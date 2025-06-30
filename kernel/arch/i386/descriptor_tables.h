@@ -2,6 +2,8 @@
 // use packed attribute to suggest GCC not add padding
 // and align members of the struct.
 
+#include "common.h"
+
 struct gdt_entry {
     u16int limit_low; // lower 16 bits of limit
     u16int base_low;
@@ -16,23 +18,24 @@ struct gdt_ptr {
     u32int base; // address of first gdt_entry struct
 } __attribute__((packed));
 
-// describes an interrupt gate
 struct idt_entry {
-    u16int base_lo;         // lower 16 bits of the addr to jmp to when int is fired.
-    u16int sel;             // kernel segment selector
-    u8int always0;          // must always be zero
-    u8int flags;            // more flags. see manual documentation
-    u16int base_hi;        
-} __attribute__((packed));
-
-// pointer to array of interrupt (int) handlers
-// in format suitable for giving to 'lidt' x86 instruction
-struct idt_ptr {
-    u16int limit;
-    u32int base;            // addr of first element in idt_entry array
+    u16int isr_low;     // lower 16 bits to jmp to when int fires
+    u16int kernel_cs;   // kernel segment selector
+    u8int reserved;     // always zero
+    u8int attributes;   // more flags. see documentation
+    u16int isr_high;    // upper 16 bits of address to jump to
 } __attribute((packed));
 
-// for access to addresses of asm irs handlers
+typedef struct {
+    u16int limit;
+    u32int base;
+} __attribute((packed)) idtr_t;
+
+__attribute__((aligned(0x10))) static struct idt_entry idt[256];
+
+void init_descriptor_tables();
+void terminal_initialize();
+
 void isr0();
 void isr1();
 void isr2();

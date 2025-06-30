@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include <algorithms/sorting.h>
 
 #include <kernel/tty.h>
-#include <kernel/descriptor_tables.h>
+
+#include "descriptor_tables.h"
 
 void print(int *arr, int n) {
     for (int i = 0; i < n; i++) {
@@ -14,23 +14,13 @@ void print(int *arr, int n) {
 void kernel_main(void) {
     // IRS and segmentation (we implement paging later)
     init_descriptor_tables();
-	terminal_initialize();
+    terminal_initialize();
 
-    int n = 10;
-    int arr[n];
-    for (int i = 0; i < n; i++) {
-        arr[i] = n - i;
-    }
-    printf("Unsorted array: ");
-    print(arr, n);
-    quick_sort(arr, n);
-    printf("Sorted array: ");
-    print(arr, n);
+    asm volatile("int $0x0");
+    asm volatile("int $0x0");
+    asm volatile("int $0x0");
 
-    terminal_scroll();
-
-    asm volatile("int $0xB"); 
-    // asm volatile("int $0x4"); 
+    printf("hello world");
 
     return;
 }

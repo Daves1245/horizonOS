@@ -76,6 +76,21 @@ int printf(const char* restrict format, ...) {
                 return -1;
             }
             written += len;
+        } else if (*format == 'x') {
+            format++;
+            if (!maxrem) {
+                // TODO: Set errno to EOVERFLOW.
+                return -1;
+            }
+            char num_buff[9] = {0};
+            unsigned int num = va_arg(parameters, unsigned int);
+            itoa_hex(num_buff, num);
+            size_t len = strlen(num_buff);
+            if (!print(num_buff, len)) {
+                // TODO set errno to (TODO).
+                return -1;
+            }
+            written += len;
         } else {
 			format = format_begun_at;
 			size_t len = strlen(format);

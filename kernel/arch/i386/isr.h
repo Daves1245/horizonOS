@@ -7,8 +7,8 @@
 #include "common.h"
 
 struct registers {
-    u32int ds; // data segment selector
-    u32int edi, esi, ebp, esp, ebx, edx, ecx, eax; // pushed by pusha
-    u32int int_no, err_code;        // interrupt number and error code (if applicable)
-    u32int eip, cs, eflags, useresp, ss; // pushed by the processor automatically
-};
+    u32int ds;
+    u32int edi, esi, ebp, esp, ebx, edx, ecx, eax; // pusha
+    u32int int_no, err_code;                       // isr_common_stub
+    u32int eip, cs, eflags, useresp, ss;            // cpu on interrupt
+} __attribute__((packed));

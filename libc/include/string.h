@@ -15,6 +15,7 @@ void* memmove(void*, const void*, size_t);
 void* memset(void*, int, size_t);
 size_t strlen(const char*);
 void itoa(char *dest, int num);
+void itoa_hex(char *dest, unsigned int num);
 
 #ifdef __cplusplus
 }

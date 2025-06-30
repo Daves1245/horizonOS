@@ -1,11 +1,12 @@
 //
-// descriptor_tables.c - Initialises the GDT and IDT, and defines the 
+// descriptor_tables.c - Initialises the GDT and IDT, and defines the
 //                       default ISR and IRQ handler.
 //                       Based on code from Bran's kernel development tutorials.
 //                       Rewritten for JamesM's kernel development tutorials.
 //
 
 #include <string.h>
+#include <stdint.h>
 
 #include "common.h"
 #include "descriptor_tables.h"
@@ -18,27 +19,25 @@ extern void idt_flush(u32int);
 static void init_gdt();
 static void init_idt();
 static void gdt_set_gate(s32int,u32int,u32int,u8int,u8int);
-static void idt_set_gate(u8int,u32int,u16int,u8int);
 
 struct gdt_entry gdt_entries[5];
 struct gdt_ptr   gdt_ptr;
 struct idt_entry idt_entries[256];
-struct idt_ptr   idt_ptr;
+
+// idt
+__attribute__((aligned(0x10))) static struct idt_entry idt[256];
+idtr_t idtr;
 
 // Initialisation routine - zeroes all the interrupt service routines,
 // initialises the GDT and IDT.
-void init_descriptor_tables()
-{
-
+void init_descriptor_tables() {
     // Initialise the global descriptor table.
     init_gdt();
     // Initialise the interrupt descriptor table.
     init_idt();
-
 }
 
-static void init_gdt()
-{
+static void init_gdt() {
     gdt_ptr.limit = (sizeof(struct gdt_entry) * 5) - 1;
     gdt_ptr.base  = (u32int)&gdt_entries;
 
@@ -52,75 +51,45 @@ static void init_gdt()
 }
 
 // Set the value of one GDT entry.
-static void gdt_set_gate(s32int num, u32int base, u32int limit, u8int access, u8int gran)
-{
+static void gdt_set_gate(s32int num, u32int base, u32int limit, u8int access, u8int gran) {
     gdt_entries[num].base_low    = (base & 0xFFFF);
     gdt_entries[num].base_middle = (base >> 16) & 0xFF;
     gdt_entries[num].base_high   = (base >> 24) & 0xFF;
 
     gdt_entries[num].limit_low   = (limit & 0xFFFF);
     gdt_entries[num].granularity = (limit >> 16) & 0x0F;
-    
+
     gdt_entries[num].granularity |= gran & 0xF0;
     gdt_entries[num].access      = access;
 }
 
-static void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags)
-{
-    idt_entries[num].base_lo = base & 0xFFFF;
-    idt_entries[num].base_hi = (base >> 16) & 0xFFFF;
+static void idt_set_descriptor(uint8_t vector, void *isr, uint8_t flags) {
+    struct idt_entry *descriptor = &idt[vector];
 
-    idt_entries[num].sel     = sel;
-    idt_entries[num].always0 = 0;
-    // We must uncomment the OR below when we get to using user-mode.
-    // It sets the interrupt gate's privilege level to 3.
-    idt_entries[num].flags   = flags /* | 0x60 */;
+    descriptor->isr_low = (uint32_t) isr & 0xFFFF;
+    descriptor->kernel_cs = 0x08; // can be whatever offset your kernel code selector is in your GDT
+    descriptor->attributes = flags;
+    descriptor->isr_high = (uint32_t) isr >> 16;
+    descriptor->reserved = 0;
 }
 
 void idt_flush(u32int);
 
-static void idt_set_gate(u8int, u32int, u16int, u8int);
+// TODO move to a better spot
+#define IDT_MAX_DESCRIPTORS 256
 
-struct idt_entry idt_entries[256];
-struct idt_ptr idt_ptr;
+static int vectors[IDT_MAX_DESCRIPTORS];
+extern void *isr_stub_table[];
 
 static void init_idt() {
-    idt_ptr.limit = sizeof(struct idt_entry) * 256 - 1;
-    idt_ptr.base = (u32int) &idt_entries;
+    idtr.base = (uintptr_t) &idt[0];
+    idtr.limit = sizeof(struct idt_entry) * IDT_MAX_DESCRIPTORS - 1;
 
-    memset(&idt_entries, 0, sizeof(struct idt_entry) * 256);
-    idt_set_gate(0, (u32int) isr0, 0x08, 0x8E);
-    idt_set_gate(1, (u32int) isr1, 0x08, 0x8E);
-    idt_set_gate(2, (u32int) isr2, 0x08, 0x8E);
-    idt_set_gate(3, (u32int) isr3, 0x08, 0x8E);
-    idt_set_gate(4, (u32int) isr4, 0x08, 0x8E);
-    idt_set_gate(5, (u32int) isr5, 0x08, 0x8E);
-    idt_set_gate(6, (u32int) isr6, 0x08, 0x8E);
-    idt_set_gate(7, (u32int) isr7, 0x08, 0x8E);
-    idt_set_gate(8, (u32int) isr8, 0x08, 0x8E);
-    idt_set_gate(9, (u32int) isr9, 0x08, 0x8E);
-    idt_set_gate(10, (u32int) isr10, 0x08, 0x8E);
-    idt_set_gate(11, (u32int) isr11, 0x08, 0x8E);
-    idt_set_gate(12, (u32int) isr12, 0x08, 0x8E);
-    idt_set_gate(13, (u32int) isr13, 0x08, 0x8E);
-    idt_set_gate(14, (u32int) isr14, 0x08, 0x8E);
-    idt_set_gate(15, (u32int) isr15, 0x08, 0x8E);
-    idt_set_gate(16, (u32int) isr16, 0x08, 0x8E);
-    idt_set_gate(17, (u32int) isr17, 0x08, 0x8E);
-    idt_set_gate(18, (u32int) isr18, 0x08, 0x8E);
-    idt_set_gate(19, (u32int) isr19, 0x08, 0x8E);
-    idt_set_gate(20, (u32int) isr20, 0x08, 0x8E);
-    idt_set_gate(21, (u32int) isr21, 0x08, 0x8E);
-    idt_set_gate(22, (u32int) isr22, 0x08, 0x8E);
-    idt_set_gate(23, (u32int) isr23, 0x08, 0x8E);
-    idt_set_gate(24, (u32int) isr24, 0x08, 0x8E);
-    idt_set_gate(25, (u32int) isr25, 0x08, 0x8E);
-    idt_set_gate(26, (u32int) isr26, 0x08, 0x8E);
-    idt_set_gate(27, (u32int) isr27, 0x08, 0x8E);
-    idt_set_gate(28, (u32int) isr28, 0x08, 0x8E);
-    idt_set_gate(29, (u32int) isr29, 0x08, 0x8E);
-    idt_set_gate(30, (u32int) isr30, 0x08, 0x8E);
-    idt_set_gate(31, (u32int) isr31, 0x08, 0x8E);
+    for (uint8_t vector = 0; vector < 32; vector++) {
+        idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
+        vectors[vector] = 1;
+    }
 
-    idt_flush((u32int) &idt_ptr);
+    __asm__ volatile ("lidt %0" : : "m"(idtr)); // load the new IDT
+    __asm__ volatile ("sti"); // enable flag
 }

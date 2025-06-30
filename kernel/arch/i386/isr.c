@@ -15,16 +15,50 @@ int has_err_code(int n) {
     return (n == 8) || ((n >= 10) && (n <= 14));
 }
 
-// This gets called from our ASM interrupt handler stub.
-void isr_handler(struct registers regs) {
-    terminal_writestring("received interrupt: ");
-    printf("interrupt: %d ", regs.int_no);
+void debug_print_registers(struct registers regs) {
+    printf("=== REGISTER DUMP ===\n");
+
+    // Segment selectors
+    printf("DS: 0x%x\n", regs.ds);
+    printf("CS: 0x%x\n", regs.cs);
+    printf("SS: 0x%x\n", regs.ss);
+
+    // General purpose registers (from pusha)
+    printf("EAX: 0x%x  EBX: 0x%x  ECX: 0x%x  EDX: 0x%x\n",
+           regs.eax, regs.ebx, regs.ecx, regs.edx);
+    printf("ESI: 0x%x  EDI: 0x%x  EBP: 0x%x  ESP: 0x%x\n",
+           regs.esi, regs.edi, regs.ebp, regs.esp);
+
+    // Control registers
+    printf("EIP: 0x%x  EFLAGS: 0x%x\n", regs.eip, regs.eflags);
+    printf("User ESP: 0x%x\n", regs.useresp);
+
+    // Interrupt info
+    printf("Interrupt: %d (0x%x)", regs.int_no, regs.int_no);
     if (has_err_code(regs.int_no)) {
-        printf("err_code: %d", regs.err_code);
+        printf("  Error Code: %d (0x%x)", regs.err_code, regs.err_code);
     }
-    // printf("int_no: %d err_code: %d", regs.int_no, regs.err_code);
-    // terminal_scroll();
-    terminal_putchar('\n');
+    printf("\n");
+
+    // EFLAGS breakdown
+    printf("EFLAGS bits: ");
+    if (regs.eflags & (1 << 0)) printf("CF ");
+    if (regs.eflags & (1 << 2)) printf("PF ");
+    if (regs.eflags & (1 << 4)) printf("AF ");
+    if (regs.eflags & (1 << 6)) printf("ZF ");
+    if (regs.eflags & (1 << 7)) printf("SF ");
+    if (regs.eflags & (1 << 8)) printf("TF ");
+    if (regs.eflags & (1 << 9)) printf("IF ");
+    if (regs.eflags & (1 << 10)) printf("DF ");
+    if (regs.eflags & (1 << 11)) printf("OF ");
+    printf("\n");
+
+    printf("==================\n");
+}
+
+// This gets called from our ASM interrupt handler stub.
+void isr_handler(struct registers *regs) {
+    debug_print_registers(*regs);
 }
 
 void isr_0() {}
