@@ -46,7 +46,7 @@ void terminal_scroll() {
 	}
     }
     for (size_t c = 0; c < VGA_WIDTH; c++) {
-	terminal_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH + c] = ' ';
+	terminal_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH + c] = vga_entry(' ', terminal_color);
     }
 }
 
@@ -80,8 +80,9 @@ void terminal_putchar(char c) {
 }
 
 void terminal_write(const char* data, size_t size) {
-    for (size_t i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++) {
 	terminal_putchar(data[i]);
+    }
 }
 
 void terminal_write_dec(u32int n) {
@@ -94,7 +95,7 @@ void terminal_write_dec(u32int n) {
 	n /= 10;
     } while (n);
     do {
-	terminal_putchar(tmp[--i]);
+	terminal_putchar('0' + tmp[--i]);
     } while (i);
 }
 
