@@ -16,11 +16,11 @@ void kernel_main(void) {
     init_descriptor_tables();
     terminal_initialize();
 
-    asm volatile("int $0x0");
-    asm volatile("int $0x0");
-    asm volatile("int $0x0");
-
-    printf("hello world");
+    __asm__ volatile ("int $0x0");
+    __asm__ volatile ("int $0x1");
+    __asm__ volatile ("int $0x2");
+    __asm__ volatile ("int $0x3");
+    __asm__ volatile ("int $0x4");
 
     return;
 }
