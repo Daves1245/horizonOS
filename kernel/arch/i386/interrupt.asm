@@ -24,8 +24,6 @@ isr_common_stub:
     mov ax, ds                 ; Lower 16-bits of eax = ds (zero extension not needed in assembly, but to properly fill out our struct value, we zero extend so that the full 32 bit value doesn't have gargbage upper 16 bits)
     push eax                   ; Save the data segment descriptor (push ds)
 
-    ; At this point, esp holds a pointer to registers struct argument
-
     mov ax, 0x10               ; Load the kernel data segment descriptor
     mov ds, ax
     mov es, ax
@@ -35,17 +33,13 @@ isr_common_stub:
     ; -- Ensure stack alignment for System V ABI (16-byte for function calls) --
 
     mov eax, esp               ; Move stack pointer into eax
-    mov ebx, esp               ; Save the stack pointer in ebx
-
     and esp, -16               ; Align stack to 16-byte boundary (0xFFFFFFF0)
-    sub esp, 12                ; Adjust so ESP is 12 mod 16 (allows us to push 1 dw, getting us to 8 mod 16)
-    push eax                   ; push pointer to struct registers
 
     call isr_handler
     add esp, 4                 ; Clean up the pushed argument
 
     ; -- Restore stack --
-    mov esp, ebx
+    pop esp                    ; Unaligned stack pointer value
 
     pop eax                    ; Reload the original data segment descriptor
     mov ds, ax
