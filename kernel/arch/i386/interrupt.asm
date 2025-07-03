@@ -16,13 +16,15 @@ isr%+%1:
 %endmacro
 
 extern isr_handler
-
-; Common ISR stub that saves processor state, calls C handler, and restores state
+global isr_common_stub
 isr_common_stub:
     pusha                      ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
 
-    mov ax, ds                 ; Lower 16-bits of eax = ds
-    push eax                   ; Save the data segment descriptor
+    xor eax, eax               ; Clear eax. Not necessary, but upper bits are displayed in struct register
+    mov ax, ds                 ; Lower 16-bits of eax = ds (zero extension not needed in assembly, but to properly fill out our struct value, we zero extend so that the full 32 bit value doesn't have gargbage upper 16 bits)
+    push eax                   ; Save the data segment descriptor (push ds)
+
+    ; At this point, esp holds a pointer to registers struct argument
 
     mov ax, 0x10               ; Load the kernel data segment descriptor
     mov ds, ax
@@ -31,16 +33,19 @@ isr_common_stub:
     mov gs, ax
 
     ; -- Ensure stack alignment for System V ABI (16-byte for function calls) --
-    mov eax, esp               ; Save the current stack pointer
-    and esp, -16               ; Align stack to 16-byte boundary (0xFFFFFFF0)
-    push eax                   ; Save old stack pointer
 
-    push eax                   ; Pass pointer to registers struct as argument
+    mov eax, esp               ; Move stack pointer into eax
+    mov ebx, esp               ; Save the stack pointer in ebx
+
+    and esp, -16               ; Align stack to 16-byte boundary (0xFFFFFFF0)
+    sub esp, 12                ; Adjust so ESP is 12 mod 16 (allows us to push 1 dw, getting us to 8 mod 16)
+    push eax                   ; push pointer to struct registers
+
     call isr_handler
     add esp, 4                 ; Clean up the pushed argument
 
     ; -- Restore stack --
-    pop esp                    ; Unaligned stack pointer value
+    mov esp, ebx
 
     pop eax                    ; Reload the original data segment descriptor
     mov ds, ax
@@ -51,7 +56,6 @@ isr_common_stub:
     popa                       ; Pops edi,esi,ebp,esp,ebx,edx,ecx,eax
     add esp, 8                 ; Cleans up the pushed error code and pushed ISR number
     iret                       ; Pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
-
 isr_no_err_stub 0
 isr_no_err_stub 1
 isr_no_err_stub 2

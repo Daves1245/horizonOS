@@ -55,11 +55,16 @@ void terminal_putentryat_interrupt_debug(unsigned char c, uint8_t color, size_t 
 void terminal_putentryat(unsigned char c, uint8_t color, size_t x, size_t y) {
     if (x >= VGA_WIDTH || y >= VGA_HEIGHT) {
         // Write error message and halt
-        terminal_buffer[0] = vga_entry('B', vga_entry_color(VGA_COLOR_RED, VGA_COLOR_BLACK));
-        terminal_buffer[1] = vga_entry('U', vga_entry_color(VGA_COLOR_RED, VGA_COLOR_BLACK));
-        terminal_buffer[2] = vga_entry('G', vga_entry_color(VGA_COLOR_RED, VGA_COLOR_BLACK));
+        terminal_buffer[0] = vga_entry('B', terminal_color);
+        terminal_buffer[1] = vga_entry('U', terminal_color);
+        terminal_buffer[2] = vga_entry('G', terminal_color);
+        terminal_buffer[3] = vga_entry('B', terminal_color);
+        terminal_buffer[4] = vga_entry('U', terminal_color);
+        terminal_buffer[5] = vga_entry('G', terminal_color);
+        terminal_buffer[6] = vga_entry('B', terminal_color);
+        terminal_buffer[7] = vga_entry('U', terminal_color);
+        terminal_buffer[8] = vga_entry('G', terminal_color);
         __asm__ volatile ("hlt");
-        return;
     }
     const size_t index = y * VGA_WIDTH + x;
     terminal_buffer[index] = vga_entry(c, color);
@@ -121,12 +126,12 @@ void terminal_putchar(char c) {
     }
     terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
     terminal_column++;
-    if (terminal_column == VGA_WIDTH) {
+    if (terminal_column >= VGA_WIDTH) {
 	terminal_column = 0;
 	terminal_row++;
-	if (terminal_row == VGA_HEIGHT) {
-	    terminal_row--;
+	if (terminal_row >= VGA_HEIGHT) {
 	    terminal_scroll();
+            terminal_row--;
 	}
     }
 }
