@@ -9,6 +9,7 @@
 #include "isr.h"
 #include <kernel/tty.h>
 
+#include <stdint.h>
 #include <stdio.h>
 
 int has_err_code(int n) {
@@ -56,9 +57,81 @@ void debug_print_registers(struct registers regs) {
     printf("==================\n");
 }
 
+volatile uint16_t *vga_buffer = (uint16_t *) 0xB8000;
+int vga_cursor = 0;
+
+void vga_putchar(char c) {
+    if (c == '\n') {
+        vga_cursor = (vga_cursor / 80 + 1) * 80;
+    } else {
+        vga_buffer[vga_cursor++] = (uint16_t) c | 0x0F00; // White on black
+    }
+    if (vga_cursor >= 80 * 25) {
+        vga_cursor = 0; // Wrap around
+    }
+}
+
+void vga_print(const char* str) {
+    while (*str) {
+        vga_putchar(*str++);
+    }
+}
+
+void vga_print_hex(uint32_t value) {
+    const char hex_chars[] = "0123456789ABCDEF";
+    vga_print("0x");
+    for (int i = 7; i >= 0; i--) {
+        vga_putchar(hex_chars[(value >> (i * 4)) & 0xF]);
+    }
+}
+
 // This gets called from our ASM interrupt handler stub.
-void isr_handler(struct registers *regs) {
+void isr_handler(const struct registers *regs) {
+    // temporary - just print the interrupt number
+    volatile uint16_t *vga = (uint16_t *) 0xB8000;
+    vga[10] = 0x0F00 | ('0' + regs->int_no);
+    /*
+    if (regs->int_no == 13) {
+        // Use direct VGA output to avoid triggering another GPF
+        vga_print("\n*** GENERAL PROTECTION FAULT ***\n");
+        vga_print("Error Code: ");
+        vga_print_hex(regs->err_code);
+        vga_print("\nEIP: ");
+        vga_print_hex(regs->eip);
+        vga_print("\nCS: ");
+        vga_print_hex(regs->cs);
+        vga_print("\nESP: ");
+        vga_print_hex(regs->esp);
+        vga_print("\nEFLAGS: ");
+        vga_print_hex(regs->eflags);
+
+        // Decode error code
+        vga_print("\nError details: ");
+        if (regs->err_code & 1) vga_print("External ");
+        else vga_print("Internal ");
+
+        uint32_t table = (regs->err_code >> 1) & 3;
+        switch (table) {
+            case 0: vga_print("GDT "); break;
+            case 1: vga_print("IDT "); break;
+            case 2: vga_print("LDT "); break;
+            case 3: vga_print("IDT "); break;
+        }
+
+        vga_print("Selector: ");
+        vga_print_hex(regs->err_code & 0xFFF8);
+        vga_print("\n*** HALTING ***\n");
+
+        // Halt the system to prevent infinite loop
+        asm volatile("cli; hlt");
+
+        // Should never reach here
+        for(;;);
+    }
+
+    // For all other interrupts, use normal debugging
     debug_print_registers(*regs);
+    */
 }
 
 void isr_0() {}

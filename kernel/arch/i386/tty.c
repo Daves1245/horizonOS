@@ -115,6 +115,8 @@ void terminal_scrolln(size_t rows) {
 void terminal_putchar(char c) {
     unsigned char uc = c;
     if (c == '\n') {
+        // If we're on the last row, we can't print on the next - scroll the
+        // screen up and keep ourselves on the last row (newline)
 	if (terminal_row >= VGA_HEIGHT - 1) {
 	    terminal_scroll();
 	    terminal_row = VGA_HEIGHT - 1;
@@ -125,20 +127,26 @@ void terminal_putchar(char c) {
 	return;
     }
     terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
-    terminal_column++;
-    if (terminal_column >= VGA_WIDTH) {
-	terminal_column = 0;
-	terminal_row++;
-	if (terminal_row >= VGA_HEIGHT) {
-	    terminal_scroll();
-            terminal_row--;
-	}
+    // only move up if we printed a value
+    if (c != '\n') {
+        terminal_column++;
+        if (terminal_column >= VGA_WIDTH) {
+            terminal_column = 0;
+            terminal_row++;
+
+            // logic here is different, since we're not moving down a row
+            if (terminal_row >= VGA_HEIGHT) {
+                terminal_scroll();
+                terminal_row = VGA_HEIGHT - 1;
+            }
+        }
+
     }
 }
 
 void terminal_write(const char* data, size_t size) {
     for (size_t i = 0; i < size; i++) {
-	terminal_putchar(data[i]);
+        terminal_putchar(data[i]);
     }
 }
 
@@ -148,11 +156,11 @@ void terminal_write_dec(uint32_t n) {
     int i = 0;
 
     do {
-	tmp[i++] = n % 10;
-	n /= 10;
+        tmp[i++] = n % 10;
+        n /= 10;
     } while (n);
     do {
-	terminal_putchar('0' + tmp[--i]);
+        terminal_putchar('0' + tmp[--i]);
     } while (i);
 }
 

@@ -16,21 +16,16 @@ void kernel_main(void) {
     init_descriptor_tables();
     terminal_initialize();
 
-    asm volatile ("int $0x1");
-    asm volatile ("int $0x2");
-    asm volatile ("int $0x3");
-    asm volatile ("int $0x4");
-    asm volatile ("int $0x5");
-    asm volatile ("int $0x6");
-    asm volatile ("int $0x7");
-    asm volatile ("int $0x8");
-    asm volatile ("int $0x9");
-    asm volatile ("int $0xA");
-    asm volatile ("int $0xB");
-    asm volatile ("int $0xC");
-    asm volatile ("int $0xD");
-    asm volatile ("int $0xE");
-    asm volatile ("int $0xF");
+    // test int 1 - trigger directly
+    // asm volatile ("int $0x1");
+
+    // int 14 - page fault
+    /*
+    int *p = (int *) 0;
+    *p = 42; // page fault with error code
+    */
+    // ok nevermind apparently gcc recognizes this as ub and replaces it with a
+    // special op `ud2` meant to signify 'this should never be run'
 
     // passes if we see debug prints for int #9
 
