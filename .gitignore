@@ -1,5 +1,9 @@
 *.iso
+
 isodir
 sysroot
+
+# Vim files
 *.swp
 *.swo
+*.swn

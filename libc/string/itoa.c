@@ -1,7 +1,6 @@
 #include <string.h>
 
 void itoa(char *dest, int num) {
-    memset(dest, 0, sizeof dest);
     char stack[12] = {0};
     int i;
     for (i = 0; i < 11; i++) {
@@ -16,16 +15,15 @@ void itoa(char *dest, int num) {
 }
 
 void itoa_hex(char *dest, unsigned int num) {
-    memset(dest, 0, sizeof dest);
     char stack[9] = {0};  // 8 hex digits + null terminator
     int i;
-    
+
     if (num == 0) {
         dest[0] = '0';
         dest[1] = '\0';
         return;
     }
-    
+
     for (i = 0; i < 8 && num > 0; i++) {
         int digit = num % 16;
         if (digit < 10) {
@@ -35,7 +33,7 @@ void itoa_hex(char *dest, unsigned int num) {
         }
         num /= 16;
     }
-    
+
     for (int k = 0; k < i; k++) {
         dest[k] = stack[i - 1 - k];
     }

@@ -32,30 +32,57 @@ isr_common_stub:
     mov fs, ax
     mov gs, ax
 
-    ; -- Ensure stack alignment for System V ABI (16-byte for function calls) --
+    mov ebx, esp
 
-    mov eax, esp               ; Move stack pointer into eax
-    mov ebx, esp               ; Save the stack pointer in ebx
+    ; -- Ensure stack alignment for System V ABI (16-byte for function calls) --
 
     and esp, -16               ; Align stack to 16-byte boundary (0xFFFFFFF0)
     sub esp, 12                ; Adjust so ESP is 12 mod 16 (allows us to push 1 dw, getting us to 8 mod 16)
-    push eax                   ; push pointer to struct registers
+    push ebx                   ; push original esp as registers pointer
 
+    ; ---- Debug with stack checking --- ;
     call isr_handler
-    add esp, 4                 ; Clean up the pushed argument
+    add esp, 4                 ; Remove argument
+    mov esp, ebx               ; Restore original ESP
 
-    ; -- Restore stack --
-    mov esp, ebx
+    ; DEBUG: Verify stack contents before iret
+    push eax
+    mov eax, [esp + 4]         ; Should be saved DS (0x10)
+    cmp eax, 0x10
 
-    pop eax                    ; Reload the original data segment descriptor
+    jne .stack_corruption
+    mov eax, [esp + 52]        ; Should be CS (0x08)
+    cmp eax, 0x08
+    jne .stack_corruption
+    pop eax
+    jmp .stack_ok
+
+.stack_corruption:
+    ; Stack corruption detected - make it visually obvious
+    pop eax                    ; Clean up stack
+
+    ; Write bright red 'X' to first VGA cell
+    push eax                   ; Save EAX
+    mov eax, 0xB8000           ; VGA text buffer address
+    mov word [eax], 0x0C58     ; 'X' (0x58) with bright red on black (0x0C)
+    pop eax                    ; Restore EAX
+
+    cli                        ; Disable interrupts
+    hlt                        ; Halt system
+
+.stack_ok:
+    pop eax                    ; Restore DS
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
-    popa                       ; Pops edi,esi,ebp,esp,ebx,edx,ecx,eax
-    add esp, 8                 ; Cleans up the pushed error code and pushed ISR number
-    iret                       ; Pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+    popa                       ; Restore all general registers
+    add esp, 8                 ; Skip error code and interrupt number
+
+    ; At this point, [ESP] should be EIP, [ESP+4] should be CS
+    iret
+
 isr_no_err_stub 0
 isr_no_err_stub 1
 isr_no_err_stub 2
