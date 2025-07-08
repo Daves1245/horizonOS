@@ -17,7 +17,13 @@ void kernel_main(void) {
     terminal_initialize();
 
     // test int 1 - trigger directly
-    // asm volatile ("int $0x1");
+    asm volatile ("int $0x1");
+    asm volatile ("int $0x2");
+    asm volatile ("int $0x3");
+    asm volatile ("int $0x4");
+    asm volatile ("int $0x5");
+    asm volatile ("int $0x6");
+    asm volatile ("int $0x7");
 
     // int 14 - page fault
     /*
