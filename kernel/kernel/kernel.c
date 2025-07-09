@@ -14,6 +14,7 @@ void print(int *arr, int n) {
 }
 
 extern void halt_without_apic();
+extern int check_msr();
 
 int check_msr() {
     uint32_t eax, ebx, ecx, edx;
