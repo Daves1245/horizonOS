@@ -4,6 +4,8 @@
 
 #include "descriptor_tables.h"
 
+#include <stdint.h>
+
 void print(int *arr, int n) {
     for (int i = 0; i < n; i++) {
         printf("%d ", arr[i]);
@@ -11,19 +13,24 @@ void print(int *arr, int n) {
     printf("\n");
 }
 
+extern void halt_without_apic();
+
+int check_msr() {
+    uint32_t eax, ebx, ecx, edx;
+    asm volatile ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
+    return (edx & (1 << 5)) != 0;
+}
+
 void kernel_main(void) {
     // IRS and segmentation (we implement paging later)
     init_descriptor_tables();
     terminal_initialize();
 
-    // test int 1 - trigger directly
-    asm volatile ("int $0x1");
-    asm volatile ("int $0x2");
-    asm volatile ("int $0x3");
-    asm volatile ("int $0x4");
-    asm volatile ("int $0x5");
-    asm volatile ("int $0x6");
-    asm volatile ("int $0x7");
+    // test for APIC support
+    halt_without_apic();
+
+    printf("APIC supported\n");
+    printf("check_msr (apic base msr): %d", check_msr());
 
     // int 14 - page fault
     /*
