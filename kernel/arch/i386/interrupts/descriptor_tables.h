@@ -2,7 +2,7 @@
 // use packed attribute to suggest GCC not add padding
 // and align members of the struct.
 
-#include "common.h"
+#include "../include/common.h"
 
 struct gdt_entry {
     u16int limit_low; // lower 16 bits of limit
@@ -24,12 +24,12 @@ struct idt_entry {
     u8int reserved;     // always zero
     u8int attributes;   // more flags. see documentation
     u16int isr_high;    // upper 16 bits of address to jump to
-} __attribute((packed));
+} __attribute__((packed));
 
 typedef struct {
     u16int limit;
     u32int base;
-} __attribute((packed)) idtr_t;
+} __attribute__((packed)) idtr_t;
 
 __attribute__((aligned(0x10))) static struct idt_entry idt[256];
 

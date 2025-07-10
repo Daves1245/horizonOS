@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "common.h"
+#include "../include/common.h"
 #include "descriptor_tables.h"
 
 // Lets us access our ASM functions from our C code.

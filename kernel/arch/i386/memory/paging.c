@@ -1,9 +1,9 @@
-#include "common.h"
+#include "../include/common.h"
 #include "paging.h"
-#include "isr.h"
+#include "../interrupts/isr.h"
 #include <string.h>
 #include <stdio.h>
-#include "../../kernel/kheap.h"
+#include "../../../kernel/kheap.h"
 
 u32int *frames;
 u32int nframes;

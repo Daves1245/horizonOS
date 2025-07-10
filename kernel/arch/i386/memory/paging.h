@@ -1,8 +1,8 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include "common.h"
-#include "isr.h"
+#include "../include/common.h"
+#include "../interrupts/isr.h"
 
 /*
  * x86-32 Page Directory Structure

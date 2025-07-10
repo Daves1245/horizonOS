@@ -2,7 +2,7 @@
 
 #include <kernel/tty.h>
 
-#include "descriptor_tables.h"
+#include "../arch/i386/interrupts/descriptor_tables.h"
 #include "../arch/i386/memory/paging.h"
 
 #include <stdint.h>

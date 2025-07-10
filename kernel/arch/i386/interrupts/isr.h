@@ -1,7 +1,7 @@
 #ifndef ISR_H
 #define ISR_H
 
-#include "common.h"
+#include "../include/common.h"
 
 struct interrupt_context {
     u32int ds;

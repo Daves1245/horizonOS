@@ -5,7 +5,7 @@
  *
  */
 
-#include "common.h"
+#include "../include/common.h"
 #include "isr.h"
 #include <kernel/tty.h>
 
