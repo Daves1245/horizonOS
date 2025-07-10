@@ -1,23 +1,29 @@
+#include <stdint.h>
+
 #include "kheap.h"
+#include "../arch/i386/common.h"
 
-u32int placement_address;
+uint32_t placement_address;
 
-u32int kmalloc_a(u32int sz) {
-    u32int ret = placement_address;
-    if (placement_address & 0xFFFFF000) {
+uint32_t kmalloc_a(uint32_t sz) {
+    // align to page boundary if not already aligned
+    if (placement_address & 0xFFF) {
         placement_address &= 0xFFFFF000;
         placement_address += 0x1000;
     }
-    return kmalloc(sz);
+    uint32_t ret = placement_address;
+    placement_address += sz;
+    return ret;
 }
 
-u32int kmalloc_p(u32int sz, u32int *phys) {
+uint32_t kmalloc_p(uint32_t sz, uint32_t *phys) {
     *phys = placement_address;
     return kmalloc(sz);
 }
 
-u32int kmalloc_ap(u32int sz, u32int *phys) {
-    if (placement_address & 0xFFFFF000) {
+uint32_t kmalloc_ap(uint32_t sz, uint32_t *phys) {
+    // align to page boundary if not already aligned
+    if (placement_address & 0xFFF) {
         placement_address &= 0xFFFFF000;
         placement_address += 0x1000;
     }
@@ -25,8 +31,8 @@ u32int kmalloc_ap(u32int sz, u32int *phys) {
     return kmalloc(sz);
 }
 
-u32int kmalloc(u32int sz) {
-    u32int ret = placement_address;
+uint32_t kmalloc(uint32_t sz) {
+    uint32_t ret = placement_address;
     placement_address += sz;
     return ret;
 }

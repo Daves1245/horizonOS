@@ -1,7 +1,13 @@
 #ifndef KHEAP_H
 #define KHEAP_H
-u32int kmalloc_a(u32int sz); // page aligned
-u32int kmalloc_p(u32int sz, u32int *phys); // returns a physical address
-u32int kmalloc_ap(u32int sz, u32int *phys); // page aligned and returns a physical address
-u32int kmalloc(u32int sz); // vanilla
+
+#include <stdint.h>
+
+#include "../arch/i386/common.h"
+
+uint32_t kmalloc_a(uint32_t sz); // page aligned
+uint32_t kmalloc_p(uint32_t sz, uint32_t *phys); // returns a physical address
+uint32_t kmalloc_ap(uint32_t sz, uint32_t *phys); // page aligned and returns a physical address
+uint32_t kmalloc(uint32_t sz); // vanilla
+
 #endif

@@ -16,25 +16,25 @@ int has_err_code(int n) {
     return (n == 8) || ((n >= 10) && (n <= 14));
 }
 
-void debug_print_registers(struct registers regs) {
+void debug_print_registers(struct interrupt_context regs) {
     printf("=== REGISTER DUMP ===\n");
 
-    // Segment selectors
+    // segment selectors
     printf("DS: 0x%x\n", regs.ds);
     printf("CS: 0x%x\n", regs.cs);
     printf("SS: 0x%x\n", regs.ss);
 
-    // General purpose registers (from pusha)
+    // general purpose registers (from pusha)
     printf("EAX: 0x%x  EBX: 0x%x  ECX: 0x%x  EDX: 0x%x\n",
            regs.eax, regs.ebx, regs.ecx, regs.edx);
     printf("ESI: 0x%x  EDI: 0x%x  EBP: 0x%x  ESP: 0x%x\n",
            regs.esi, regs.edi, regs.ebp, regs.esp);
 
-    // Control registers
+    // control registers
     printf("EIP: 0x%x  EFLAGS: 0x%x\n", regs.eip, regs.eflags);
     printf("User ESP: 0x%x\n", regs.useresp);
 
-    // Interrupt info
+    // interrupt info
     printf("Interrupt: %d (0x%x)", regs.int_no, regs.int_no);
     if (has_err_code(regs.int_no)) {
         printf("  Error Code: %d (0x%x)", regs.err_code, regs.err_code);
@@ -64,10 +64,10 @@ void vga_putchar(char c) {
     if (c == '\n') {
         vga_cursor = (vga_cursor / 80 + 1) * 80;
     } else {
-        vga_buffer[vga_cursor++] = (uint16_t) c | 0x0F00; // White on black
+        vga_buffer[vga_cursor++] = (uint16_t) c | 0x0F00; // white on black
     }
     if (vga_cursor >= 80 * 25) {
-        vga_cursor = 0; // Wrap around
+        vga_cursor = 0; // wrap around
     }
 }
 
@@ -85,14 +85,27 @@ void vga_print_hex(uint32_t value) {
     }
 }
 
-// This gets called from our ASM interrupt handler stub.
-void isr_handler(const struct registers *regs) {
+// array of interrupt handlers
+static isr_t interrupt_handlers[256] = {0};
+
+// register a handler for a specific interrupt
+void register_interrupt_handler(u8int n, isr_t handler) {
+    interrupt_handlers[n] = handler;
+}
+
+// this gets called from our ASM interrupt handler stub.
+void isr_handler(const struct interrupt_context *int_context) {
     // temporary - just print the interrupt number
     volatile uint16_t *vga = (uint16_t *) 0xB8000;
-    vga[10] = 0x0F00 | ('0' + regs->int_no);
+    vga[10] = 0x0F00 | ('0' + int_context->int_no);
+
+    // dispatch to registered handler if exists
+    if (interrupt_handlers[int_context->int_no] != 0) {
+        interrupt_handlers[int_context->int_no]((struct interrupt_context*)int_context);
+    }
     /*
     if (regs->int_no == 13) {
-        // Use direct VGA output to avoid triggering another GPF
+        // use direct VGA output to avoid triggering another GPF
         vga_print("\n*** GENERAL PROTECTION FAULT ***\n");
         vga_print("Error Code: ");
         vga_print_hex(regs->err_code);
@@ -105,8 +118,8 @@ void isr_handler(const struct registers *regs) {
         vga_print("\nEFLAGS: ");
         vga_print_hex(regs->eflags);
 
-        // Decode error code
-        vga_print("\nError details: ");
+        // decode error code
+        vga_print("\nerror details: ");
         if (regs->err_code & 1) vga_print("External ");
         else vga_print("Internal ");
 
@@ -118,7 +131,7 @@ void isr_handler(const struct registers *regs) {
             case 3: vga_print("IDT "); break;
         }
 
-        vga_print("Selector: ");
+        vga_print("selector: ");
         vga_print_hex(regs->err_code & 0xFFF8);
         vga_print("\n*** HALTING ***\n");
 
@@ -129,7 +142,7 @@ void isr_handler(const struct registers *regs) {
         for(;;);
     }
 
-    // For all other interrupts, use normal debugging
+    // for all other interrupts, use normal debugging
     debug_print_registers(*regs);
     */
 }
