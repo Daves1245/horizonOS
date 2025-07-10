@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #include "kheap.h"
-#include "../arch/i386/common.h"
+#include "../arch/i386/include/common.h"
 
 uint32_t placement_address;
 
