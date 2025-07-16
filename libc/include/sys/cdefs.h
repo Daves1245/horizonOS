@@ -3,4 +3,7 @@
 
 #define __myos_libc 1
 
+# define __BEGIN_DECLS
+# define __END_DECLS
+
 #endif
