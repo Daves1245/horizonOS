@@ -2,6 +2,8 @@ DEFAULT_HOST!=../default-host.sh
 HOST?=$(DEFAULT_HOST)
 HOSTARCH!=../target-triplet-to-arch.sh $(HOST)
 
+# if we can, we should add noexecstack option here, instead of
+# defining macros all over our assembly files
 CFLAGS?=-O2 -g -v
 CPPFLAGS?=
 LDFLAGS?=
@@ -34,14 +36,23 @@ $(KERNEL_ARCH_OBJS) \
 kernel/kernel.o \
 kernel/kheap.o \
 
+# these were causing issues with relocation,
+# for now let's ignore them. afaik they're only useful for
+# cpp constructor / deconstructors
+#$(ARCHDIR)/crtbegin.o \
+$(ARCHDIR)/crtend.o \
+#$(ARCHDIR)/boot/crtn.o
+#$(TEST_OBJS_DIR)/$(ARCHDIR)/crtend.o \
+$(TEST_OBJS_DIR)/$(ARCHDIR)/boot/crtn.o \
+$(ARCHDIR)/boot/crtn.o \
+$(ARCHDIR)/crtend.o \
+$(TEST_OBJS_DIR)/$(ARCHDIR)/crtbegin.o \
+
 OBJS=\
 $(ARCHDIR)/boot/crti.o \
-$(ARCHDIR)/crtbegin.o \
 $(KERNEL_OBJS) \
-$(ARCHDIR)/crtend.o \
-$(ARCHDIR)/boot/crtn.o \
 
-# Test objs directory
+# test objs directory
 TEST_OBJS_DIR=test/objs
 
 TEST_KERNEL_OBJS=\
@@ -50,26 +61,23 @@ $(TEST_OBJS_DIR)/kernel/kernel.o \
 
 TEST_OBJS=\
 $(TEST_OBJS_DIR)/$(ARCHDIR)/boot/crti.o \
-$(TEST_OBJS_DIR)/$(ARCHDIR)/crtbegin.o \
 $(TEST_KERNEL_OBJS) \
-$(TEST_OBJS_DIR)/$(ARCHDIR)/crtend.o \
-$(TEST_OBJS_DIR)/$(ARCHDIR)/boot/crtn.o \
+
+# similarly remove from linker list
+# $(ARCHDIR)/crtbegin.o
 
 LINK_LIST=\
 $(LDFLAGS) \
 $(ARCHDIR)/boot/crti.o \
-$(ARCHDIR)/crtbegin.o \
 $(KERNEL_OBJS) \
 $(LIBS) \
-$(ARCHDIR)/crtend.o \
-$(ARCHDIR)/boot/crtn.o \
 
 .PHONY: all clean install install-headers install-kernel test-objs
 .SUFFIXES: .o .c .S .asm
 
 all: myos.kernel
 
-# Test build target - compiles objects to test/objs/ directory
+# test build target - compiles objects to test/objs/ directory
 test-objs: $(TEST_OBJS)
 
 $(TEST_OBJS_DIR)/%.o: %.c
@@ -82,7 +90,11 @@ $(TEST_OBJS_DIR)/%.o: %.S
 
 $(TEST_OBJS_DIR)/%.o: %.asm
 	@mkdir -p $(dir $@)
-	$(NASM) -f elf32 $< -o $@
+	if [ "$(HOSTARCH)" = "x86_64" ]; then \
+		$(NASM) -f elf64 $< -o $@; \
+	else \
+		$(NASM) -f elf32 $< -o $@; \
+	fi
 
 $(TEST_OBJS_DIR)/$(ARCHDIR)/crtbegin.o $(TEST_OBJS_DIR)/$(ARCHDIR)/crtend.o:
 	@mkdir -p $(dir $@)
@@ -91,7 +103,6 @@ $(TEST_OBJS_DIR)/$(ARCHDIR)/crtbegin.o $(TEST_OBJS_DIR)/$(ARCHDIR)/crtend.o:
 myos.kernel: $(OBJS) $(ARCHDIR)/linker.ld
 	echo $(CC)
 	$(CC) -T $(ARCHDIR)/linker.ld -o $@ $(CFLAGS) $(LINK_LIST)
-	grub-file --is-x86-multiboot myos.kernel
 
 $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
 	OBJ=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$OBJ" $@
@@ -103,7 +114,11 @@ $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
 	$(CC) -MD -c $< -o $@ $(CFLAGS) $(CPPFLAGS)
 
 .asm.o:
-	$(NASM) -f elf32 $< -o $@
+	if [ "$(HOSTARCH)" = "x86_64" ]; then \
+		$(NASM) -f elf64 $< -o $@; \
+	else \
+		$(NASM) -f elf32 $< -o $@; \
+	fi
 
 clean:
 	rm -f myos.kernel
