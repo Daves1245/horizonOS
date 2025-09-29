@@ -38,4 +38,11 @@ static inline void write_msr_low(uint32_t msr, uint32_t low) {
     write_msr(msr, low, high);
 }
 
+// there are two registers for ioapic - address register and
+// data register at APIC_BASE and APIC_BASE + 4 bytes respectively
+// address register uses the bottom byte for register select
+uint32_t ioapic_read(void *ioapic_base, uint32_t reg);
+void ioapic_write(void *ioapic_base, uint32_t reg, uint32_t value);
+uint32_t get_ioapic_base();
+
 #endif

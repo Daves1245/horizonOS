@@ -1,11 +1,10 @@
 #include <stdio.h>
+#include <stdint.h>
 
 #include <kernel/tty.h>
-
-#include "descriptor_tables.h"
-#include "../arch/i386/paging.h"
-
-#include <stdint.h>
+#include "memory/paging.h"
+#include "gdt/descriptor_tables.h"
+#include "common/common.h"
 
 extern void halt_without_apic();
 

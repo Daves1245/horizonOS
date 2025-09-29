@@ -35,11 +35,11 @@ kernel/kernel.o \
 kernel/kheap.o \
 
 OBJS=\
-$(ARCHDIR)/crti.o \
+$(ARCHDIR)/boot/crti.o \
 $(ARCHDIR)/crtbegin.o \
 $(KERNEL_OBJS) \
 $(ARCHDIR)/crtend.o \
-$(ARCHDIR)/crtn.o \
+$(ARCHDIR)/boot/crtn.o \
 
 # Test objs directory
 TEST_OBJS_DIR=test/objs
@@ -49,20 +49,20 @@ $(addprefix $(TEST_OBJS_DIR)/,$(KERNEL_ARCH_OBJS)) \
 $(TEST_OBJS_DIR)/kernel/kernel.o \
 
 TEST_OBJS=\
-$(TEST_OBJS_DIR)/$(ARCHDIR)/crti.o \
+$(TEST_OBJS_DIR)/$(ARCHDIR)/boot/crti.o \
 $(TEST_OBJS_DIR)/$(ARCHDIR)/crtbegin.o \
 $(TEST_KERNEL_OBJS) \
 $(TEST_OBJS_DIR)/$(ARCHDIR)/crtend.o \
-$(TEST_OBJS_DIR)/$(ARCHDIR)/crtn.o \
+$(TEST_OBJS_DIR)/$(ARCHDIR)/boot/crtn.o \
 
 LINK_LIST=\
 $(LDFLAGS) \
-$(ARCHDIR)/crti.o \
+$(ARCHDIR)/boot/crti.o \
 $(ARCHDIR)/crtbegin.o \
 $(KERNEL_OBJS) \
 $(LIBS) \
 $(ARCHDIR)/crtend.o \
-$(ARCHDIR)/crtn.o \
+$(ARCHDIR)/boot/crtn.o \
 
 .PHONY: all clean install install-headers install-kernel test-objs
 .SUFFIXES: .o .c .S .asm

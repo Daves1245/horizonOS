@@ -2,7 +2,7 @@
 // use packed attribute to suggest GCC not add padding
 // and align members of the struct.
 
-#include "common.h"
+#include "common/common.h"
 
 struct gdt_entry {
     u16int limit_low; // lower 16 bits of limit

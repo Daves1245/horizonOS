@@ -1,6 +1,6 @@
-#include "common.h"
-#include "paging.h"
-#include "isr.h"
+#include "common/common.h"
+#include "memory/paging.h"
+#include "interrupts/isr.h"
 #include <string.h>
 #include <stdio.h>
 #include "../../kernel/kheap.h"
@@ -8,10 +8,10 @@
 u32int *frames;
 u32int nframes;
 
-// Defined in kheap.c
+// defined in kheap.c
 extern u32int placement_address;
 
-// Global page directories
+// global bage direbtories
 page_directory_t *kernel_directory;
 page_directory_t *current_directory;
 
@@ -50,7 +50,9 @@ static u32int first_frame() {
             if (!(frames[i] & mask)) return i * 32 + j;
         }
     }
-    return (u32int)-1; // No free frames found
+
+    // no free frames found
+    return (u32int) -1;
 }
 
 void alloc_frame(page_table_entry_t *page, int iskernel, int writeable) {
@@ -105,11 +107,11 @@ void init_paging() {
 
 void switch_page_directory(page_directory_t *dir) {
     current_directory = dir;
-    
+
     // load the page directory physical address into cr3
     u32int phys_addr = (u32int)dir;
     asm volatile("movl %0, %%cr3" : : "r"(phys_addr));
-    
+
     // enable paging by setting the pg bit in cr0
     u32int cr0;
     asm volatile("movl %%cr0, %0" : "=r"(cr0));
@@ -118,36 +120,36 @@ void switch_page_directory(page_directory_t *dir) {
 }
 
 page_table_entry_t *get_page(u32int addr, int make, page_directory_t *dir) {
-    // Extract page directory index (bits 31-22)
+    // extract page directory index (bits 31-22)
     u32int page_dir_index = addr >> 22;
-    
-    // Get the page directory entry
+
+    // get the page directory entry
     u32int pde = dir[page_dir_index];
-    
-    // Check if page table exists
+
+    // check if page table exists
     if (!(pde & PDE_PRESENT)) {
         if (!make) {
-            return 0; // Page table doesn't exist and we're not creating it
+            return 0; // page table doesn't exist and we're not creating it
         }
-        
-        // Allocate a new page table (4KB, page-aligned)
+
+        // allocate a new page table (4KB, page-aligned)
         u32int page_table_phys = (u32int) kmalloc_a(4096);
         memset((void*)page_table_phys, 0, 4096);
-        
-        // Set up the page directory entry
+
+        // set up the page directory entry
         dir[page_dir_index] = page_table_phys | PDE_PRESENT | PDE_READ_WRITE;
-        // Note: PDE_USER_SUPERVISOR should be set based on the page's intended use,
+        // note: PDE_USER_SUPERVISOR should be set based on the page's intended use,
         // not the make parameter. For now, kernel pages don't set this bit.
     }
-    
-    // Get the page table physical address
+
+    // get the page table physical address
     u32int page_table_phys = dir[page_dir_index] & PDE_PAGE_TABLE_BASE_MASK;
     page_table_entry_t *page_table = (page_table_entry_t*)page_table_phys;
-    
-    // Extract page table index (bits 21-12)
+
+    // extract page table index (bits 21-12)
     u32int page_table_index = (addr >> 12) & 0x3FF;
-    
-    // Return pointer to the page table entry
+
+    // return pointer to the page table entry
     return &page_table[page_table_index];
 }
 
@@ -155,15 +157,14 @@ void page_fault(struct interrupt_context *regs) {
     // Get the faulting address from CR2
     u32int faulting_address;
     asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
-    
-    // Decode the error code
+
     int present = regs->err_code & 0x1;    // Page not present
     int rw = regs->err_code & 0x2;         // Write operation?
     int us = regs->err_code & 0x4;         // User mode?
     int reserved = regs->err_code & 0x8;   // Reserved bits set?
     int id = regs->err_code & 0x10;        // Instruction fetch?
-    
-    // Print error information
+
+    // print error information
     printf("\nPage fault! ( ");
     if (!present) printf("not present ");
     if (rw) printf("read-only ");
@@ -171,10 +172,9 @@ void page_fault(struct interrupt_context *regs) {
     if (reserved) printf("reserved ");
     if (id) printf("instruction-fetch ");
     printf(") at 0x%x\n", faulting_address);
-    
+
     printf("EIP: 0x%x\n", regs->eip);
-    
-    // For now, halt the system
+
     printf("System halted.\n");
     asm volatile("cli; hlt");
 }

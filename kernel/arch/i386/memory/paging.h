@@ -1,8 +1,8 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include "common.h"
-#include "isr.h"
+#include "common/common.h"
+#include "interrupts/isr.h"
 
 /*
  * x86-32 Page Directory Structure
@@ -79,7 +79,7 @@ extern page_directory_t *current_directory;
 
 // function declarations
 void init_paging(void);
-void switch_page_directory(page_directory_t *new);
+void switch_page_directory(page_directory_t *new_pd);
 page_table_entry_t *get_page(u32int addr, int make, page_directory_t *dir);
 void page_fault(struct interrupt_context *regs);
 void alloc_frame(page_table_entry_t *page, int iskernel, int writeable);

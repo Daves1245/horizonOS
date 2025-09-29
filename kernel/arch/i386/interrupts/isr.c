@@ -5,8 +5,8 @@
  *
  */
 
-#include "common.h"
-#include "isr.h"
+#include "common/common.h"
+#include "interrupts/isr.h"
 #include <kernel/tty.h>
 
 #include <stdint.h>
