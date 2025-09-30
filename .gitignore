@@ -3,6 +3,9 @@
 isodir
 sysroot
 
+# build files
+*.o
+
 # Vim files
 *.swp
 *.swo
