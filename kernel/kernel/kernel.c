@@ -5,6 +5,7 @@
 #include "memory/paging.h"
 #include "gdt/descriptor_tables.h"
 #include "common/common.h"
+#include "apic/madt.h"
 
 extern void halt_without_apic();
 
@@ -76,6 +77,21 @@ void kernel_main(void) {
     // *unmapped = 42;  // this should trigger a page fault
 
     printf("\nall paging tests passed\n");
+
+    // Test MADT parsing (need actual MADT address from ACPI)
+    printf("\n=== MADT Testing ===\n");
+    printf("Note: Need actual MADT table address from ACPI RSDT/XSDT\n");
+    printf("For now, testing with mock address (will likely fail):\n");
+    
+    // This is just a placeholder - in real implementation you'd get this from ACPI
+    void *mock_madt_addr = (void*)0x0;  // Invalid address for demo
+    printf("Would call: parse_madt(0x%x)\n", (uint32_t)mock_madt_addr);
+    
+    // Uncomment when you have real MADT address:
+    // parse_madt(real_madt_address);
+    // printf("I/O APIC Address: 0x%x\n", get_ioapic_address());
+    // printf("Keyboard Global IRQ: %d\n", get_keyboard_global_irq());
+    // printf("Keyboard IRQ Flags: 0x%x\n", get_keyboard_irq_flags());
 
     return;
 }
