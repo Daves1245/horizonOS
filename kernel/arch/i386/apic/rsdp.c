@@ -3,6 +3,7 @@
 #include "madt.h"
 #include "../../../libc/string/string.h"
 #include <stdio.h>
+#include "../memory/paging.h"
 
 uint32_t *find_rsdp() {
     uint32_t *rsdp_addr;
@@ -81,36 +82,87 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
     }
 
     struct rsdp_t *rsdp = (struct rsdp_t *) rsdp_addr;
+    printf("RSDP revision: %d\n", rsdp->revision);
 
     // determine if we use RSDT (v1.0) or XSDT (v2.0+)
     if (rsdp->revision >= 2) {
         // use XSDT for ACPI v2.0+
         struct xsdp_t *xsdp = (struct xsdp_t *) rsdp_addr;
+        printf("XSDT address: 0x%x%x\n", (uint32_t)(xsdp->xsdt_addr >> 32), (uint32_t)xsdp->xsdt_addr);
+        
+        // check if XSDT address is reasonable (< 4GB for 32-bit system)
+        if (xsdp->xsdt_addr >= 0x100000000ULL) {
+            printf("ERROR: XSDT address too high for 32-bit system\n");
+            return (void *) 0;
+        }
+        
         struct xsdt_t *xsdt = (struct xsdt_t *) (uint32_t) xsdp->xsdt_addr;
+        printf("Accessing XSDT at: 0x%x\n", (uint32_t) xsdt);
 
         // calculate number of entries
         uint32_t num_entries = (xsdt->header.length - sizeof(struct apic_header)) / 8;
+        printf("XSDT entries: %d\n", num_entries);
 
         // search for MADT ("APIC" signature)
         for (uint32_t i = 0; i < num_entries; i++) {
-            struct apic_header *table = (struct apic_header *) (uint32_t) xsdt->entry_ptrs[i];
+            uint32_t table_addr = (uint32_t) xsdt->entry_ptrs[i];
+            printf("Checking table %d at address: 0x%x\n", i, table_addr);
+            
+            // safety check for table address
+            if (table_addr < 0x1000 || table_addr >= 0x40000000) {
+                printf("WARNING: Skipping invalid table address: 0x%x\n", table_addr);
+                continue;
+            }
+            
+            // Map the table page before accessing it
+            map_physical_range(table_addr, 4096, 1, 1); // kernel, writable
+            
+            struct apic_header *table = (struct apic_header *) table_addr;
 
             if (strncmp(table->signature, "APIC", 4) == 0) {
+                printf("Found APIC table!\n");
                 return (uint32_t *) table;
             }
         }
     } else {
         // use RSDT for ACPI v1.0
+        printf("RSDT address: 0x%x\n", rsdp->rsdt_addr);
+        
+        // safety check for RSDT address
+        if (rsdp->rsdt_addr < 0x1000 || rsdp->rsdt_addr >= 0x40000000) {
+            printf("ERROR: Invalid RSDT address: 0x%x\n", rsdp->rsdt_addr);
+            return (void *) 0;
+        }
+        
+        // Map the RSDT page before accessing it
+        printf("Mapping RSDT at: 0x%x\n", rsdp->rsdt_addr);
+        map_physical_range(rsdp->rsdt_addr, 4096, 1, 1); // kernel, writable
+        
         struct rsdt_t *rsdt = (struct rsdt_t *) rsdp->rsdt_addr;
+        printf("Accessing RSDT at: 0x%x\n", (uint32_t) rsdt);
 
         // calculate number of entries
         uint32_t num_entries = (rsdt->header.length - sizeof(struct apic_header)) / 4;
+        printf("RSDT entries: %d\n", num_entries);
 
         // search for MADT ("APIC" signature)
         for (uint32_t i = 0; i < num_entries; i++) {
-            struct apic_header *table = (struct apic_header *) rsdt->entry_ptrs[i];
+            uint32_t table_addr = rsdt->entry_ptrs[i];
+            printf("Checking table %d at address: 0x%x\n", i, table_addr);
+            
+            // safety check for table address
+            if (table_addr < 0x1000 || table_addr >= 0x40000000) {
+                printf("WARNING: Skipping invalid table address: 0x%x\n", table_addr);
+                continue;
+            }
+            
+            // Map the table page before accessing it
+            map_physical_range(table_addr, 4096, 1, 1); // kernel, writable
+            
+            struct apic_header *table = (struct apic_header *) table_addr;
 
             if (strncmp(table->signature, "APIC", 4) == 0) {
+                printf("Found APIC table!\n");
                 return (uint32_t *) table;
             }
         }

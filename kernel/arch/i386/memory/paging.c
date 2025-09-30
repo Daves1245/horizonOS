@@ -178,3 +178,28 @@ void page_fault(struct interrupt_context *regs) {
     printf("System halted.\n");
     asm volatile("cli; hlt");
 }
+
+void map_physical_range(u32int phys_start, u32int length, int iskernel, int writeable) {
+    // Align start address to page boundary
+    u32int start = phys_start & 0xFFFFF000;
+    // Align end address to page boundary (round up)
+    u32int end = (phys_start + length + 0xFFF) & 0xFFFFF000;
+    
+    printf("Mapping physical range 0x%x to 0x%x (length: %d bytes)\n", start, end, end - start);
+    
+    // Identity map each page in the range
+    for (u32int addr = start; addr < end; addr += 0x1000) {
+        page_table_entry_t *page = get_page(addr, 1, kernel_directory);
+        if (page && !PTE_IS_PRESENT(*page)) {
+            // Map virtual address to same physical address (identity mapping)
+            u32int frame = addr / 0x1000;
+            PTE_SET_PRESENT(*page);
+            if (writeable) PTE_SET_WRITABLE(*page);
+            if (!iskernel) PTE_SET_USER(*page);
+            PTE_SET_FRAME(*page, frame);
+            
+            // Mark frame as used in our frame bitmap
+            set_frame(addr);
+        }
+    }
+}

@@ -84,5 +84,6 @@ page_table_entry_t *get_page(u32int addr, int make, page_directory_t *dir);
 void page_fault(struct interrupt_context *regs);
 void alloc_frame(page_table_entry_t *page, int iskernel, int writeable);
 void free_frame(page_table_entry_t *page);
+void map_physical_range(u32int phys_start, u32int length, int iskernel, int writeable);
 
 #endif
