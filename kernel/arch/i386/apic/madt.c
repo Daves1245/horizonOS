@@ -29,14 +29,14 @@ void parse_madt(void *madt_addr) {
             case 0: { // Processor Local APIC
                 struct processor_local_apic_record *local_apic =
                     (struct processor_local_apic_record *)(entry + sizeof(struct madt_record_header));
-                printf("Local APIC: Processor ID=%d, APIC ID=%d, Flags=0x%x\n",
+                printf("[madt::parse_madt]: Local APIC: Processor ID=%d, APIC ID=%d, Flags=0x%x\n",
                        local_apic->acpi_processor_id, local_apic->apic_id, local_apic->flags);
                 break;
             }
             case 1: { // I/O APIC
                 struct ioapic *io_apic =
                     (struct ioapic *)(entry + sizeof(struct madt_record_header));
-                printf("I/O APIC: ID=%d, Address=0x%x, IRQ Base=%d\n",
+                printf("[madt::parse_madt]: I/O APIC: ID=%d, Address=0x%x, IRQ Base=%d\n",
                        io_apic->ioapic_id, io_apic->io_apic_address, io_apic->global_system_interrupt_base);
 
                 // store the first I/O APIC we find (usually covers IRQ 0-23)
@@ -51,7 +51,7 @@ void parse_madt(void *madt_addr) {
                 struct ioapic_interrupt_source_override *override =
                     (struct ioapic_interrupt_source_override *)(entry + sizeof(struct madt_record_header));
                 uint16_t flags = *(uint16_t*)override->flags;
-                printf("IRQ Override: Bus=%d, Source IRQ=%d -> Global IRQ=%d, Flags=0x%x\n",
+                printf("[madt::parse_madt]: IRQ Override: Bus=%d, Source IRQ=%d -> Global IRQ=%d, Flags=0x%x\n",
                        override->bus_source, override->irq_source,
                        override->global_system_interrupt, flags);
 
@@ -67,21 +67,21 @@ void parse_madt(void *madt_addr) {
             case 3: { // I/O APIC Non-maskable interrupt source
                 struct ioapic_nonmaskable_interrupt_source *nmi =
                     (struct ioapic_nonmaskable_interrupt_source *)(entry + sizeof(struct madt_record_header));
-                printf("I/O APIC NMI: Source=%d, Global IRQ=%d\n",
+                printf("[madt::parse_madt]: I/O APIC NMI: Source=%d, Global IRQ=%d\n",
                        nmi->nmi_source, nmi->global_system_interrupt);
                 break;
             }
             case 4: { // Local APIC Non-maskable interrupts
                 struct local_apic_nonmaskable_interrupts *local_nmi =
                     (struct local_apic_nonmaskable_interrupts *)(entry + sizeof(struct madt_record_header));
-                printf("Local APIC NMI: Processor ID=%d, LINT=%d\n",
+                printf("[madt::parse_madt]: Local APIC NMI: Processor ID=%d, LINT=%d\n",
                        local_nmi->acpi_processor_id, local_nmi->lint_number);
                 break;
             }
             case 5: { // Local APIC Address Override
                 struct local_apic_address_override *addr_override =
                     (struct local_apic_address_override *)(entry + sizeof(struct madt_record_header));
-                printf("Local APIC Address Override: 0x%x%x\n",
+                printf("[madt::parse_madt]: Local APIC Address Override: 0x%x%x\n",
                        addr_override->dqword_local_apic_physical_address[1],
                        addr_override->dqword_local_apic_physical_address[0]);
                 break;
@@ -89,12 +89,12 @@ void parse_madt(void *madt_addr) {
             case 9: { // Processor Local x2APIC
                 struct processor_local_x2apic *x2apic =
                     (struct processor_local_x2apic *)(entry + sizeof(struct madt_record_header));
-                printf("Local x2APIC: ID=0x%x, Flags=0x%x, ACPI ID=%d\n",
+                printf("[madt::parse_madt]: Local x2APIC: ID=0x%x, Flags=0x%x, ACPI ID=%d\n",
                        x2apic->processor_local_x2apic_id, x2apic->flags, x2apic->acpi_id);
                 break;
             }
             default:
-                printf("Unknown MADT entry type: %d\n", entry_header->entry_type);
+                printf("[madt::parse_madt]: Unknown MADT entry type: %d\n", entry_header->entry_type);
                 break;
         }
 
