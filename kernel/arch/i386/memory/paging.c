@@ -58,7 +58,7 @@ void alloc_frame(page_table_entry_t *page, int iskernel, int writeable) {
     if (PTE_GET_FRAME(*page) != 0) return; // already allocated
     uint32_t idx = first_frame();
     if (idx == (uint32_t) - 1) {
-        printf("kernel panic: No free frames\n");
+        printf("[paging::aloc_frame]: kernel panic: No free frames\n");
         asm volatile("cli; hlt");
         while (1);
     }
@@ -184,7 +184,7 @@ void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel, int 
     // Align end address to page boundary (round up)
     uint32_t end = (phys_start + length + 0xFFF) & 0xFFFFF000;
 
-    printf("Mapping physical range 0x%x to 0x%x (length: %d bytes)\n", start, end, end - start);
+    printf("[map_physical_range]: Mapping physical range 0x%x to 0x%x (length: %d bytes)\n", start, end, end - start);
 
     // Identity map each page in the range
     for (uint32_t addr = start; addr < end; addr += 0x1000) {
