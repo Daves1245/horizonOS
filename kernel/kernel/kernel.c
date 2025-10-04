@@ -17,14 +17,14 @@ int check_msr() {
 }
 
 // declare kernel_end from linker script
-extern u32int kernel_end;
+extern uint32_t kernel_end;
 
 // declare placement_address from kheap.c
-extern u32int placement_address;
+extern uint32_t placement_address;
 
 void kernel_main(void) {
     // initialize placement address to end of kernel
-    placement_address = (u32int)&kernel_end;
+    placement_address = (uint32_t) &kernel_end;
 
     // IRS and segmentation (we implement paging later)
     init_descriptor_tables();
@@ -60,7 +60,7 @@ void kernel_main(void) {
     volatile int *another_kernel_mem = (volatile int *) (placement_address - 0x1000);
     *another_kernel_mem = 0xDEADBEEF;
     if (*another_kernel_mem == 0xDEADBEEF) {
-        printf("paging test PASSED: Second memory location OK (0x%x)\n", (u32int)another_kernel_mem);
+        printf("paging test PASSED: Second memory location OK (0x%x)\n", (uint32_t) another_kernel_mem);
     } else {
         printf("paging test FAILED: Second memory location write failed\n");
     }

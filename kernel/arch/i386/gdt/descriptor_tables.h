@@ -2,33 +2,33 @@
 // use packed attribute to suggest GCC not add padding
 // and align members of the struct.
 
-#include "common/common.h"
+#include <stdint.h>
 
 struct gdt_entry {
-    u16int limit_low; // lower 16 bits of limit
-    u16int base_low;
-    u8int base_middle;
-    u8int access;
-    u8int granularity;
-    u8int base_high;
+    uint16_t limit_low; // lower 16 bits of limit
+    uint16_t base_low;
+    uint8_t base_middle;
+    uint8_t access;
+    uint8_t granularity;
+    uint8_t base_high;
 } __attribute__((packed));
 
 struct gdt_ptr {
-    u16int limit; // upper 16 bits of all selector limits
-    u32int base; // address of first gdt_entry struct
+    uint16_t limit; // upper 16 bits of all selector limits
+    uint32_t base; // address of first gdt_entry struct
 } __attribute__((packed));
 
 struct idt_entry {
-    u16int isr_low;     // lower 16 bits to jmp to when int fires
-    u16int kernel_cs;   // kernel segment selector
-    u8int reserved;     // always zero
-    u8int attributes;   // more flags. see documentation
-    u16int isr_high;    // upper 16 bits of address to jump to
+    uint16_t isr_low;     // lower 16 bits to jmp to when int fires
+    uint16_t kernel_cs;   // kernel segment selector
+    uint8_t reserved;     // always zero
+    uint8_t attributes;   // more flags. see documentation
+    uint16_t isr_high;    // upper 16 bits of address to jump to
 } __attribute((packed));
 
 typedef struct {
-    u16int limit;
-    u32int base;
+    uint16_t limit;
+    uint32_t base;
 } __attribute((packed)) idtr_t;
 
 __attribute__((aligned(0x10))) static struct idt_entry idt[256];

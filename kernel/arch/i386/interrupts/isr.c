@@ -5,7 +5,6 @@
  *
  */
 
-#include "common/common.h"
 #include "interrupts/isr.h"
 #include <kernel/tty.h>
 
@@ -89,7 +88,7 @@ void vga_print_hex(uint32_t value) {
 static isr_t interrupt_handlers[256] = {0};
 
 // register a handler for a specific interrupt
-void register_interrupt_handler(u8int n, isr_t handler) {
+void register_interrupt_handler(uint8_t n, isr_t handler) {
     interrupt_handlers[n] = handler;
 }
 

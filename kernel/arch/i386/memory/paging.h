@@ -1,8 +1,8 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include "common/common.h"
 #include "interrupts/isr.h"
+#include <stdint.h>
 
 /*
  * x86-32 Page Directory Structure
@@ -54,8 +54,8 @@
 #define PTE_FRAME_MASK       0xFFFFF000
 
 // pimple typedefs for page directory and page table entries
-typedef u32int page_directory_t;
-typedef u32int page_table_entry_t;
+typedef uint32_t page_directory_t;
+typedef uint32_t page_table_entry_t;
 
 // macro helpers for page table entry manipulation
 #define PTE_IS_PRESENT(pte)       ((pte) & PTE_PRESENT)
@@ -80,10 +80,10 @@ extern page_directory_t *current_directory;
 // function declarations
 void init_paging(void);
 void switch_page_directory(page_directory_t *new_pd);
-page_table_entry_t *get_page(u32int addr, int make, page_directory_t *dir);
+page_table_entry_t *get_page(uint32_t addr, int make, page_directory_t *dir);
 void page_fault(struct interrupt_context *regs);
 void alloc_frame(page_table_entry_t *page, int iskernel, int writeable);
 void free_frame(page_table_entry_t *page);
-void map_physical_range(u32int phys_start, u32int length, int iskernel, int writeable);
+void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel, int writeable);
 
 #endif
