@@ -82,87 +82,87 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
     }
 
     struct rsdp_t *rsdp = (struct rsdp_t *) rsdp_addr;
-    printf("RSDP revision: %d\n", rsdp->revision);
+    printf("[rsdp::find_madt]: RSDP revision: %d\n", rsdp->revision);
 
     // determine if we use RSDT (v1.0) or XSDT (v2.0+)
     if (rsdp->revision >= 2) {
         // use XSDT for ACPI v2.0+
         struct xsdp_t *xsdp = (struct xsdp_t *) rsdp_addr;
-        printf("XSDT address: 0x%x%x\n", (uint32_t)(xsdp->xsdt_addr >> 32), (uint32_t)xsdp->xsdt_addr);
-        
+        printf("[rsdp::find_madt]: XSDT address: 0x%x%x\n", (uint32_t)(xsdp->xsdt_addr >> 32), (uint32_t)xsdp->xsdt_addr);
+
         // check if XSDT address is reasonable (< 4GB for 32-bit system)
         if (xsdp->xsdt_addr >= 0x100000000ULL) {
             printf("ERROR: XSDT address too high for 32-bit system\n");
             return (void *) 0;
         }
-        
+
         struct xsdt_t *xsdt = (struct xsdt_t *) (uint32_t) xsdp->xsdt_addr;
-        printf("Accessing XSDT at: 0x%x\n", (uint32_t) xsdt);
+        printf("[rsdp::find_madt]: Accessing XSDT at: 0x%x\n", (uint32_t) xsdt);
 
         // calculate number of entries
         uint32_t num_entries = (xsdt->header.length - sizeof(struct apic_header)) / 8;
-        printf("XSDT entries: %d\n", num_entries);
+        printf("[rsdp::find_madt]: XSDT entries: %d\n", num_entries);
 
         // search for MADT ("APIC" signature)
         for (uint32_t i = 0; i < num_entries; i++) {
             uint32_t table_addr = (uint32_t) xsdt->entry_ptrs[i];
-            printf("Checking table %d at address: 0x%x\n", i, table_addr);
-            
+            printf("[rsdp::find_madt]: Checking table %d at address: 0x%x\n", i, table_addr);
+
             // safety check for table address
             if (table_addr < 0x1000 || table_addr >= 0x40000000) {
-                printf("WARNING: Skipping invalid table address: 0x%x\n", table_addr);
+                printf("[rsdp::find_madt]: WARNING: Skipping invalid table address: 0x%x\n", table_addr);
                 continue;
             }
-            
+
             // Map the table page before accessing it
             map_physical_range(table_addr, 4096, 1, 1); // kernel, writable
-            
+
             struct apic_header *table = (struct apic_header *) table_addr;
 
             if (strncmp(table->signature, "APIC", 4) == 0) {
-                printf("Found APIC table!\n");
+                printf("[rsdp::find_madt]: Found APIC table!\n");
                 return (uint32_t *) table;
             }
         }
     } else {
         // use RSDT for ACPI v1.0
-        printf("RSDT address: 0x%x\n", rsdp->rsdt_addr);
-        
+        printf("[rsdp::find_madt]: RSDT address: 0x%x\n", rsdp->rsdt_addr);
+
         // safety check for RSDT address
         if (rsdp->rsdt_addr < 0x1000 || rsdp->rsdt_addr >= 0x40000000) {
             printf("ERROR: Invalid RSDT address: 0x%x\n", rsdp->rsdt_addr);
             return (void *) 0;
         }
-        
+
         // Map the RSDT page before accessing it
-        printf("Mapping RSDT at: 0x%x\n", rsdp->rsdt_addr);
+        printf("[rsdp::find_madt]: Mapping RSDT at: 0x%x\n", rsdp->rsdt_addr);
         map_physical_range(rsdp->rsdt_addr, 4096, 1, 1); // kernel, writable
-        
+
         struct rsdt_t *rsdt = (struct rsdt_t *) rsdp->rsdt_addr;
-        printf("Accessing RSDT at: 0x%x\n", (uint32_t) rsdt);
+        printf("[rsdp::find_madt]: Accessing RSDT at: 0x%x\n", (uint32_t) rsdt);
 
         // calculate number of entries
         uint32_t num_entries = (rsdt->header.length - sizeof(struct apic_header)) / 4;
-        printf("RSDT entries: %d\n", num_entries);
+        printf("[rsdp::find_madt]: RSDT entries: %d\n", num_entries);
 
         // search for MADT ("APIC" signature)
         for (uint32_t i = 0; i < num_entries; i++) {
             uint32_t table_addr = rsdt->entry_ptrs[i];
-            printf("Checking table %d at address: 0x%x\n", i, table_addr);
-            
+            printf("[rsdp::find_madt]: Checking table %d at address: 0x%x\n", i, table_addr);
+
             // safety check for table address
             if (table_addr < 0x1000 || table_addr >= 0x40000000) {
-                printf("WARNING: Skipping invalid table address: 0x%x\n", table_addr);
+                printf("[rsdp::find_madt]: WARNING: Skipping invalid table address: 0x%x\n", table_addr);
                 continue;
             }
-            
+
             // Map the table page before accessing it
             map_physical_range(table_addr, 4096, 1, 1); // kernel, writable
-            
+
             struct apic_header *table = (struct apic_header *) table_addr;
 
             if (strncmp(table->signature, "APIC", 4) == 0) {
-                printf("Found APIC table!\n");
+                printf("[rsdp::find_madt]: Found APIC table!\n");
                 return (uint32_t *) table;
             }
         }
@@ -172,44 +172,44 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
 }
 
 void initialize_apic() {
-    printf("starting ACPI/APIC initialization...\n");
+    printf("[rsdp::init_apic]: starting ACPI/APIC initialization...\n");
 
     // find RSDP
-    printf("searching for RSDP...\n");
+    printf("[rsdp::init_apic]: searching for RSDP...\n");
     uint32_t *rsdp = find_rsdp();
     if (!rsdp) {
         printf("ERROR: RSDP not found!\n");
         return;
     }
-    printf("RSDP found at address: 0x%x\n", (uint32_t) rsdp);
+    printf("[rsdp::init_apic]: RSDP found at address: 0x%x\n", (uint32_t) rsdp);
 
     // validate RSDP checksum
-    printf("validating RSDP checksum...\n");
+    printf("[rsdp::init_apic]: validating RSDP checksum...\n");
     uint32_t rsdp_result = validate_rsdp_checksum(rsdp);
     if (rsdp_result != 0) {
         printf("ERROR: RSDP checksum validation failed (code: %d)\n", rsdp_result);
         return;
     }
-    printf("RSDP checksum valid!\n");
+    printf("[rsdp::init_apic]: RSDP checksum valid!\n");
 
     // find madt
-    printf("searching for MADT table...\n");
+    printf("[rsdp::init_apic]: searching for MADT table...\n");
     uint32_t *madt = find_madt(rsdp);
     if (!madt) {
         printf("ERROR: MADT not found!\n");
         return;
     }
-    printf("madt found at address: 0x%x\n", (uint32_t) madt);
+    printf("[rsdp::init_apic]: madt found at address: 0x%x\n", (uint32_t) madt);
 
     // parse madt
-    printf("parsing MADT table...\n");
+    printf("[rsdp::init_apic]: parsing MADT table...\n");
     parse_madt(madt);
-    printf("MADT parsing complete!\n");
+    printf("[rsdp::init_apic]: MADT parsing complete!\n");
 
     // display results
-    printf("I/O APIC Address: 0x%x\n", get_ioapic_address());
-    printf("I/O APIC ID: %d\n", get_ioapic_id());
-    printf("Keyboard IRQ: %d (flags: 0x%x)\n", get_keyboard_global_irq(), get_keyboard_irq_flags());
+    printf("[rsdp::init_apic]: I/O APIC Address: 0x%x\n", get_ioapic_address());
+    printf("[rsdp::init_apic]: I/O APIC ID: %d\n", get_ioapic_id());
+    printf("[rsdp::init_apic]: Keyboard IRQ: %d (flags: 0x%x)\n", get_keyboard_global_irq(), get_keyboard_irq_flags());
 
-    printf("ACPI/APIC initialization complete!\n");
+    printf("[rsdp::init_apic]: ACPI/APIC initialization complete!\n");
 }
