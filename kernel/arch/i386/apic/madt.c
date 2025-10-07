@@ -1,3 +1,4 @@
+#include "../memory/paging.h"
 #include "madt.h"
 #include <stdio.h>
 
@@ -15,6 +16,9 @@ static struct {
 static int num_overrides = 0;
 
 void parse_madt(void *madt_addr) {
+    // ensure the madt is mapped
+    map_physical_range((uint32_t)madt_addr,  0x4000, 1, 1);
+
     struct madt_extended_header *header = (struct madt_extended_header *) madt_addr;
     uint32_t length = header->header.length;
 
