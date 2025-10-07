@@ -31,53 +31,53 @@ void kernel_main(void) {
     terminal_initialize();
 
     // initialize paging
-    printf("initializing paging...\n");
+    printf("[kernel]: initializing paging...\n");
     init_paging();
-    printf("paging enabled!\n");
+    printf("[kernel]: paging enabled!\n");
 
     // test for APIC support
     halt_without_apic();
 
-    printf("APIC supported\n");
-    printf("check_msr (apic base msr): %d", check_msr());
+    printf("[kernel]: APIC supported\n");
+    printf("[kernel]: check_msr (apic base msr): %d", check_msr());
 
-    printf("\ntesting paging...\n");
+    printf("\n[kernel]: testing paging...\n");
 
     // paging test 1: access kernel memory (should work)
     volatile int *kernel_mem = (volatile int *)0x100000;  // 1MB mark
     *kernel_mem = 0x12345678;
-    printf("write to kernel memory: 0x%x\n", *kernel_mem);
+    printf("[kernel]: write to kernel memory: 0x%x\n", *kernel_mem);
 
     // test 2: verify we can read back the value
     if (*kernel_mem == 0x12345678) {
-        printf("paging test PASSED: memory read/write working\n");
+        printf("[kernel]: paging test PASSED: memory read/write working\n");
     } else {
-        printf("paging test FAILED: got 0x%x, expected 0x12345678\n", *kernel_mem);
+        printf("[kernel]: paging test FAILED: got 0x%x, expected 0x12345678\n", *kernel_mem);
     }
 
     // test 3: test another mapped location within kernel space
-    printf("\ntesting another mapped location...\n");
+    printf("\n[kernel]: testing another mapped location...\n");
     volatile int *another_kernel_mem = (volatile int *) (placement_address - 0x1000);
     *another_kernel_mem = 0xDEADBEEF;
     if (*another_kernel_mem == 0xDEADBEEF) {
-        printf("paging test PASSED: Second memory location OK (0x%x)\n", (uint32_t) another_kernel_mem);
+        printf("[kernel]: paging test PASSED: Second memory location OK (0x%x)\n", (uint32_t) another_kernel_mem);
     } else {
-        printf("paging test FAILED: Second memory location write failed\n");
+        printf("[kernel]: paging test FAILED: Second memory location write failed\n");
     }
 
     // test 4: display memory mapping info
-    printf("\nmemory mapping info:\n");
-    printf("  kernel start: 0x100000 (1MB) \n");
-    printf("  kernel end: 0x%x\n", (uint32_t) &kernel_end);
-    printf("  placement address: 0x%x\n", placement_address);
-    printf("  identity mapped up to: 0x%x\n", placement_address + 0x1000);
+    printf("\n[kernel]: memory mapping info:\n");
+    printf("  [kernel]: kernel start: 0x100000 (1MB) \n");
+    printf("  [kernel]: kernel end: 0x%x\n", (uint32_t) &kernel_end);
+    printf("  [kernel]: placement address: 0x%x\n", placement_address);
+    printf("  [kernel]: identity mapped up to: 0x%x\n", placement_address + 0x1000);
 
     // test 5: page fault test (uncomment to test page fault handler)
     // printf("\ntesting page fault handler...\n");
     // volatile int *unmapped = (volatile int *)0xA0000000;  // high unmapped address
     // *unmapped = 42;  // this should trigger a page fault
 
-    printf("\nall paging tests passed\n");
+    printf("\n[kernel]: all paging tests passed\n");
 
     // Initialize ACPI/APIC system
     printf("\n=== ACPI/APIC Initialization ===\n");
