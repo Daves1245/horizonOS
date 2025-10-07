@@ -13,3 +13,6 @@ sysroot
 
 # log files
 *.log
+
+# disassembly debugging
+kernel/myos.kernel.*
