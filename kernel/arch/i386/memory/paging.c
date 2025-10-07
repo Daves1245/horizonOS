@@ -78,7 +78,7 @@ void free_frame(page_table_entry_t *page) {
 }
 
 void init_paging() {
-    // assumes 64MB memory
+    // 64MB of memory to work with
     uint32_t mem_end_page = 0x4000000;
     nframes = mem_end_page / 0x1000;
     frames = (uint32_t *) kmalloc(BITSET_INDEX(nframes) * sizeof(uint32_t));
@@ -89,18 +89,22 @@ void init_paging() {
     memset(kernel_directory, 0, 1024 * sizeof(page_directory_t));
     current_directory = kernel_directory;
 
+    /* Identity map the kernel */
     // Identity map from 0x0 to the end of used memory
     // Map physical address X to virtual address X for kernel memory
-    uint32_t i = 0;
-    while (i < placement_address + 0x1000) {
+    for (uint32_t i = 0; i < placement_address + 0x1000; i += 0x1000) {
         page_table_entry_t *page = get_page(i, 1, kernel_directory);
         alloc_frame(page, 1, 1); // kernel=1, writeable=1
-        i += 0x1000;
     }
+
+    // map bios memory regions for acpi tables
+    map_physical_range(0x80000, 0x80000, 1, 1); // 512kb area around ebda
+
+    // map bios rom area
+    map_physical_range(0xE0000, 0x20000, 1, 1); // 128kb bios rom area
 
     // Register page fault handler
     register_interrupt_handler(14, page_fault);
-
     switch_page_directory(kernel_directory);
 }
 
