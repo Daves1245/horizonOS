@@ -23,8 +23,9 @@ extern uint32_t kernel_end;
 extern uint32_t placement_address;
 
 void kernel_main(void) {
-    // initialize placement address to end of kernel
+    // we'll use this to test paging some amount after the end of the kernel
     placement_address = (uint32_t) &kernel_end;
+    volatile int *mem_test_addr = (volatile int *) (placement_address + 0x0100);
 
     // IRS and segmentation (we implement paging later)
     init_descriptor_tables();
@@ -43,36 +44,37 @@ void kernel_main(void) {
 
     printf("\n[kernel]: testing paging...\n");
 
-    // paging test 1: access kernel memory (should work)
-    volatile int *kernel_mem = (volatile int *)0x100000;  // 1MB mark
-    *kernel_mem = 0x12345678;
-    printf("[kernel]: write to kernel memory: 0x%x\n", *kernel_mem);
+    // display memory mapping info
+    printf("\n[kernel]: memory mapping info:\n");
+    printf("  [kernel]: kernel start: 0x100000 (1MB) \n");
+    printf("  [kernel]: kernel end: 0x%x\n", (uint32_t) &kernel_end);
+    printf("  [kernel]: mem testing address: 0x%x\n", (uint32_t) mem_test_addr);
 
-    // test 2: verify we can read back the value
-    if (*kernel_mem == 0x12345678) {
+
+    // paging test 1: read memory (should work)
+    printf("[kernel]: testing read\n");
+    printf("[kernel]: read kernel memory (garbage): 0x%x\n", (uint32_t) mem_test_addr);
+    printf("[kernel]: value read: 0x%x\n", *mem_test_addr);
+
+    // test 2: write, and verify with read
+    *mem_test_addr = 0xDEADBEEF;
+    if (*mem_test_addr == 0xDEADBEEF) {
         printf("[kernel]: paging test PASSED: memory read/write working\n");
     } else {
-        printf("[kernel]: paging test FAILED: got 0x%x, expected 0x12345678\n", *kernel_mem);
+        printf("[kernel]: paging test FAILED: got 0x%x, expected 0xDEADBEEF\n", *mem_test_addr);
     }
 
     // test 3: test another mapped location within kernel space
     printf("\n[kernel]: testing another mapped location...\n");
-    volatile int *another_kernel_mem = (volatile int *) (placement_address - 0x1000);
-    *another_kernel_mem = 0xDEADBEEF;
-    if (*another_kernel_mem == 0xDEADBEEF) {
-        printf("[kernel]: paging test PASSED: Second memory location OK (0x%x)\n", (uint32_t) another_kernel_mem);
+    mem_test_addr = (volatile int *) (placement_address + 0x1000);
+    *mem_test_addr = 0xDEADBEEF;
+    if (*mem_test_addr == 0xDEADBEEF) {
+        printf("[kernel]: paging test PASSED: Second memory location OK (0x%x)\n", (uint32_t) mem_test_addr);
     } else {
         printf("[kernel]: paging test FAILED: Second memory location write failed\n");
     }
 
-    // test 4: display memory mapping info
-    printf("\n[kernel]: memory mapping info:\n");
-    printf("  [kernel]: kernel start: 0x100000 (1MB) \n");
-    printf("  [kernel]: kernel end: 0x%x\n", (uint32_t) &kernel_end);
-    printf("  [kernel]: placement address: 0x%x\n", placement_address);
-    printf("  [kernel]: identity mapped up to: 0x%x\n", placement_address + 0x1000);
-
-    // test 5: page fault test (uncomment to test page fault handler)
+        // test 5: page fault test (uncomment to test page fault handler)
     // printf("\ntesting page fault handler...\n");
     // volatile int *unmapped = (volatile int *)0xA0000000;  // high unmapped address
     // *unmapped = 42;  // this should trigger a page fault
