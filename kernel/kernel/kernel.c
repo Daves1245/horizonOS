@@ -66,7 +66,7 @@ void kernel_main(void) {
 
     // test 3: test another mapped location within kernel space
     printf("\n[kernel]: testing another mapped location...\n");
-    mem_test_addr = (volatile int *) (placement_address + 0x1000);
+    mem_test_addr = (volatile int *) (placement_address + 0x0100);
     *mem_test_addr = 0xDEADBEEF;
     if (*mem_test_addr == 0xDEADBEEF) {
         printf("[kernel]: paging test PASSED: Second memory location OK (0x%x)\n", (uint32_t) mem_test_addr);
