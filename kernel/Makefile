@@ -92,6 +92,9 @@ myos.kernel: $(OBJS) $(ARCHDIR)/linker.ld
 	echo $(CC)
 	$(CC) -T $(ARCHDIR)/linker.ld -o $@ $(CFLAGS) $(LINK_LIST)
 	grub-file --is-x86-multiboot myos.kernel
+	objdump -d myos.kernel > myos.kernel.dis
+	objdump -t myos.kernel > myos.kernel.sym
+	readelf -a myos.kernel > myos.kernel.elf
 
 $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
 	OBJ=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$OBJ" $@
@@ -106,7 +109,7 @@ $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
 	$(NASM) -f elf32 $< -o $@
 
 clean:
-	rm -f myos.kernel
+	rm -f myos.kernel myos.kernel.dis myos.kernel.sym myos.kernel.elf
 	rm -f $(OBJS) *.o */*.o */*/*.o
 	rm -f $(OBJS:.o=.d) *.d */*.d */*/*.d
 	rm -rf $(TEST_OBJS_DIR)

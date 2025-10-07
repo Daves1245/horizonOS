@@ -1,9 +1,25 @@
 #!/bin/sh
 
 if [ "$1" = "debug" ]; then
-    # If any argument is passed, enable GDB stub
-    qemu-system-i386 -cdrom myos.iso -S -s -kernel isodir/boot/myos.kernel
+    # debug mode with GDB stub
+    qemu-system-i386 -cdrom myos.iso -S -s -kernel isodir/boot/myos.kernel \
+        -monitor stdio \
+        -d int,cpu_reset \
+        -no-reboot \
+        -no-shutdown \
+        -serial file:serial.log
+elif [ "$1" = "console" ]; then
+    # console mode for direct byte inspection
+    qemu-system-i386 -cdrom myos.iso -kernel isodir/boot/myos.kernel \
+        -monitor stdio \
+        -d int,cpu_reset,exec,in_asm \
+        -D qemu.log \
+        -no-reboot \
+        -no-shutdown \
+        -serial file:serial.log
 else
-    # Run normally without GDB
-    qemu-system-i386 -cdrom myos.iso -kernel isodir/boot/myos.kernel
+    # run normally
+    qemu-system-i386 -cdrom myos.iso -kernel isodir/boot/myos.kernel \
+        -monitor stdio \
+        -serial file:serial.log
 fi
