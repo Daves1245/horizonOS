@@ -48,3 +48,21 @@ uint32_t get_ioapic_base() {
     uint32_t low = read_msr_low(0x1B);
     return low & 0xfffff000; // mask the lower 12 bits
 }
+
+// Configure IOAPIC pin to route to specific vector
+void configure_ioapic_irq(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_t dest_apic_id) {
+    // IOAPIC redirection table entry is 64 bits (2 registers)
+    uint32_t low_reg = 0x10 + (irq * 2);     // Low 32 bits register
+    uint32_t high_reg = 0x10 + (irq * 2) + 1; // High 32 bits register
+    
+    // Configure low 32 bits: vector + delivery mode (fixed) + edge triggered + not masked
+    uint32_t low_val = vector;  // Vector in bits 0-7, rest defaults to 0 (fixed delivery, edge, not masked)
+    
+    // Configure high 32 bits: destination APIC ID in bits 56-63 (upper 8 bits of high register)
+    uint32_t high_val = (uint32_t)dest_apic_id << 24;
+    
+    printf("[ioapic]: Configuring IRQ %d -> vector %d, dest APIC %d\n", irq, vector, dest_apic_id);
+    ioapic_write(ioapic_base, high_reg, high_val);
+    ioapic_write(ioapic_base, low_reg, low_val);
+    printf("[ioapic]: IRQ %d configured\n", irq);
+}

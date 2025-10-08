@@ -33,7 +33,7 @@ void parse_madt(void *madt_addr) {
             case 0: { // Processor Local APIC
                 struct processor_local_apic_record *local_apic =
                     (struct processor_local_apic_record *)(entry + sizeof(struct madt_record_header));
-                printf("[madt::parse_madt]: Local APIC: Processor ID=%d, APIC ID=%d, Flags=0x%x\n",
+                printf("[madt::parse_madt]: Local APIC: Processor ID=%d, APIC ID=%d,\nFlags=0x%x\n",
                        local_apic->acpi_processor_id, local_apic->apic_id, local_apic->flags);
                 break;
             }
@@ -55,7 +55,7 @@ void parse_madt(void *madt_addr) {
                 struct ioapic_interrupt_source_override *override =
                     (struct ioapic_interrupt_source_override *)(entry + sizeof(struct madt_record_header));
                 uint16_t flags = *(uint16_t*)override->flags;
-                printf("[madt::parse_madt]: IRQ Override: Bus=%d, Source IRQ=%d -> Global IRQ=%d, Flags=0x%x\n",
+                printf("[madt::parse_madt]: IRQ Override: Bus=%d, Source IRQ=%d -> Global IRQ=%d,\nFlags=0x%x\n",
                        override->bus_source, override->irq_source,
                        override->global_system_interrupt, flags);
 
