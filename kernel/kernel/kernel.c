@@ -7,6 +7,7 @@
 #include "common/common.h"
 #include "apic/madt.h"
 #include "apic/rsdp.h"
+#include "drivers/keyboard/keyboard.h"
 
 extern void halt_without_apic();
 
@@ -84,6 +85,14 @@ void kernel_main(void) {
     // Initialize ACPI/APIC system
     printf("\n=== ACPI/APIC Initialization ===\n");
     initialize_apic();
+
+    // initialize keyboard driver
+    printf("\n=== Keyboard Initialization ===\n");
+    init_keyboard();
+
+    printf("\n[kernel]: System ready! Try typing on the keyboard.\n");
+    printf("[kernel]: If you see [IRQ:32] messages, timer is working.\n");
+    printf("[kernel]: If you see [IRQ:33] messages when typing, keyboard IRQ works.\n");
 
     return;
 }
