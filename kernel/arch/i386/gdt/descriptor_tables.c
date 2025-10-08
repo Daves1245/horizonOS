@@ -11,6 +11,17 @@
 #include "common/common.h"
 #include "descriptor_tables.h"
 
+// I/O port functions for PIC programming
+static inline void outb(uint16_t port, uint8_t val) {
+    asm volatile ("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+
+static inline uint8_t inb(uint16_t port) {
+    uint8_t ret;
+    asm volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+
 // Lets us access our ASM functions from our C code.
 extern void gdt_flush(u32int);
 extern void idt_flush(u32int);
@@ -81,14 +92,51 @@ void idt_flush(u32int);
 static int vectors[IDT_MAX_DESCRIPTORS];
 extern void *isr_stub_table[];
 
+// Remap the PIC to use IRQs 32-47 instead of 8-23
+static void remap_pic() {
+    // Save masks
+    uint8_t a1 = inb(0x21);
+    uint8_t a2 = inb(0xA1);
+
+    // Start initialization sequence
+    outb(0x20, 0x11);  // ICW1: Initialize PIC1
+    outb(0xA0, 0x11);  // ICW1: Initialize PIC2
+    
+    // ICW2: Set vector offsets
+    outb(0x21, 32);    // PIC1 offset: IRQ 0-7 -> interrupts 32-39
+    outb(0xA1, 40);    // PIC2 offset: IRQ 8-15 -> interrupts 40-47
+    
+    // ICW3: Set up cascading
+    outb(0x21, 0x04);  // PIC1: IRQ2 connected to slave
+    outb(0xA1, 0x02);  // PIC2: Cascade identity
+    
+    // ICW4: Set mode
+    outb(0x21, 0x01);  // 8086 mode
+    outb(0xA1, 0x01);  // 8086 mode
+    
+    // Enable timer IRQ 0, keyboard IRQ 1, and cascade IRQ 2
+    outb(0x21, 0xF8);  // 11111000 - Enable IRQ 0 (timer), IRQ 1 (keyboard), IRQ 2 (cascade)
+    outb(0xA1, 0xFF);  // Mask all IRQs on PIC2 for now
+}
+
 static void init_idt() {
     idtr.base = (uintptr_t) &idt[0];
     idtr.limit = sizeof(struct idt_entry) * IDT_MAX_DESCRIPTORS - 1;
 
+    // Set up exception handlers (0-31)
     for (uint8_t vector = 0; vector < 32; vector++) {
         idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
         vectors[vector] = 1;
     }
+
+    // set up irq handlers (32-34 for now, just for keyboard driver)
+    for (uint8_t vector = 32; vector <= 34; vector++) {
+        idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
+        vectors[vector] = 1;
+    }
+
+    // Remap PIC before enabling interrupts
+    remap_pic();
 
     __asm__ volatile ("lidt %0" : : "m"(idtr)); // load the new IDT
     __asm__ volatile ("sti"); // enable flag
