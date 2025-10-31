@@ -30,10 +30,10 @@ void parse_madt(void *madt_addr) {
         uint8_t entry_length = entry_header->record_lenght;
 
         switch (entry_header->entry_type) {
-            case 0: { // Processor Local APIC
+            case 0: { // processor Local APIC
                 struct processor_local_apic_record *local_apic =
                     (struct processor_local_apic_record *)(entry + sizeof(struct madt_record_header));
-                printf("[madt::parse_madt]: Local APIC: Processor ID=%d, APIC ID=%d, Flags=0x%x\n",
+                printf("[madt::parse_madt]: Local APIC: Processor ID=%d, APIC ID=%d,\nFlags=0x%x\n",
                        local_apic->acpi_processor_id, local_apic->apic_id, local_apic->flags);
                 break;
             }
@@ -55,7 +55,7 @@ void parse_madt(void *madt_addr) {
                 struct ioapic_interrupt_source_override *override =
                     (struct ioapic_interrupt_source_override *)(entry + sizeof(struct madt_record_header));
                 uint16_t flags = *(uint16_t*)override->flags;
-                printf("[madt::parse_madt]: IRQ Override: Bus=%d, Source IRQ=%d -> Global IRQ=%d, Flags=0x%x\n",
+                printf("[madt::parse_madt]: IRQ Override: Bus=%d, Source IRQ=%d -> Global IRQ=%d,\nFlags=0x%x\n",
                        override->bus_source, override->irq_source,
                        override->global_system_interrupt, flags);
 
@@ -75,14 +75,14 @@ void parse_madt(void *madt_addr) {
                        nmi->nmi_source, nmi->global_system_interrupt);
                 break;
             }
-            case 4: { // Local APIC Non-maskable interrupts
+            case 4: { // local APIC Non-maskable interrupts
                 struct local_apic_nonmaskable_interrupts *local_nmi =
                     (struct local_apic_nonmaskable_interrupts *)(entry + sizeof(struct madt_record_header));
                 printf("[madt::parse_madt]: Local APIC NMI: Processor ID=%d, LINT=%d\n",
                        local_nmi->acpi_processor_id, local_nmi->lint_number);
                 break;
             }
-            case 5: { // Local APIC Address Override
+            case 5: { // local APIC Address Override
                 struct local_apic_address_override *addr_override =
                     (struct local_apic_address_override *)(entry + sizeof(struct madt_record_header));
                 printf("[madt::parse_madt]: Local APIC Address Override: 0x%x%x\n",
@@ -90,7 +90,7 @@ void parse_madt(void *madt_addr) {
                        addr_override->dqword_local_apic_physical_address[0]);
                 break;
             }
-            case 9: { // Processor Local x2APIC
+            case 9: { // processor Local x2APIC
                 struct processor_local_x2apic *x2apic =
                     (struct processor_local_x2apic *)(entry + sizeof(struct madt_record_header));
                 printf("[madt::parse_madt]: Local x2APIC: ID=0x%x, Flags=0x%x, ACPI ID=%d\n",
@@ -116,7 +116,7 @@ uint8_t get_ioapic_id(void) {
 }
 
 uint32_t get_keyboard_global_irq(void) {
-    // Check if IRQ 1 (keyboard) has an override
+    // check if IRQ 1 (keyboard) has an override
     for (int i = 0; i < num_overrides; i++) {
         if (irq_overrides[i].source_irq == 1) {
             return irq_overrides[i].global_irq;

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-/* Register offsets */
+/* register offsets */
 #define APIC_BASE 0xFEE00000
 
 #define APIC_ID 0x020
@@ -14,7 +14,7 @@
 #define APIC_ICR_LOW 0x300
 #define APIC_ICR_HIGH 0x310
 
-/* Helper macro */
+/* helper macro */
 #define APIC_REG(offset) (*(volatile uint32_t)(APIC_BASE + offset))
 
 static inline uint32_t read_msr_low(uint32_t msr) {
@@ -29,6 +29,8 @@ static inline uint32_t read_msr_high(uint32_t msr) {
     return high;
 }
 
+int check_msr();
+
 static inline void write_msr(uint32_t msr, uint32_t low, uint32_t high) {
     asm volatile("wrmsr" : : "c"(msr), "a"(low), "d"(high));
 }
@@ -41,8 +43,16 @@ static inline void write_msr_low(uint32_t msr, uint32_t low) {
 // there are two registers for ioapic - address register and
 // data register at APIC_BASE and APIC_BASE + 4 bytes respectively
 // address register uses the bottom byte for register select
+void enable_api_hardware();
+void enable_apic_software();
 uint32_t ioapic_read(void *ioapic_base, uint32_t reg);
 void ioapic_write(void *ioapic_base, uint32_t reg, uint32_t value);
 uint32_t get_ioapic_base();
+uint8_t get_local_apic_id();
+void configure_ioapic_irq(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_t dest_apic_id);
+void configure_ioapic_irq_with_flags(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_t dest_apic_id, uint16_t flags);
+void disable_pic();
+
+
 
 #endif

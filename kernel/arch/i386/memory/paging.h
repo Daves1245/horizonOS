@@ -86,4 +86,14 @@ void alloc_frame(page_table_entry_t *page, int iskernel, int writeable);
 void free_frame(page_table_entry_t *page);
 void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel, int writeable);
 
+// Virtual memory API
+void map_page(uint32_t virt_addr, uint32_t phys_addr, int iskernel, int writeable);
+void unmap_page(uint32_t virt_addr);
+int is_page_mapped(uint32_t virt_addr);
+
+// TLB management
+static inline void invalidate_page(uint32_t virt_addr) {
+    asm volatile("invlpg (%0)" : : "r"(virt_addr) : "memory");
+}
+
 #endif
