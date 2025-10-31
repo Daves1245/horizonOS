@@ -13,28 +13,50 @@
 
 #include <stdint.h>
 
+#define COMMAND_NAME_LEN 10
 #define MAX_COMMAND_LEN 80
 #define MAX_ARGS 10
+#define ARG_LEN 30
 #define HISTORY_LEN 5
+#define MAX_COMMANDS 20
 #define PROMPT "... "
 
-struct shell_state {
+/*
+ * there needs to be a difference between the full command buffer
+ * and the name of a command. for now, we'll use name and arguments
+ */
+struct hush_state {
+  // currently executing command
+  char name[COMMAND_NAME_LEN];
+  int argc;
+  char args[MAX_ARGS][ARG_LEN];
+
+  // buffers and history
   char command_buffer[MAX_COMMAND_LEN];
   char history[HISTORY_LEN][MAX_COMMAND_LEN];
   int history_index;
-  int command_cursor_position;
+
+  // shell state
+  int cursor_position;
   int command_len; // running length of command
   int running; // bool
 };
 
-struct shell_command {
+struct hush_command {
   const char *name;
   const char *description;
   void (*handler)(int argc, char **argv);
 };
 
-int hush_init();
-int hush_run();
-int hush_execute_command(const char *command, int argc, const char **argv);
+struct hush_command_registry {
+  int registered_commands; // number of commands registered
+  struct hush_command **commands;
+};
+
+void hush_init();
+void hush_run();
+void hush_handle_keypress(char key);
+void hush_parse_entry();
+void hush_execute_command();
 
 #endif
