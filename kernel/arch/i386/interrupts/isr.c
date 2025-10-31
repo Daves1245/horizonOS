@@ -94,17 +94,11 @@ void register_interrupt_handler(uint8_t n, isr_t handler) {
 
 // this gets called from our ASM interrupt handler stub.
 void isr_handler(const struct interrupt_context *int_context) {
-    // Debug: Show all interrupts
-    printf("[IRQ:%d]", int_context->int_no);
-    
-    // temporary - just print the interrupt number on VGA
-    volatile uint16_t *vga = (uint16_t *) 0xB8000;
-    vga[10] = 0x0F00 | ('0' + (int_context->int_no % 10));
-
     // dispatch to registered handler if exists
     if (interrupt_handlers[int_context->int_no] != 0) {
         interrupt_handlers[int_context->int_no]((struct interrupt_context*)int_context);
     } else {
+        // Only print unhandled interrupts for debugging
         printf("[UNHANDLED IRQ %d]", int_context->int_no);
     }
     /*

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <kernel/tty.h>
@@ -89,14 +90,12 @@ void terminal_scrolln(size_t rows) {
     }
 
     if (rows >= VGA_HEIGHT) {
-        // Clear entire screen if scrolling more than screen height
         for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
             terminal_buffer[i] = vga_entry(' ', terminal_color);
         }
         return;
     }
 
-    // Move rows up by 'rows' lines in one operation
     for (size_t r = 0; r < VGA_HEIGHT - rows; r++) {
         for (size_t c = 0; c < VGA_WIDTH; c++) {
             terminal_buffer[r * VGA_WIDTH + c] =
@@ -114,6 +113,16 @@ void terminal_scrolln(size_t rows) {
 
 void terminal_putchar(char c) {
     unsigned char uc = c;
+
+    // handle backspace (keyboard driver)
+    if (c == '\b') {
+        if (terminal_column > 0) {
+            terminal_column--;
+            terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
+        }
+        return;
+    }
+
     if (c == '\n') {
         // If we're on the last row, we can't print on the next - scroll the
         // screen up and keep ourselves on the last row (newline)
@@ -167,3 +176,13 @@ void terminal_write_dec(uint32_t n) {
 void terminal_writestring(const char* data) {
     terminal_write(data, strlen(data));
 }
+
+/* color Printing Helpers */
+
+void print_colored(const char* str, uint8_t fg, uint8_t bg) {
+    uint8_t old_color = terminal_color;
+    terminal_color = vga_entry_color(fg, bg);
+    terminal_writestring(str);
+    terminal_color = old_color;
+}
+

@@ -18,7 +18,7 @@ INCLUDEDIR?=$(PREFIX)/include
 ARCHDIR=arch/$(HOSTARCH)
 
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra -fstack-protector
-CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -I$(ARCHDIR) -Iinclude
+CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -I$(ARCHDIR) -Iinclude -Iarch
 LDFLAGS:=$(LDFLAGS)
 LIBS:=$(LIBS) -nostdlib -lk -lgcc
 
@@ -33,6 +33,8 @@ KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
 kernel/kernel.o \
 kernel/kheap.o \
+kernel/jury/test_paging.o \
+kernel/jury/test_vm.o \
 
 OBJS=\
 $(ARCHDIR)/boot/crti.o \
@@ -42,7 +44,7 @@ $(ARCHDIR)/crtend.o \
 $(ARCHDIR)/boot/crtn.o \
 
 # Test objs directory
-TEST_OBJS_DIR=test/objs
+TEST_OBJS_DIR=jury/objs
 
 TEST_KERNEL_OBJS=\
 $(addprefix $(TEST_OBJS_DIR)/,$(KERNEL_ARCH_OBJS)) \

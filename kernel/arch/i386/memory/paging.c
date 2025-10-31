@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "../../kernel/kheap.h"
+#include <i386/common/logger.h>
 
 uint32_t *frames;
 uint32_t nframes;
@@ -58,7 +59,7 @@ void alloc_frame(page_table_entry_t *page, int iskernel, int writeable) {
     if (PTE_GET_FRAME(*page) != 0) return; // already allocated
     uint32_t idx = first_frame();
     if (idx == (uint32_t) - 1) {
-        printf("kernel panic: No free frames\n");
+        log_error("kernel panic: no free frames! :O\n");
         asm volatile("cli; hlt");
         while (1);
     }
@@ -84,15 +85,17 @@ void init_paging() {
     frames = (uint32_t *) kmalloc(BITSET_INDEX(nframes) * sizeof(uint32_t));
     memset(frames, 0, BITSET_INDEX(nframes) * sizeof(uint32_t));
 
-    // Allocate page directory (1024 entries * 4 bytes each = 4KB, page-aligned)
+    // allocate page directory (1024 entries * 4 bytes each = 4KB, page-aligned)
     kernel_directory = (page_directory_t *) kmalloc_a(1024 * sizeof(page_directory_t));
     memset(kernel_directory, 0, 1024 * sizeof(page_directory_t));
     current_directory = kernel_directory;
 
-    /* Identity map the kernel */
-    // Identity map from 0x0 to the end of used memory
-    // Map physical address X to virtual address X for kernel memory
-    for (uint32_t i = 0; i < placement_address + 0x1000; i += 0x1000) {
+    /* identity map the kernel */
+    // identity map from 0x0 to the end of used memory
+    // map physical address X to virtual address X for kernel memory
+    // map extra space (8MB) for kernel heap and dynamically allocated page tables
+    uint32_t identity_map_end = placement_address + 0x800000; // 8MB extra
+    for (uint32_t i = 0; i < identity_map_end; i += 0x1000) {
         page_table_entry_t *page = get_page(i, 1, kernel_directory);
         alloc_frame(page, 1, 1); // kernel=1, writeable=1
     }
@@ -100,10 +103,19 @@ void init_paging() {
     // map bios memory regions for acpi tables
     map_physical_range(0x80000, 0x80000, 1, 1); // 512kb area around ebda
 
+    // map extended bios area for ACPI tables (can be anywhere in low memory)
+    map_physical_range(0x7fe0000, 0x20000, 1, 1); // Map 128KB around typical RSDT location
+
     // map bios rom area
     map_physical_range(0xE0000, 0x20000, 1, 1); // 128kb bios rom area
 
-    // Register page fault handler
+    // pre-map APIC and IOAPIC regions to avoid page faults later
+    // these are default locations, not standardized, but we
+    // do this just to be safe and use the MADT-found values later
+    map_physical_range(0xFEC00000, 0x1000, 1, 1); // IOAPIC
+    map_physical_range(0xFEE00000, 0x1000, 1, 1); // local APIC
+
+    // register the page fault handler
     register_interrupt_handler(14, page_fault);
     switch_page_directory(kernel_directory);
 }
@@ -161,14 +173,16 @@ void page_fault(struct interrupt_context *regs) {
     uint32_t faulting_address;
     asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
 
-    int present = regs->err_code & 0x1;    // Page not present
-    int rw = regs->err_code & 0x2;         // Write operation?
-    int us = regs->err_code & 0x4;         // User mode?
-    int reserved = regs->err_code & 0x8;   // Reserved bits set?
-    int id = regs->err_code & 0x10;        // Instruction fetch?
+    int present = regs->err_code & 0x1;    // page not present
+    int rw = regs->err_code & 0x2;         // write operation?
+    int us = regs->err_code & 0x4;         // user mode?
+    int reserved = regs->err_code & 0x8;   // reserved bits?
+    int id = regs->err_code & 0x10;        // instruction fetch?
+                                           // hotel?
+                                           // trivago
 
     // print error information
-    printf("\nPage fault! ( ");
+    log_error("\npage fault! ( ");
     if (!present) printf("not present ");
     if (rw) printf("read-only ");
     if (us) printf("user-mode ");
@@ -178,7 +192,9 @@ void page_fault(struct interrupt_context *regs) {
 
     printf("EIP: 0x%x\n", regs->eip);
 
-    printf("System halted.\n");
+    log_error("system halted. oh nooo...\n");
+    log_error("welp. that ain't good chief\n");
+    log_error("uh oh. ya done goofed you goofball\n");
     asm volatile("cli; hlt");
 }
 
@@ -188,21 +204,97 @@ void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel, int 
     // Align end address to page boundary (round up)
     uint32_t end = (phys_start + length + 0xFFF) & 0xFFFFF000;
 
-    printf("Mapping physical range 0x%x to 0x%x (length: %d bytes)\n", start, end, end - start);
+    printf("mapping physical range 0x%x to 0x%x (length: %d bytes)\n", start, end, end - start);
 
-    // Identity map each page in the range
+    // identity map each page in the range
     for (uint32_t addr = start; addr < end; addr += 0x1000) {
+        // get page directory index
+        uint32_t page_dir_index = addr >> 22;
+
+        // ensure PDE has write permission (both PDE and PTE must be writable)
+        if (writeable) {
+            kernel_directory[page_dir_index] |= PDE_READ_WRITE;
+        }
+
         page_table_entry_t *page = get_page(addr, 1, kernel_directory);
-        if (page && !PTE_IS_PRESENT(*page)) {
-            // Map virtual address to same physical address (identity mapping)
+        if (page) {
+            // map virtual address to same physical address (identity mapping)
             uint32_t frame = addr / 0x1000;
             PTE_SET_PRESENT(*page);
-            if (writeable) PTE_SET_WRITABLE(*page);
-            if (!iskernel) PTE_SET_USER(*page);
+            if (writeable) {
+                PTE_SET_WRITABLE(*page);
+            } else {
+                PTE_CLEAR_WRITABLE(*page);
+            }
+            if (!iskernel) {
+                PTE_SET_USER(*page);
+            } else {
+                PTE_CLEAR_USER(*page);
+            }
             PTE_SET_FRAME(*page, frame);
 
-            // Mark frame as used in our frame bitmap
+            // mark frame as used in our frame bitmap
             set_frame(addr);
+
+            // flush TLB for this page to ensure changes take effect
+            asm volatile("invlpg (%0)" : : "r"(addr) : "memory");
         }
     }
+}
+
+/* Virtual Memory API */
+
+void map_page(uint32_t virt_addr, uint32_t phys_addr, int iskernel, int writeable) {
+    // align to page boundaries
+    virt_addr &= 0xFFFFF000;
+    phys_addr &= 0xFFFFF000;
+
+    // get or create page table entry
+    page_table_entry_t *page = get_page(virt_addr, 1, current_directory);
+    if (!page) {
+        printf("[paging]: Failed to get page for 0x%x\n", virt_addr);
+        return;
+    }
+
+    // set frame number and flags
+    uint32_t frame = phys_addr / 0x1000;
+    PTE_SET_FRAME(*page, frame);
+    PTE_SET_PRESENT(*page);
+
+    if (writeable) {
+        PTE_SET_WRITABLE(*page);
+    } else {
+        PTE_CLEAR_WRITABLE(*page);
+    }
+
+    if (!iskernel) {
+        PTE_SET_USER(*page);
+    }
+
+    // mark frame as used
+    set_frame(phys_addr);
+
+    // invalidate TLB entry
+    invalidate_page(virt_addr);
+}
+
+void unmap_page(uint32_t virt_addr) {
+    virt_addr &= 0xFFFFF000;
+
+    page_table_entry_t *page = get_page(virt_addr, 0, current_directory);
+    if (!page || !PTE_IS_PRESENT(*page)) {
+        return;  // already unmapped!
+    }
+
+    // freeee the frame
+    free_frame(page);
+
+    // invalidate TLB entry
+    invalidate_page(virt_addr);
+}
+
+// is it?
+int is_page_mapped(uint32_t virt_addr) {
+    page_table_entry_t *page = get_page(virt_addr, 0, current_directory);
+    return (page != 0 && PTE_IS_PRESENT(*page));
 }

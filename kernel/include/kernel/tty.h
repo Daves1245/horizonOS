@@ -12,4 +12,11 @@ void terminal_write_dec(uint32_t n);
 void terminal_writestring(const char *data);
 void terminal_scroll();
 
+// Color printing helpers
+void terminal_setcolor(uint8_t color);
+void print_colored(const char* str, uint8_t fg, uint8_t bg);
+
+// Logger functions (from i386-specific logger.h)
+#include "common/logger.h"
+
 #endif

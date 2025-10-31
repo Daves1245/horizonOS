@@ -139,5 +139,5 @@ static void init_idt() {
     remap_pic();
 
     __asm__ volatile ("lidt %0" : : "m"(idtr)); // load the new IDT
-    __asm__ volatile ("sti"); // enable flag
+    // Note: Interrupts will be enabled later in kernel_main after APIC setup
 }
