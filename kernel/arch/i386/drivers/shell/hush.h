@@ -21,6 +21,13 @@
 #define MAX_COMMANDS 20
 #define PROMPT "... "
 
+enum HUSH_STATE {
+  OK,
+  ERROR,
+  INVALID_COMMAND,
+  COMMAND_NOT_FOUND
+};
+
 /*
  * there needs to be a difference between the full command buffer
  * and the name of a command. for now, we'll use name and arguments
@@ -48,15 +55,11 @@ struct hush_command {
   void (*handler)(int argc, char **argv);
 };
 
-struct hush_command_registry {
-  int registered_commands; // number of commands registered
-  struct hush_command **commands;
-};
-
 void hush_init();
 void hush_run();
 void hush_handle_keypress(char key);
-void hush_parse_entry();
-void hush_execute_command();
+struct hush_command const * hush_lookup_registry(const char *command);
+int hush_parse_entry();
+enum HUSH_STATE hush_execute_command();
 
 #endif
