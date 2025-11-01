@@ -8,6 +8,7 @@
 #include "common/common.h"
 #include <i386/common/halt.h>
 #include <i386/common/logger.h>
+#include <i386/drivers/shell/hush.h>
 #include "apic/apic.h"
 #include "apic/madt.h"
 #include "apic/rsdp.h"
@@ -104,6 +105,8 @@ void kernel_main(void) {
     log_demo();
 
     log_info("try typing :)\n");
+
+    hush_init();
 
     // interrupts will fire and be handled while halted
     halt();

@@ -1,7 +1,7 @@
 #include "logger.h"
 #include "vga.h"
 
-void log(enum log_type type, const char *str) {
+static void log_prefix(enum log_type type) {
     const char *prefix;
     uint8_t fg_color;
 
@@ -33,7 +33,21 @@ void log(enum log_type type, const char *str) {
     }
 
     print_colored(prefix, fg_color, VGA_COLOR_BLACK);
-    printf(" %s", str);
+    printf(" ");
+}
+
+void log(enum log_type type, const char *str) {
+    log_prefix(type);
+    printf("%s", str);
+}
+
+void logf(enum log_type type, const char *format, ...) {
+    log_prefix(type);
+
+    va_list args;
+    va_start(args, format);
+    printf(format, args);
+    va_end(args);
 }
 
 void log_demo() {
