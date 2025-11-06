@@ -5,6 +5,9 @@
 #include <i386/common/logger.h>
 #include <string.h>
 
+#include <jury/test_paging.h>
+#include <jury/test_vm.h>
+
 static size_t min(size_t a, size_t b) {
     return (a < b) ? a : b;
 }
@@ -35,9 +38,19 @@ void cmd_clear(int argc, char **argv) {
     terminal_set_cursor(0, 0);
 }
 
+void paging_test(int argc, char **argv) {
+    test_paging();
+}
+
+void vm_test(int argc, char **argv) {
+    test_vm();
+}
+
 static struct hush_command builtin_help = {"help", "show available commands", cmd_help};
 static struct hush_command builtin_echo = {"echo", "echo", cmd_echo};
 static struct hush_command builtin_clear = {"clear", "clear the screen", cmd_clear};
+static struct hush_command builtin_paging_test = {"test-paging", "run the paging tests", paging_test};
+static struct hush_command builtin_vm_test = {"test-vm", "run the vm tests", vm_test};
 
 void hush_register_command(struct hush_command *cmd) {
     if (num_commands < MAX_COMMANDS) {
@@ -46,10 +59,20 @@ void hush_register_command(struct hush_command *cmd) {
 }
 
 struct hush_command const *hush_lookup_registry(const char *name) {
+#ifdef DEBUG
+    printf("[DEBUG] Looking up command: '%s'\n", name);
+#endif
     for (int i = 0; i < num_commands; i++) {
         size_t name_len = strnlen(name, COMMAND_NAME_LEN);
+#ifdef DEBUG
+        printf("[DEBUG] Comparing with registry[%d]: '%s' (len=%zu vs %zu)\n", 
+               i, hush_registry[i]->name, name_len, strnlen(hush_registry[i]->name, COMMAND_NAME_LEN));
+#endif
         if (strncmp(hush_registry[i]->name, name, name_len) == 0 &&
                 strnlen(hush_registry[i]->name, COMMAND_NAME_LEN) == name_len) {
+#ifdef DEBUG
+            printf("[DEBUG] Match found: '%s'\n", hush_registry[i]->name);
+#endif
             return hush_registry[i];
         }
     }
@@ -58,6 +81,9 @@ struct hush_command const *hush_lookup_registry(const char *name) {
 }
 
 void hush_init() {
+#ifdef DEBUG
+    printf("[DEBUG] Debug mode enabled in hush\n");
+#endif
     // zero out the registry
     for (int i = 0; i < MAX_COMMAND_LEN; i++) {
         hush_state.command_buffer[i] = 0;
@@ -79,7 +105,8 @@ void hush_init() {
     hush_register_command(&builtin_help);
     hush_register_command(&builtin_echo);
     hush_register_command(&builtin_clear);
-    num_commands = 3;
+    hush_register_command(&builtin_paging_test);
+    hush_register_command(&builtin_vm_test);
 
     printf("Horizon Utility Shell (hush)\n");
     printf("try 'help' for available commands\n");
@@ -111,6 +138,10 @@ enum HUSH_STATE hush_execute_command() {
 }
 
 int parse_command_buffer() {
+#ifdef DEBUG
+    printf("[DEBUG] Command buffer: '%s' (len=%zu)\n", hush_state.command_buffer, hush_state.command_len);
+    halt();
+#endif
     char *it = hush_state.command_buffer;
     const char *end = hush_state.command_buffer + MAX_COMMAND_LEN;
     while (*it && iswhitespace(*it) && (it < end)) {

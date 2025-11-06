@@ -18,7 +18,7 @@ INCLUDEDIR?=$(PREFIX)/include
 ARCHDIR=arch/$(HOSTARCH)
 
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra -fstack-protector
-CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -I$(ARCHDIR) -Iinclude -Iarch
+CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -I$(ARCHDIR) -Iinclude -Iarch -Ikernel
 LDFLAGS:=$(LDFLAGS)
 LIBS:=$(LIBS) -nostdlib -lk -lgcc
 
