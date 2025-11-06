@@ -7,10 +7,16 @@
 #include <kernel/tty.h>
 
 #include "common/vga.h"
+#include "common/io.h"
 
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
 static uint16_t* const VGA_MEMORY = (uint16_t*) 0xB8000;
+
+#define VGA_CTRL_REGISTER 0x3D4
+#define VGA_DATA_REGISTER 0x3D5
+#define VGA_CURSOR_LOC_HIGH 0x0E
+#define VGA_CURSOR_LOC_LOW 0x0F
 
 static size_t terminal_row;
 static size_t terminal_column;
@@ -28,15 +34,29 @@ void terminal_initialize(void) {
 	    terminal_buffer[index] = vga_entry(' ', terminal_color);
 	}
     }
+    update_hardware_cursor();
 }
 
 void terminal_setcolor(uint8_t color) {
     terminal_color = color;
 }
 
+void update_hardware_cursor(void) {
+    uint16_t cursor_location = terminal_row * VGA_WIDTH + terminal_column;
+
+    // high byte of cursor location to the VGA cursor address register
+    outb(VGA_CTRL_REGISTER, VGA_CURSOR_LOC_HIGH);
+    outb(VGA_DATA_REGISTER, cursor_location >> 8);
+
+    // low byte of cursor location to the VGA cursor address register
+    outb(VGA_CTRL_REGISTER, VGA_CURSOR_LOC_LOW);
+    outb(VGA_DATA_REGISTER, cursor_location & 0xFF);
+}
+
 void terminal_set_cursor(size_t x, size_t y) {
     terminal_row = y;
     terminal_column = x;
+    update_hardware_cursor();
 }
 
 void terminal_putentryat_visual_debug(unsigned char c, uint8_t color, size_t x, size_t y) {
@@ -51,7 +71,7 @@ void terminal_putentryat_visual_debug(unsigned char c, uint8_t color, size_t x, 
 
 void terminal_putentryat_interrupt_debug(unsigned char c, uint8_t color, size_t x, size_t y) {
     if (x >= VGA_WIDTH || y >= VGA_HEIGHT) {
-        __asm__ volatile ("int $0x3"); // Debug interrupt
+        __asm__ volatile ("int $0x3");
         return;
     }
     const size_t index = y * VGA_WIDTH + x;
@@ -60,7 +80,6 @@ void terminal_putentryat_interrupt_debug(unsigned char c, uint8_t color, size_t 
 
 void terminal_putentryat(unsigned char c, uint8_t color, size_t x, size_t y) {
     if (x >= VGA_WIDTH || y >= VGA_HEIGHT) {
-        // Write error message and halt
         terminal_buffer[0] = vga_entry('B', terminal_color);
         terminal_buffer[1] = vga_entry('U', terminal_color);
         terminal_buffer[2] = vga_entry('G', terminal_color);
@@ -124,6 +143,7 @@ void terminal_putchar(char c) {
         if (terminal_column > 0) {
             terminal_column--;
             terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
+            update_hardware_cursor();
         }
         return;
     }
@@ -138,6 +158,7 @@ void terminal_putchar(char c) {
 	    terminal_row++;
 	}
 	terminal_column = 0;
+	update_hardware_cursor();
 	return;
     }
     terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
@@ -154,7 +175,7 @@ void terminal_putchar(char c) {
                 terminal_row = VGA_HEIGHT - 1;
             }
         }
-
+        update_hardware_cursor();
     }
 }
 
@@ -181,8 +202,6 @@ void terminal_write_dec(uint32_t n) {
 void terminal_writestring(const char* data) {
     terminal_write(data, strlen(data));
 }
-
-/* color Printing Helpers */
 
 void print_colored(const char* str, uint8_t fg, uint8_t bg) {
     uint8_t old_color = terminal_color;

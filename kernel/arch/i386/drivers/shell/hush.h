@@ -46,7 +46,7 @@ struct hush_state {
   // shell state
   int cursor_position;
   int command_len; // running length of command
-  int running; // bool
+  int running;
 };
 
 struct hush_command {
