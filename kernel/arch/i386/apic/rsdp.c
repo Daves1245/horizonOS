@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "rsdp.h"
 #include "madt.h"
-#include "../../../libc/string/string.h"
+#include <string.h>
 #include <stdio.h>
 #include "../memory/paging.h"
 

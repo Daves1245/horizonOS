@@ -3,25 +3,10 @@
 #include <stdio.h>
 #include <kernel/tty.h>
 #include <i386/common/logger.h>
-
-static size_t strnlen(const char *s, size_t maxlen) {
-    size_t len = 0;
-    while (len < maxlen && *s++) len++;
-    return len;
-}
+#include <string.h>
 
 static size_t min(size_t a, size_t b) {
     return (a < b) ? a : b;
-}
-
-static int strncmp(const char *s1, const char *s2, size_t n) {
-    while (n && *s1 && (*s1 == *s2)) {
-        s1++;
-        s2++;
-        n--;
-    }
-    if (n == 0) return 0;
-    return *(unsigned char *) s1 - *(unsigned char *) s2;
 }
 
 struct hush_state hush_state;
@@ -62,7 +47,7 @@ struct hush_command const *hush_lookup_registry(const char *name) {
     for (int i = 0; i < num_commands; i++) {
         size_t name_len = strnlen(name, COMMAND_NAME_LEN);
         if (strncmp(hush_registry[i]->name, name, name_len) == 0 && 
-            strnlen(hush_registry[i]->name, COMMAND_NAME_LEN) == name_len) {
+                strnlen(hush_registry[i]->name, COMMAND_NAME_LEN) == name_len) {
             return hush_registry[i];
         }
     }
