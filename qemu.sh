@@ -1,12 +1,16 @@
 #!/bin/sh
 
+if [ ! -f myos.iso ] || [ ! -f myos-debug.iso ]; then
+    ./iso.sh
+fi
+
 if [ "$1" = "gdb" ]; then
     # gdb with stub
     qemu-system-i386 -cdrom myos.iso -S -s -kernel isodir/boot/myos.kernel \
         -serial file:serial.log
 elif [ "$1" = "debug" ]; then
-    # debug mode with monitor and interrupt tracing
-    qemu-system-i386 -cdrom myos.iso -kernel isodir/boot/myos.kernel \
+    # debug mode with monitor, interrupt tracing, and debug prints
+    qemu-system-i386 -cdrom myos-debug.iso -kernel isodir-debug/boot/myos.kernel \
         -monitor stdio \
         -d int,cpu_reset,guest_errors \
         -D debug.log \
