@@ -22,7 +22,7 @@ void cmd_help(int argc, char **argv) {
 }
 
 void cmd_echo(int argc, char **argv) {
-    for (int i = 1; i < argc; i++) {
+    for (int i = 0; i < argc; i++) {
         printf("%s", argv[i]);
         if (i < argc - 1) printf(" ");
     }
@@ -31,6 +31,8 @@ void cmd_echo(int argc, char **argv) {
 
 void cmd_clear(int argc, char **argv) {
     terminal_scrolln(25);
+    hush_state.cursor_position = 0;
+    terminal_set_cursor(0, 0);
 }
 
 static struct hush_command builtin_help = {"help", "show available commands", cmd_help};
@@ -46,7 +48,7 @@ void hush_register_command(struct hush_command *cmd) {
 struct hush_command const *hush_lookup_registry(const char *name) {
     for (int i = 0; i < num_commands; i++) {
         size_t name_len = strnlen(name, COMMAND_NAME_LEN);
-        if (strncmp(hush_registry[i]->name, name, name_len) == 0 && 
+        if (strncmp(hush_registry[i]->name, name, name_len) == 0 &&
                 strnlen(hush_registry[i]->name, COMMAND_NAME_LEN) == name_len) {
             return hush_registry[i];
         }

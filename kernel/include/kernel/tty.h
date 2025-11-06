@@ -13,6 +13,7 @@ void terminal_write_dec(uint32_t n);
 void terminal_writestring(const char *data);
 void terminal_scroll();
 void terminal_scrolln();
+void terminal_set_cursor(size_t x, size_t y);
 
 void terminal_setcolor(uint8_t color);
 void print_colored(const char* str, uint8_t fg, uint8_t bg);

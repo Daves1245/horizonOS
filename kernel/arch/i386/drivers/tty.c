@@ -34,6 +34,11 @@ void terminal_setcolor(uint8_t color) {
     terminal_color = color;
 }
 
+void terminal_set_cursor(size_t x, size_t y) {
+    terminal_row = y;
+    terminal_column = x;
+}
+
 void terminal_putentryat_visual_debug(unsigned char c, uint8_t color, size_t x, size_t y) {
     if (x >= VGA_WIDTH || y >= VGA_HEIGHT) {
         // Flash corner of screen bright red to indicate bounds error
