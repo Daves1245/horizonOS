@@ -59,13 +59,10 @@ void hush_register_command(struct hush_command *cmd) {
 }
 
 struct hush_command const *hush_lookup_registry(const char *name) {
-    // printf("[hush]: looking up command '%s' in %d registered commands\n", name, num_commands);
     for (int i = 0; i < num_commands; i++) {
-        // printf("[hush]: comparing '%s' with '%s'\n", name, hush_registry[i]->name);
         size_t name_len = strnlen(name, COMMAND_NAME_LEN);
         if (strncmp(hush_registry[i]->name, name, name_len) == 0 && 
             strnlen(hush_registry[i]->name, COMMAND_NAME_LEN) == name_len) {
-            // printf("[hush]: found match at index %d\n", i);
             return hush_registry[i];
         }
     }
@@ -74,8 +71,6 @@ struct hush_command const *hush_lookup_registry(const char *name) {
 }
 
 void hush_init() {
-    // log_info("[hush]: initializing shell\n");
-
     // zero out the registry
     for (int i = 0; i < MAX_COMMAND_LEN; i++) {
         hush_state.command_buffer[i] = 0;
@@ -99,8 +94,6 @@ void hush_init() {
     hush_register_command(&builtin_clear);
     num_commands = 3;
 
-    // log_info("[hush]: registered %d commands\n", num_commands);
-
     printf("Horizon Utility Shell (hush)\n");
     printf("try 'help' for available commands\n");
     printf(PROMPT);
@@ -111,37 +104,26 @@ void hush_run() {
 }
 
 enum HUSH_STATE hush_execute_command() {
-    // printf("[hush]: executing command '%s' with %d args\n", hush_state.name, hush_state.argc);
-
     if (hush_state.argc < 0) {
         log_warning("[hush]: invalid argc: %d\n", hush_state.argc);
         return INVALID_COMMAND;
     }
 
-    // printf("looking up command...\n");
     struct hush_command const *command = hush_lookup_registry(hush_state.name);
     if (!command) {
-        // printf("[hush]: command not found: '%s'\n", hush_state.name);
-        // printf("command not found: %s\n", hush_state.name);
         return COMMAND_NOT_FOUND;
-    } else {
-        // printf("found command %s\n", hush_state.command_buffer);
     }
 
     char* argv[MAX_ARGS];
     for (int i = 0; i < hush_state.argc; i++) {
         argv[i] = hush_state.args[i];
-        // log_debug("[hush]: arg[%d] = '%s'\n", i, argv[i]);
     }
 
-    // log_debug("[hush]: calling handler for '%s'\n", command->name);
     command->handler(hush_state.argc, argv);
     return OK;
 }
 
 int parse_command_buffer() {
-    // printf("[hush]: parsing command buffer: '%s'\n", hush_state.command_buffer);
-
     char *it = hush_state.command_buffer;
     const char *end = hush_state.command_buffer + MAX_COMMAND_LEN;
     while (*it && iswhitespace(*it) && (it < end)) {
@@ -149,7 +131,6 @@ int parse_command_buffer() {
     }
 
     if (!*it || it >= end) {
-        // log_debug("[hush]: empty command buffer\n");
         hush_state.argc = -1;
         return -1;
     }
@@ -162,11 +143,8 @@ int parse_command_buffer() {
     }
     *namep = '\0';
 
-    // printf("[hush]: parsed command name: '%s'\n", hush_state.name);
-
     if (!*it || it >= end) {
         hush_state.argc = 0;
-        // log_debug("[hush]: no arguments\n");
         return 0;
     }
 
@@ -184,12 +162,10 @@ int parse_command_buffer() {
             arg_len++;
         }
         *dest = '\0';
-        // log_debug("[hush]: parsed arg[%d]: '%s'\n", argc, hush_state.args[argc]);
         argc++;
     }
 
     hush_state.argc = argc;
-    // log_debug("[hush]: total args: %d\n", argc);
     return 0;
 }
 
@@ -198,17 +174,6 @@ void hush_handle_keypress(char key) {
         printf("\n");
         if (hush_state.command_len > 0) {
             hush_state.command_buffer[hush_state.command_len] = '\0';
-
-            // printf("DEBUG: buffer len=%d\n", hush_state.command_len);
-            // printf("DEBUG: buffer: ");
-            /*
-            for (int i = 0; i < hush_state.command_len; i++) {
-                char c = hush_state.command_buffer[i];
-                printf("'%c' ", isprintable(c) ? c : '?');
-            }
-            printf("\n");
-
-            */
             parse_command_buffer();
             hush_execute_command();
         }
