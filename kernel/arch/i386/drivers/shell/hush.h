@@ -19,7 +19,7 @@
 #define ARG_LEN 30
 #define HISTORY_LEN 5
 #define MAX_COMMANDS 20
-#define PROMPT "... "
+#define PROMPT "$ "
 
 enum HUSH_STATE {
   OK,
