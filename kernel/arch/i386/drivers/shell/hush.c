@@ -219,7 +219,6 @@ void hush_handle_keypress(char key) {
         if (hush_state.command_len > 0) {
             hush_state.command_len--;
             hush_state.cursor_position--;
-            printf("\b \b");
         }
     } else if (isprintable(key) && hush_state.command_len < MAX_COMMAND_LEN - 1) {
         hush_state.command_buffer[hush_state.command_len++] = key;
