@@ -7,6 +7,7 @@
 
 #include <jury/test_paging.h>
 #include <jury/test_vm.h>
+#include <i386/drivers/shell/builtins/maze.h>
 
 static size_t min(size_t a, size_t b) {
     return (a < b) ? a : b;
@@ -46,11 +47,26 @@ void vm_test(int argc, char **argv) {
     test_vm();
 }
 
+void cmd_maze(int argc, char **argv) {
+    generate_maze();
+}
+
+void cmd_display(int argc, char **argv) {
+    display_maze();
+}
+
+void cmd_solve(int argc, char **argv) {
+    solve_maze();
+}
+
 static struct hush_command builtin_help = {"help", "show available commands", cmd_help};
 static struct hush_command builtin_echo = {"echo", "echo", cmd_echo};
 static struct hush_command builtin_clear = {"clear", "clear the screen", cmd_clear};
 static struct hush_command builtin_paging_test = {"test-paging", "run the paging tests", paging_test};
 static struct hush_command builtin_vm_test = {"test-vm", "run the vm tests", vm_test};
+static struct hush_command builtin_maze = {"maze", "generate mazes and change settings", cmd_maze};
+static struct hush_command builtin_display = {"display", "display the current maze", cmd_display};
+static struct hush_command builtin_solve = {"solve", "solve the current maze", cmd_solve};
 
 void hush_register_command(struct hush_command *cmd) {
     if (num_commands < MAX_COMMANDS) {
@@ -107,6 +123,9 @@ void hush_init() {
     hush_register_command(&builtin_clear);
     hush_register_command(&builtin_paging_test);
     hush_register_command(&builtin_vm_test);
+    hush_register_command(&builtin_maze);
+    hush_register_command(&builtin_display);
+    hush_register_command(&builtin_solve);
 
     printf("Horizon Utility Shell (hush)\n");
     printf("try 'help' for available commands\n");
