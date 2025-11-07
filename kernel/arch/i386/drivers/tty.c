@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <kernel/tty.h>
+#include <i386/common/halt.h>
 
 #include "common/vga.h"
 #include "common/io.h"
@@ -177,6 +178,14 @@ void terminal_putchar(char c) {
         }
         update_hardware_cursor();
     }
+}
+
+void terminal_putchar_at(char c, int x, int y) {
+    if (x < 0 || y < 0 || x >= VGA_WIDTH || y >= VGA_HEIGHT) {
+        printf("PANIC: terminal_putchar_at bounds violation: (%d, %d)\n", x, y);
+        halt();
+    }
+    terminal_putentryat(c, terminal_color, x, y);
 }
 
 void terminal_write(const char* data, size_t size) {
