@@ -19,6 +19,10 @@ void timer_interrupt_handler(struct interrupt_context *regs) {
     *apic_eoi = 0;
 }
 
+uint32_t timer_ticks() {
+    return tick_count;
+}
+
 void init_timer() {
     printf("[timer]: Registering timer handler for vector 32\n");
     register_interrupt_handler(32, timer_interrupt_handler);
