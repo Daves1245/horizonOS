@@ -1,9 +1,19 @@
 *.iso
 
 isodir
+isodir-debug
 sysroot
+
+# build files
+*.o
 
 # Vim files
 *.swp
 *.swo
 *.swn
+
+# log files
+*.log
+
+# disassembly debugging
+kernel/myos.kernel.*

@@ -5,8 +5,7 @@
  *
  */
 
-#include "../include/common.h"
-#include "isr.h"
+#include "interrupts/isr.h"
 #include <kernel/tty.h>
 
 #include <stdint.h>
@@ -89,19 +88,18 @@ void vga_print_hex(uint32_t value) {
 static isr_t interrupt_handlers[256] = {0};
 
 // register a handler for a specific interrupt
-void register_interrupt_handler(u8int n, isr_t handler) {
+void register_interrupt_handler(uint8_t n, isr_t handler) {
     interrupt_handlers[n] = handler;
 }
 
 // this gets called from our ASM interrupt handler stub.
 void isr_handler(const struct interrupt_context *int_context) {
-    // temporary - just print the interrupt number
-    volatile uint16_t *vga = (uint16_t *) 0xB8000;
-    vga[10] = 0x0F00 | ('0' + int_context->int_no);
-
     // dispatch to registered handler if exists
     if (interrupt_handlers[int_context->int_no] != 0) {
         interrupt_handlers[int_context->int_no]((struct interrupt_context*)int_context);
+    } else {
+        // Only print unhandled interrupts for debugging
+        printf("[UNHANDLED IRQ %d]", int_context->int_no);
     }
     /*
     if (regs->int_no == 13) {
