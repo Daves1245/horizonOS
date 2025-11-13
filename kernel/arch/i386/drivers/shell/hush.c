@@ -2,7 +2,7 @@
 #include <i386/common/ctype.h>
 #include <stdio.h>
 #include <kernel/tty.h>
-#include <i386/common/logger.h>
+#include <kernel/logger.h>
 #include <string.h>
 
 #include <jury/test_paging.h>

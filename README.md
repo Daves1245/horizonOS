@@ -65,3 +65,7 @@ A custom operating system kernel written in C for the i386 architecture.
 - **Target**: i386 (32-bit x86) and x86_64, with a focus on i386
 - **Bootloader**: GRUB
 - **Emulation**: QEMU
+
+---
+
+*[I saw a man pursuing the horizon](https://www.poetryfoundation.org/poems/50457/i-saw-a-man-pursuing-the-horizon)*

@@ -7,6 +7,18 @@ sysroot
 # build files
 *.o
 
+# Log files generated on runs
+boot_debug.log
+boot_output.log
+events
+iso_backup.sh
+iso_old.sh
+qemu.log
+test_boot.log
+limine.log
+kernel_test.log
+kernel_output.txt
+
 # Vim files
 *.swp
 *.swo

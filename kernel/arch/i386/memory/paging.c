@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "../../kernel/kheap.h"
-#include <i386/common/logger.h>
+#include <kernel/logger.h>
 
 uint32_t *frames;
 uint32_t nframes;

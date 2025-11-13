@@ -4,7 +4,7 @@
 #include "common.h"
 #include <string.h>
 #include <stdint.h>
-#include "common/logger.h"
+#include <kernel/logger.h>
 
 void terminal_initialize(void);
 void terminal_putchar(char c);

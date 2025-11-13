@@ -5,9 +5,8 @@
 #include <string.h>
 
 #include <kernel/tty.h>
+#include <kernel/vga.h>
 #include <i386/common/halt.h>
-
-#include "common/vga.h"
 #include "common/io.h"
 
 static const size_t VGA_WIDTH = 80;
