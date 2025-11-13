@@ -192,9 +192,9 @@ void page_fault(struct interrupt_context *regs) {
 
     printf("EIP: 0x%x\n", regs->eip);
 
-    log_error("system halted. oh nooo...\n");
+    log_error("system halted. oh neuwr...\n");
     log_error("welp. that ain't good chief\n");
-    log_error("uh oh. ya done goofed you goofball\n");
+    log_error("uh oh. ya done fucked up you goofball\n");
     asm volatile("cli; hlt");
 }
 

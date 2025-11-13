@@ -26,9 +26,6 @@ extern struct cell maze[MAZE_HEIGHT][MAZE_WIDTH];
 extern char display_buffer[DISPLAY_HEIGHT][DISPLAY_WIDTH];
 extern int next_set_id;
 
-void seed_rng(uint32_t seed);
-uint32_t random_next();
-uint32_t random_range(uint32_t max);
 
 void maze_init();
 void draw_maze();

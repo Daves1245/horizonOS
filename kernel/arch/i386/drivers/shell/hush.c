@@ -64,7 +64,7 @@ static struct hush_command builtin_echo = {"echo", "echo", cmd_echo};
 static struct hush_command builtin_clear = {"clear", "clear the screen", cmd_clear};
 static struct hush_command builtin_paging_test = {"test-paging", "run the paging tests", paging_test};
 static struct hush_command builtin_vm_test = {"test-vm", "run the vm tests", vm_test};
-static struct hush_command builtin_maze = {"maze", "generate mazes and change settings", cmd_maze};
+static struct hush_command builtin_maze = {"maze", "generate maze", cmd_maze};
 static struct hush_command builtin_display = {"display", "display the current maze", cmd_display};
 static struct hush_command builtin_solve = {"solve", "solve the current maze", cmd_solve};
 
