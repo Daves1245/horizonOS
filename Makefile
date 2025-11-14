@@ -45,3 +45,4 @@ clean:
 	@rm -rf sysroot
 	@rm -rf isodir
 	@rm -f myos.iso horizon-i386.iso horizon-x86_64.iso
+	@rm -rf *.log */*.log */*/*.log

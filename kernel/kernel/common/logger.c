@@ -54,15 +54,10 @@ void logf(enum log_type type, const char *format, ...) {
 void log_demo() {
     printf("\n");
     printf("=== Color Log Demo ===\n");
-    log_info("[INFO] ");
-    printf("This is informational text\n");
-    log_success("[SUCCESS] ");
-    printf("Operation completed successfully\n");
-    log_warning("[WARNING] ");
-    printf("This is a warning message\n");
-    log_error("[ERROR] ");
-    printf("This is an error message\n");
-    log_debug("[DEBUG] ");
-    printf("Debug information\n");
+    log_info(" status\n");
+    log_success(" tests passed\n");
+    log_warning(" unexpected value\n");
+    log_error(" test failed\n");
+    log_debug(" debug information\n");
     printf("\n");
 }
