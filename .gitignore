@@ -1,7 +1,6 @@
 *.iso
 
 isodir
-isodir-debug
 sysroot
 
 # build files

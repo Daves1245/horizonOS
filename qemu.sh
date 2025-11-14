@@ -4,7 +4,7 @@
 if [ -f horizon-i386.iso ]; then
     ARCH="i386"
     ISO_FILE="horizon-i386.iso"
-    KERNEL_PATH="isodir-i386/boot/horizon.kernel"
+    KERNEL_PATH="isodir/i386/boot/horizon.kernel"
     QEMU_BIN="qemu-system-i386"
     USE_CDROM=1
 elif [ -f horizon-x86_64.iso ]; then

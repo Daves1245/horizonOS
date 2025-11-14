@@ -1,6 +1,7 @@
 DEFAULT_HOST!=../default-host.sh
-HOST?=DEFAULT_HOST
-HOSTARCH!=../target-triplet-to-arch.sh $(HOST)
+HOST?=$(DEFAULT_HOST)
+# convert host triplet to architecture (i686-elf -> i386, x86_64-linux-gnu -> x86_64)
+HOSTARCH!=echo "$(HOST)" | grep -Eq 'i[[:digit:]]86-' && echo i386 || echo "$(HOST)" | grep -Eo '^[[:alnum:]_]*'
 
 CFLAGS?=-O2 -g
 CPPFLAGS?=
