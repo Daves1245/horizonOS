@@ -33,7 +33,7 @@ LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 
 KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
-kernel/kernel.o \
+$(ARCHDIR)/kernel.o \
 kernel/kheap.o \
 kernel/jury/test_paging.o \
 kernel/jury/test_vm.o \
@@ -51,9 +51,22 @@ $(ARCHDIR)/boot/crtn.o \
 $(ARCHDIR)/crtend.o \
 $(TEST_OBJS_DIR)/$(ARCHDIR)/crtbegin.o \
 
+# For i386, include crtbegin.o, crtend.o, and crtn.o
+# For x86_64, exclude them due to relocation issues with high memory addresses
+ifeq ($(HOSTARCH),i386)
+OBJS=\
+$(ARCHDIR)/boot/crti.o \
+$(ARCHDIR)/crtbegin.o \
+$(KERNEL_OBJS) \
+$(ARCHDIR)/crtend.o \
+$(ARCHDIR)/boot/crtn.o \
+
+else
 OBJS=\
 $(ARCHDIR)/boot/crti.o \
 $(KERNEL_OBJS) \
+
+endif
 
 # Test objs directory
 TEST_OBJS_DIR=jury/objs
@@ -69,16 +82,29 @@ $(TEST_KERNEL_OBJS) \
 # similarly remove from linker list
 # $(ARCHDIR)/crtbegin.o
 
+ifeq ($(HOSTARCH),i386)
+LINK_LIST=\
+$(LDFLAGS) \
+$(ARCHDIR)/boot/crti.o \
+$(ARCHDIR)/crtbegin.o \
+$(KERNEL_OBJS) \
+$(LIBS) \
+$(ARCHDIR)/crtend.o \
+$(ARCHDIR)/boot/crtn.o \
+
+else
 LINK_LIST=\
 $(LDFLAGS) \
 $(ARCHDIR)/boot/crti.o \
 $(KERNEL_OBJS) \
 $(LIBS) \
 
+endif
+
 .PHONY: all clean install install-headers install-kernel test-objs
 .SUFFIXES: .o .c .S .asm
 
-all: myos.kernel
+all: horizon.kernel
 
 # test build target - compiles objects to test/objs/ directory
 test-objs: $(TEST_OBJS)
@@ -103,13 +129,15 @@ $(TEST_OBJS_DIR)/$(ARCHDIR)/crtbegin.o $(TEST_OBJS_DIR)/$(ARCHDIR)/crtend.o:
 	@mkdir -p $(dir $@)
 	OBJ=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$OBJ" $@
 
-myos.kernel: $(OBJS) $(ARCHDIR)/linker.ld
+horizon.kernel: $(OBJS) $(ARCHDIR)/linker.ld
 	echo $(CC)
 	$(CC) -T $(ARCHDIR)/linker.ld -o $@ $(CFLAGS) $(LINK_LIST)
-	grub-file --is-x86-multiboot myos.kernel
-	objdump -d myos.kernel > myos.kernel.dis
-	objdump -t myos.kernel > myos.kernel.sym
-	readelf -a myos.kernel > myos.kernel.elf
+	@if [ "$(HOSTARCH)" = "i386" ]; then \
+		grub-file --is-x86-multiboot horizon.kernel; \
+	fi
+	objdump -d horizon.kernel > horizon.kernel.dis
+	objdump -t horizon.kernel > horizon.kernel.sym
+	readelf -a horizon.kernel > horizon.kernel.elf
 
 $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
 	OBJ=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$OBJ" $@
@@ -128,7 +156,7 @@ $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
 	fi
 
 clean:
-	rm -f myos.kernel myos.kernel.dis myos.kernel.sym myos.kernel.elf
+	rm -f horizon.kernel horizon.kernel.dis horizon.kernel.sym horizon.kernel.elf
 	rm -f $(OBJS) *.o */*.o */*/*.o
 	rm -f $(OBJS:.o=.d) *.d */*.d */*/*.d
 	rm -rf $(TEST_OBJS_DIR)
@@ -139,8 +167,8 @@ install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
-install-kernel: myos.kernel
+install-kernel: horizon.kernel
 	mkdir -p $(DESTDIR)$(BOOTDIR)
-	cp myos.kernel $(DESTDIR)$(BOOTDIR)
+	cp horizon.kernel $(DESTDIR)$(BOOTDIR)
 
 -include $(OBJS:.o=.d)

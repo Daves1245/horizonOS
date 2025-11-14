@@ -1,0 +1,303 @@
+
+horizon.kernel:     file format elf32-i386
+
+SYMBOL TABLE:
+00000000 l    df *ABS*	00000000 boot.o
+00000001 l       *ABS*	00000000 ALIGN
+00000002 l       *ABS*	00000000 MEMINFO
+00000003 l       *ABS*	00000000 FLAGS
+1badb002 l       *ABS*	00000000 MAGIC
+e4524ffb l       *ABS*	00000000 CHECKSUM
+00108020 l       .bss	00000000 stack_bottom
+0010c020 l       .bss	00000000 stack_top
+00000000 l    df *ABS*	00000000 crtstuff.c
+0010706c l     O .ctors	00000000 __CTOR_LIST__
+00107074 l     O .dtors	00000000 __DTOR_LIST__
+001050dc l     O .eh_frame	00000000 __EH_FRAME_BEGIN__
+00100010 l     F .text	00000000 deregister_tm_clones
+00100050 l     F .text	00000000 register_tm_clones
+00100090 l     F .text	00000000 __do_global_dtors_aux
+00108000 l     O .bss	00000001 completed.2
+00108004 l     O .bss	00000004 dtor_idx.1
+00100110 l     F .text	00000000 frame_dummy
+00108008 l     O .bss	00000018 object.0
+00000000 l    df *ABS*	00000000 tty.c
+0010c02c l     O .bss	00000004 terminal_row
+0010c028 l     O .bss	00000004 terminal_column
+0010c024 l     O .bss	00000001 terminal_color
+0010c020 l     O .bss	00000004 terminal_buffer
+00000000 l    df *ABS*	00000000 serial.c
+00000000 l    df *ABS*	00000000 timer.c
+0010c034 l     O .bss	00000004 tick_count
+00000000 l    df *ABS*	00000000 descriptor_tables.c
+0010c8b0 l     O .bss	00000800 idt
+00000000 l    df *ABS*	00000000 gdt.o
+00100c4d l       .text	00000000 .flush
+00000000 l    df *ABS*	00000000 arch/i386/interrupts/interrupt.asm
+00100c9c l       .text	00000000 isr_common_stub.stack_corruption
+00100cab l       .text	00000000 isr_common_stub.stack_ok
+00000000 l    df *ABS*	00000000 isr.c
+0010d0e0 l     O .bss	00000400 interrupt_handlers
+00000000 l    df *ABS*	00000000 stack_protector.c
+00000000 l    df *ABS*	00000000 halt.c
+00000000 l    df *ABS*	00000000 ctype.c
+00000000 l    df *ABS*	00000000 rand.c
+0010d4e0 l     O .bss	00000004 rng_state
+00000000 l    df *ABS*	00000000 paging.c
+00101780 l     F .text	000000ca alloc_frame.part.0
+00000000 l    df *ABS*	00000000 apic.c
+00000000 l    df *ABS*	00000000 arch/i386/apic/apic_asm.asm
+00101f00 l       .text	00000000 halt
+00000000 l    df *ABS*	00000000 rsdp.c
+00000000 l    df *ABS*	00000000 madt.c
+0010d500 l     O .bss	00000004 num_overrides
+0010d520 l     O .bss	000000c0 irq_overrides
+0010d5e4 l     O .bss	00000004 ioapic_address
+0010d5e0 l     O .bss	00000001 ioapic_id
+00000000 l    df *ABS*	00000000 string.c
+00000000 l    df *ABS*	00000000 keyboard.c
+0010d5e8 l     O .bss	00000004 shift_pressed
+00105080 l     O .rodata	0000003a scancode_to_ascii
+00105040 l     O .rodata	0000003a scancode_to_ascii_uppercase
+00000000 l    df *ABS*	00000000 hush.c
+0010d92c l     O .bss	00000004 num_commands
+0010d940 l     O .bss	00000050 hush_registry
+00107060 l     O .data	0000000c builtin_help
+00107054 l     O .data	0000000c builtin_echo
+00107048 l     O .data	0000000c builtin_clear
+0010703c l     O .data	0000000c builtin_paging_test
+00107030 l     O .data	0000000c builtin_vm_test
+00107024 l     O .data	0000000c builtin_maze
+00107018 l     O .data	0000000c builtin_display
+0010700c l     O .data	0000000c builtin_solve
+00000000 l    df *ABS*	00000000 maze.c
+001050bc l     O .rodata	00000004 CSWTCH.19
+00000000 l    df *ABS*	00000000 kernel.c
+00000000 l    df *ABS*	00000000 kheap.c
+00000000 l    df *ABS*	00000000 test_paging.c
+00000000 l    df *ABS*	00000000 test_vm.c
+00000000 l    df *ABS*	00000000 logger.c
+001050c8 l     O .rodata	00000014 CSWTCH.2
+001050c0 l     O .rodata	00000005 CSWTCH.3
+00000000 l    df *ABS*	00000000 printf.c
+00000000 l    df *ABS*	00000000 putchar.c
+00000000 l    df *ABS*	00000000 crtstuff.c
+00107070 l     O .ctors	00000000 __CTOR_END__
+001050dc l     O .eh_frame	00000000 __FRAME_END__
+00104f10 l     F .text	00000000 __do_global_ctors_aux
+00101510 g     F .text	00000003 system_halt
+001025d0 g     F .text	00000046 get_keyboard_global_irq
+00104ec0 g     F .text	00000045 putchar
+00101bb0 g     F .text	000000a9 map_page
+00101db0 g     F .text	0000000d get_ioapic_base
+00100950 g     F .text	00000052 init_serial
+00103280 g     F .text	000000a7 hush_execute_command
+001049c0 g     F .text	0000005c log
+00104610 g     F .text	0000001a kmalloc_p
+00101250 g     F .text	00000013 register_interrupt_handler
+00101490 g     F .text	00000001 isr_30
+00102920 g     F .text	00000017 setup_keyboard_irq
+00100de4 g       .text	00000000 isr33
+001034c0 g     F .text	000000c3 hush_handle_keypress
+00104b30 g     F .text	00000384 printf
+001012d0 g     F .text	00000001 isr_2
+001023f0 g     F .text	000001bf parse_madt
+00101a60 g     F .text	00000149 init_paging
+001045e0 g     F .text	0000002b kmalloc_a
+00100cd5 g       .text	00000000 isr4
+001026f0 g     F .text	00000056 memmove
+00100daa g       .text	00000000 isr27
+00100d24 g       .text	00000000 isr13
+001009b0 g     F .text	0000000a serial_transmit_empty
+00101430 g     F .text	00000001 isr_24
+001018d0 g     F .text	00000067 get_page
+00107008 g     O .data	00000004 __stack_chk_guard
+00102fd0 g     F .text	00000005 cmd_maze
+00102040 g     F .text	0000024e find_madt
+00100d78 g       .text	00000000 isr22
+00100d34 g       .text	00000000 isr15
+00104a20 g     F .text	0000005c logf
+00101330 g     F .text	00000001 isr_8
+00104280 g     F .text	00000005 display_maze
+00103650 g     F .text	00000056 clear_display_buffer
+001012c0 g     F .text	00000001 isr_1
+00101300 g     F .text	00000001 isr_5
+00102fc0 g     F .text	00000005 vm_test
+0010d9c0 g     O .bss	00000730 display_buffer
+00101f90 g     F .text	000000af find_rsdp
+00100d02 g       .text	00000000 isr9
+001013c0 g     F .text	00000001 isr_17
+001025b0 g     F .text	00000006 get_ioapic_address
+00100750 g     F .text	00000059 terminal_putchar_at
+001026b0 g     F .text	00000036 memcpy
+00100d82 g       .text	00000000 isr23
+0010707c g     O .dtors	00000000 .hidden __TMC_END__
+00100dbe g       .text	00000000 isr29
+00103030 g     F .text	0000009a hush_lookup_registry
+0010d0c0 g     O .bss	00000004 vga_cursor
+00107078 g     O .dtors	00000000 .hidden __DTOR_END__
+00102ff0 g     F .text	00000005 cmd_solve
+001013e0 g     F .text	00000001 isr_19
+001008a0 g     F .text	0000003d terminal_writestring
+00107004 g     O .data	00000004 vga_buffer
+00103000 g     F .text	00000029 hush_register_command
+00101ef0 g       .text	00000000 halt_without_apic
+00100dd0 g       .text	00000000 isr31
+00100a80 g     F .text	0000002f init_timer
+001015a0 g     F .text	00000026 isalphanum
+00101350 g     F .text	00000001 isr_10
+001013a0 g     F .text	00000001 isr_15
+00107000 g     O .data	00000000 .hidden __dso_handle
+00102860 g     F .text	00000001 itoa
+00100d6e g       .text	00000000 isr21
+00102870 g     F .text	00000001 itoa_hex
+00100300 g     F .text	0000003b terminal_putentryat_interrupt_debug
+00101370 g     F .text	00000001 isr_12
+001018b0 g     F .text	0000001b switch_page_directory
+0010d9a0 g     O .bss	00000004 next_set_id
+00101df0 g     F .text	00000009 get_local_apic_id
+00100db4 g       .text	00000000 isr28
+001012b0 g     F .text	00000001 isr_0
+00101620 g     F .text	00000033 random_range
+00101d70 g     F .text	00000011 ioapic_read
+0010c880 g     O .bss	00000028 gdt_entries
+00101410 g     F .text	00000001 isr_22
+0010f348 g     O .bss	00000004 placement_address
+00104680 g     F .text	00000159 test_paging
+00100cfa g       .text	00000000 isr8
+00100ac0 g     F .text	00000171 init_descriptor_tables
+001036b0 g     F .text	0000006b draw_help_text
+001014c0 g     F .text	0000003e __stack_chk_fail
+0010e100 g     O .bss	00001248 maze
+00100d64 g       .text	00000000 isr20
+00104f49 g     F .init	00000000 _init
+00102fe0 g     F .text	00000005 cmd_display
+001047e0 g     F .text	000001d3 test_vm
+001027d0 g     F .text	0000002f strnlen
+00100e80 g     F .text	0000001c has_err_code
+00104630 g     F .text	00000030 kmalloc_ap
+00100d2c g       .text	00000000 isr14
+001008e0 g     F .text	00000065 print_colored
+0010d4ec g     O .bss	00000004 nframes
+00100cdc g       .text	00000000 isr5
+00101d10 g     F .text	00000018 check_msr
+001012e0 g     F .text	00000001 isr_3
+0010d4e4 g     O .bss	00000004 current_directory
+00100580 g     F .text	000001ce terminal_putchar
+00104410 g     F .text	000001cb kernel_main
+00101d30 g     F .text	0000001b enable_api_hardware
+00100dda g       .text	00000000 isr32
+001009c0 g     F .text	0000001f serial_putchar
+00103270 g     F .text	00000001 hush_run
+00101d50 g     F .text	0000001a enable_apic_software
+00100220 g     F .text	0000003e update_hardware_cursor
+00102f80 g     F .text	0000002e cmd_clear
+00100210 g     F .text	0000000d terminal_setcolor
+00100180 g     F .text	0000008d terminal_initialize
+00104150 g     F .text	0000012e dfs_solve
+001007b0 g     F .text	0000003d terminal_write
+00101440 g     F .text	00000001 isr_25
+00100145 g     F .text	00000013 _start
+00102880 g     F .text	00000099 keyboard_interrupt_handler
+00101460 g     F .text	00000001 isr_27
+00101f10 g     F .text	00000071 validate_rsdp_checksum
+00110000 g       .bss	00000000 kernel_end
+00100470 g     F .text	00000106 terminal_scrolln
+00100cc0 g       .text	00000000 isr1
+00100a20 g     F .text	00000050 timer_interrupt_handler
+0010c060 g     O .bss	00000800 idt_entries
+00101380 g     F .text	00000001 isr_13
+00102800 g     F .text	00000056 strncmp
+00102ec0 g     F .text	0000004c cmd_help
+00100da0 g       .text	00000000 isr26
+00100d14 g       .text	00000000 isr11
+001013d0 g     F .text	00000001 isr_18
+00100ea0 g     F .text	00000235 debug_print_registers
+00103720 g     F .text	000005ee draw_maze
+00102670 g     F .text	00000034 memcmp
+00101580 g     F .text	00000014 isnum
+001015f0 g     F .text	00000021 random_next
+001007f0 g     F .text	000000a5 terminal_write_dec
+00101320 g     F .text	00000001 isr_7
+00100260 g     F .text	0000004d terminal_set_cursor
+001012f0 g     F .text	00000001 isr_4
+00101560 g     F .text	00000017 isalpha
+00101470 g     F .text	00000001 isr_28
+001009e0 g     F .text	0000003e serial_write
+0010d4e8 g     O .bss	00000004 kernel_directory
+00100a70 g     F .text	00000006 timer_ticks
+00101dc0 g     F .text	0000002e disable_pic
+00100d1c g       .text	00000000 isr12
+00101520 g     F .text	00000014 isprintable
+00102750 g     F .text	00000042 memset
+00100cb9 g       .text	00000000 isr0
+001003d0 g     F .text	00000092 terminal_scroll
+00101400 g     F .text	00000001 isr_21
+001030d0 g     F .text	0000019f hush_init
+00101270 g     F .text	00000033 isr_handler
+0010c860 g     O .bss	00000006 gdt_ptr
+00101420 g     F .text	00000001 isr_23
+0010d600 g     O .bss	0000032c hush_state
+00101d90 g     F .text	00000014 ioapic_write
+00100d8c g       .text	00000000 isr24
+0010c030 g     O .bss	00000004 serial_initialized
+00100d3e g       .text	00000000 isr16
+001002b0 g     F .text	0000004d terminal_putentryat_visual_debug
+001014a0 g     F .text	00000001 isr_31
+00104f58 g     F .fini	00000000 _fini
+00100cce g       .text	00000000 isr3
+00101e00 g     F .text	000000b8 configure_ioapic_irq_with_flags
+00101ec0 g     F .text	00000024 configure_ioapic_irq
+001015d0 g     F .text	00000017 seed_rng
+00104080 g     F .text	000000c1 can_move_to
+001011c0 g     F .text	00000089 vga_print_hex
+00101880 g     F .text	0000002e free_frame
+0010c040 g     O .bss	00000006 idtr
+00101940 g     F .text	00000118 map_physical_range
+00100dee g       .text	00000000 isr34
+00100ce6 g       .text	00000000 isr6
+00102620 g     F .text	00000043 get_keyboard_irq_flags
+00101850 g     F .text	00000029 alloc_frame
+00100d50 g       .text	00000000 isr18
+001010e0 g     F .text	0000005e vga_putchar
+00101340 g     F .text	00000001 isr_9
+00101660 g     F .text	00000119 page_fault
+00100df8 g       .text	00000000 isr_stub_table
+00101450 g     F .text	00000001 isr_26
+00101500 g     F .text	00000003 halt
+00100c31 g       .text	00000000 gdt_flush
+00101c60 g     F .text	00000069 unmap_page
+00101310 g     F .text	00000001 isr_6
+00100d0c g       .text	00000000 isr10
+00103330 g     F .text	00000183 parse_command_buffer
+00104660 g     F .text	00000015 kmalloc
+001035a0 g     F .text	000000ad maze_init
+00104a80 g     F .text	000000af log_demo
+00102f10 g     F .text	00000062 cmd_echo
+00104290 g     F .text	0000017b solve_maze
+00100d48 g       .text	00000000 isr17
+00102290 g     F .text	0000015d initialize_apic
+00100cc7 g       .text	00000000 isr2
+00101360 g     F .text	00000001 isr_11
+00100d5a g       .text	00000000 isr19
+00101390 g     F .text	00000001 isr_14
+00100c4e g       .text	00000000 idt_flush
+00100dc8 g       .text	00000000 isr30
+001027a0 g     F .text	00000026 strlen
+001013b0 g     F .text	00000001 isr_16
+0010d4f0 g     O .bss	00000004 frames
+00102fb0 g     F .text	00000005 paging_test
+001025c0 g     F .text	00000008 get_ioapic_id
+00100cf0 g       .text	00000000 isr7
+00103d10 g     F .text	00000366 generate_maze
+00100340 g     F .text	00000083 terminal_putentryat
+00100d96 g       .text	00000000 isr25
+00102940 g     F .text	0000056a init_keyboard
+00101140 g     F .text	0000007d vga_print
+00101480 g     F .text	00000001 isr_29
+00100c60 g       .text	00000000 isr_common_stub
+00101540 g     F .text	0000001e iswhitespace
+00101cd0 g     F .text	00000034 is_page_mapped
+001013f0 g     F .text	00000001 isr_20
+
+

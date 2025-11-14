@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "common/common.h"
+#include <common.h>
 
 uint32_t kmalloc_a(uint32_t sz); // page aligned
 uint32_t kmalloc_p(uint32_t sz, uint32_t *phys); // returns a physical address
