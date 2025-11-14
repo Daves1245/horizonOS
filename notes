@@ -1,4 +1,0 @@
-## PS/2
-Data is received by a microcontroller which is located on the motherboard. When a key is pressed, the microcontroller stores the relevant information inside the I/O port `0x60` and sends an interrupt request IRQ 1 to the PIC.
-
-

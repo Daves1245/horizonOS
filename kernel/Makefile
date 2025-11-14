@@ -159,6 +159,7 @@ clean:
 	rm -f horizon.kernel horizon.kernel.dis horizon.kernel.sym horizon.kernel.elf
 	rm -f $(OBJS) *.o */*.o */*/*.o
 	rm -f $(OBJS:.o=.d) *.d */*.d */*/*.d
+	rm -f *.log */*.log */*/*.log
 	rm -rf $(TEST_OBJS_DIR)
 
 install: install-headers install-kernel

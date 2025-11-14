@@ -18,6 +18,9 @@ test_boot.log
 limine.log
 kernel_test.log
 kernel_output.txt
+*.log
+*/*.log
+*/*/*.log
 
 # Vim files
 *.swp
@@ -28,4 +31,4 @@ kernel_output.txt
 *.log
 
 # disassembly debugging
-kernel/myos.kernel.*
+kernel/horizon.kernel*
