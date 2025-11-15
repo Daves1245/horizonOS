@@ -57,7 +57,7 @@ void generate_maze_eller() {
         // First, find all unique sets in current row
         int unique_sets[MAZE_WIDTH];
         int num_unique_sets = 0;
-        
+
         for (int x = 0; x < MAZE_WIDTH; x++) {
             int set = maze_eller[y][x].set_id;
             int already_found = 0;
@@ -82,7 +82,7 @@ void generate_maze_eller() {
                 if (maze_eller[y][x].set_id == current_set) {
                     // Random chance for vertical connection, but ensure at least one
                     int should_connect = random_range(100) < 40;
-                    
+
                     if (should_connect || !has_connection) {
                         maze_eller[y][x].bottom_wall = 0;
                         maze_eller[y + 1][x].type = CORRIDOR;

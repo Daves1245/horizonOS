@@ -3,6 +3,7 @@
 #include "../../apic/apic.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <halt.h>
 #include <kernel/tty.h>
 #include <i386/common/io.h>
 #include <i386/common/ctype.h>
@@ -130,7 +131,9 @@ static void wait_for_kbd_input() {
             return;
         }
     }
-    log_warning("[keyboard]: timeout waiting for input buffer\n");
+#ifdef DEBUG
+    log_debug("[keyboard]: timeout waiting for input buffer\n");
+#endif
 }
 
 // wait for keyboard controller output buffer to be full
@@ -141,13 +144,17 @@ static int wait_for_kbd_output() {
             return 1;
         }
     }
-    log_warning("[keyboard]: timeout waiting for output buffer\n");
+#ifdef DEBUG
+    log_debug("[keyboard]: timeout waiting for output buffer\n");
+#endif
     return 0;
 }
 
 // initialize PS/2 keyboard controller hardware
 static void init_ps2_controller() {
+#ifdef DEBUG
     log_debug("[keyboard]: initializing PS/2 controller...\n");
+#endif
 
     // disable both PS/2 ports
     wait_for_kbd_input();
@@ -181,10 +188,13 @@ static void init_ps2_controller() {
     if (wait_for_kbd_output()) {
         uint8_t result = inb(KEYBOARD_DATA_PORT);
         if (result == 0x55) {
+#ifdef DEBUG
             log_success("[keyboard]: controller self-test passed\n");
+#endif
         } else {
             log_error("Controller self-test failed: ");
             printf("0x%x\n", result);
+            halt();
         }
     }
 
@@ -194,7 +204,9 @@ static void init_ps2_controller() {
     if (wait_for_kbd_output()) {
         uint8_t result = inb(KEYBOARD_DATA_PORT);
         if (result == 0x00) {
+#ifdef DEBUG
             log_success("[keyboard]: keyboard port test passed\n");
+#endif
         } else {
             log_error("Keyboard port test failed: ");
             printf("0x%x\n", result);
@@ -211,20 +223,26 @@ static void init_ps2_controller() {
     if (wait_for_kbd_output()) {
         uint8_t ack = inb(KEYBOARD_DATA_PORT);
         if (ack == 0xFA) {
+#ifdef DEBUG
             log_debug("[keyboard]: keyboard reset ACK received\n");
+#endif
             // wait for self-test result
             if (wait_for_kbd_output()) {
                 uint8_t result = inb(KEYBOARD_DATA_PORT);
                 if (result == 0xAA) {
+#ifdef DEBUG
                     log_success("[keyboard]: keyboard self-test passed\n");
+#endif
                 } else {
-                    log_warning("keyboard self-test result: ");
+                    log_error("[keyboard]: keyboard self-test result: ");
                     printf("0x%x\n", result);
+                    halt();
                 }
             }
         } else {
-            log_warning("unexpected response to reset: ");
+            log_error("unexpected response to reset: ");
             printf("0x%x\n", ack);
+            halt();
         }
     }
 
@@ -234,10 +252,13 @@ static void init_ps2_controller() {
     if (wait_for_kbd_output()) {
         uint8_t ack = inb(KEYBOARD_DATA_PORT);
         if (ack == 0xFA) {
+#ifdef DEBUG
             log_success("[keyboard]: scanning enabled\n");
+#endif
         } else {
             log_error("[keyboard]: failed to enable scanning: ");
             printf("0x%x\n", ack);
+            halt();
         }
     }
 
@@ -286,7 +307,9 @@ void setup_keyboard_irq() {
 }
 
 void init_keyboard() {
+#ifdef DEBUG
     log_info("[keyboard]: initializing PS/2 keyboard driver\n");
+#endif
 
     // initialize PS/2 controller hardware
     init_ps2_controller();

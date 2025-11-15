@@ -27,10 +27,9 @@ extern uint32_t placement_address;
 void kernel_main(void) {
     // debug output w/ qemu
     init_serial();
+    log_debug("serial port initialized for debugging\n");
 
     log_demo();
-
-    log_debug("serial port initialized for debugging\n");
 
     // we'll use this to test paging some amount after the end of the kernel
     placement_address = (uint32_t) &kernel_end;
@@ -39,11 +38,12 @@ void kernel_main(void) {
     init_descriptor_tables();
     terminal_initialize();
 
-    log_info("initializing paging\n");
     init_paging();
     log_success("paging enabled\n");
 
-    log_info("[kernel]: check_msr (apic base msr): %d", check_msr());
+#ifdef DEBUG
+    log_debug("[kernel]: check_msr (apic base msr): %d", check_msr());
+#endif
 
     // Initialize ACPI/APIC system
     log_info("ACPI/APIC Initialization\n");
@@ -55,7 +55,9 @@ void kernel_main(void) {
     disable_pic();
 
     // configure IOAPIC for keyboard interrupt
-    log_info("Configuring Keyboard Interrupt\n");
+#ifdef DEBUG
+    log_debug("Configuring Keyboard Interrupt\n");
+#endif
     uint32_t ioapic_addr = get_ioapic_address();
     if (ioapic_addr == 0) {
         log_error("[kernel]: ERROR: No IOAPIC found in MADT\n");
@@ -99,11 +101,10 @@ void kernel_main(void) {
     test_vm();
 
     // everything is now setup and we are ready to enable interrupts again
-    printf("[kernel]: re-enabling interrupts...\n");
     asm volatile("sti");
-    log_success("[kernel]: interrupts enabled\n");
+    log_success("[kernel]: interrupts re-enabled\n");
 
-    log_success("[kernel]: system ready!\n");
+    log_success("[kernel]: system ready\n");
 
     log_info("try typing :)\n");
 
