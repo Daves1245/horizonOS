@@ -1,6 +1,6 @@
 #include "keyboard.h"
 #include "../../interrupts/isr.h"
-#include "../../apic/apic.h"
+#include <apic/apic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <halt.h>

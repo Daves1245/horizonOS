@@ -8,7 +8,6 @@ test:
 
 # i386 build with GRUB
 i386:
-	@echo "Building i386 ISO with GRUB..."
 	@export ARCH=i386 && ./build.sh
 	@rm -rf isodir/i386
 	@mkdir -p isodir/i386/boot/grub
@@ -17,11 +16,9 @@ i386:
 	@echo '	multiboot /boot/horizon.kernel' >> isodir/i386/boot/grub/grub.cfg
 	@echo '}' >> isodir/i386/boot/grub/grub.cfg
 	@grub-mkrescue -o horizon-i386.iso isodir/i386
-	@echo "i386 ISO created: horizon-i386.iso"
 
 # x86_64 build with Limine
 x86_64:
-	@echo "Building x86_64 ISO with Limine..."
 	@export ARCH=x86_64 && ./build.sh
 	@rm -rf isodir/x86_64
 	@mkdir -p isodir/x86_64/
@@ -37,7 +34,6 @@ x86_64:
 		-o horizon-x86_64.iso \
 		isodir/x86_64/
 	@limine bios-install horizon-x86_64.iso
-	@echo "x86_64 ISO created: horizon-x86_64.iso"
 
 clean:
 	@$(MAKE) -C libc clean

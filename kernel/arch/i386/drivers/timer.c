@@ -1,4 +1,4 @@
-#include "../apic/apic.h"
+#include <apic/apic.h>
 #include "../interrupts/isr.h"
 #include <stdint.h>
 #include <stdio.h>

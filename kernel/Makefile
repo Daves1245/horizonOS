@@ -39,6 +39,10 @@ kernel/kheap.o \
 kernel/jury/test_paging.o \
 kernel/jury/test_vm.o \
 kernel/common/logger.o \
+kernel/apic/rsdp.o \
+kernel/apic/apic.o \
+kernel/apic/madt.o \
+kernel/halt.o
 
 # these were causing issues with relocation,
 # for now let's ignore them. afaik they're only useful for
@@ -158,8 +162,8 @@ $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
 
 clean:
 	rm -f horizon.kernel horizon.kernel.dis horizon.kernel.sym horizon.kernel.elf
-	rm -f $(OBJS) *.o */*.o */*/*.o
-	rm -f $(OBJS:.o=.d) *.d */*.d */*/*.d
+	rm -f $(OBJS) *.o */*.o */*/*.o */*/*/*.o */*/*/*/*.o */*/*/*/*/*.o
+	rm -f $(OBJS:.o=.d) *.d */*.d */*/*.d */*/*/*.d */*/*/*/*.d */*/*/*/*/*.d
 	rm -f *.log */*.log */*/*.log
 	rm -rf $(TEST_OBJS_DIR)
 

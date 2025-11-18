@@ -6,12 +6,12 @@
 #include "memory/paging.h"
 #include "gdt/descriptor_tables.h"
 #include "common/common.h"
-#include <i386/common/halt.h>
+#include <halt.h>
 #include <kernel/logger.h>
 #include <i386/drivers/shell/hush.h>
-#include "apic/apic.h"
-#include "apic/madt.h"
-#include "apic/rsdp.h"
+#include <apic/apic.h>
+#include <apic/madt.h>
+#include <apic/rsdp.h>
 #include "drivers/keyboard/keyboard.h"
 #include "drivers/serial.h"
 #include "drivers/timer.h"
