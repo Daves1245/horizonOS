@@ -53,6 +53,7 @@ void configure_ioapic_irq(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_
 void configure_ioapic_irq_with_flags(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_t dest_apic_id, uint16_t flags);
 void disable_pic();
 
-
+// abstractino for architecture-independent implementation
+void apic_send_eoi(void);
 
 #endif

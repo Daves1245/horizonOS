@@ -121,3 +121,16 @@ void configure_ioapic_irq(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_
     // default flags: active high, edge triggered
     configure_ioapic_irq_with_flags(ioapic_base, irq, vector, dest_apic_id, 0);
 }
+
+// Send End of Interrupt (EOI) to Local APIC
+// Works on both i386 (xAPIC) and x86_64 (will use x2APIC there)
+void apic_send_eoi(void) {
+#ifdef __x86_64__
+    // x2APIC: Write to MSR 0x80B
+    write_msr(0x80B, 0, 0);
+#else
+    // xAPIC: Write to memory-mapped EOI register
+    volatile uint32_t *apic_eoi = (volatile uint32_t *)(APIC_BASE + APIC_EOI);
+    *apic_eoi = 0;
+#endif
+}

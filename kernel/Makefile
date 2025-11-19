@@ -38,6 +38,8 @@ $(ARCHDIR)/kernel.o \
 kernel/kheap.o \
 kernel/common/logger.o \
 kernel/drivers/serial.o \
+kernel/drivers/timer.o \
+kernel/drivers/keyboard/keyboard.o \
 kernel/apic/rsdp.o \
 kernel/apic/apic.o \
 kernel/apic/madt.o \

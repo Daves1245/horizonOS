@@ -1,5 +1,5 @@
 #include <apic/apic.h>
-#include "../interrupts/isr.h"
+#include <interrupts/isr.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <kernel/tty.h>
@@ -14,7 +14,7 @@ void timer_interrupt_handler(struct interrupt_context *regs) {
         printf("[timer]: tick %d\n", tick_count);
     }
 
-    // architecture independent abstraction for send end of interrupt
+    // send APIC EOI (architecture-independent)
     apic_send_eoi();
 }
 

@@ -135,12 +135,43 @@ void kernel_main(void) {
     serial_write("APIC supported\n");
 
     if (rsdp_request.response == NULL) {
-        serial_write("error getting rsdp address");
+        serial_write("error getting rsdp address\n");
         halt();
     }
 
-    struct apic_header *rsdp_table = (struct apic_header *) rsdp_request.response->address;
+    initialize_apic();
+    disable_pic();
 
+    uint32_t ioapic_addr = get_ioapic_address();
+
+    if (ioapic_addr == 0) {
+        serial_write("ioapic not found\n");
+        halt();
+    }
+
+    uint32_t kbd_gsi = get_keyboard_global_irq();
+    uint16_t kbd_flags = get_keyboard_irq_flags();
+
+    uint8_t local_apic_id = get_local_apic_id();
+
+    // configure timer interrupt (IRQ 0 -> vector 32)
+    // according to MADT: IRQ 0 is overriden to GSI 2
+    uint32_t timer_gsi = 2; // madt override
+    uint16_t timer_flags = 0x0; // madt itself
+    serial_write("configuring timer\n");
+    configure_ioapic_irq_with_flags((void *) ioapic_addr, timer_gsi, 32, local_apic_id, timer_flags);
+    serial_write("timer interrupt configured via IOAPIC\n");
+    configure_ioapic_irq_with_flags((void *) ioapic_addr, kbd_gsi, 33, local_apic_id, kbd_flags);
+
+    serial_write("timer initialization\n");
+    init_timer();
+
+    serial_write("keyboard initialization\n");
+    init_keyboard();
+
+    // ready to enable interrupts again
+    asm volatile("sti");
+    serial_write("interrupts re-enabled");
     //printf("check_msr (apic base msr): %d", check_msr());
 
     hcf();

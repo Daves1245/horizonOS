@@ -1,13 +1,14 @@
 #include "keyboard.h"
-#include "../../interrupts/isr.h"
+#include <interrupts/isr.h>
 #include <apic/apic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <halt.h>
 #include <kernel/tty.h>
 #include <drivers/io.h>
-#include <i386/common/ctype.h>
+#ifdef __i386__
 #include <i386/drivers/shell/hush.h>
+#endif
 
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_STATUS_PORT 0x64
@@ -291,12 +292,14 @@ void keyboard_interrupt_handler(struct interrupt_context *regs) {
 
             if (c != 0) {
                 printf("%c", c);
+#ifdef __i386__
                 hush_handle_keypress(c);
+#endif
             }
         }
     }
 
-    // architecture-independent send end of interrupt
+    // send apic EOI (End of Interrupt) - architecture-independent
     apic_send_eoi();
 }
 
