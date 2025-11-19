@@ -5,8 +5,8 @@
 #include <kernel/logger.h>
 #include <string.h>
 
-#include <jury/test_paging.h>
-#include <jury/test_vm.h>
+#include <jury/i386/test_paging.h>
+#include <jury/i386/test_vm.h>
 #include <i386/drivers/shell/builtins/maze.h>
 
 static size_t min(size_t a, size_t b) {

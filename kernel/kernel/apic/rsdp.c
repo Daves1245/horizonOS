@@ -3,7 +3,13 @@
 #include "madt.h"
 #include <string.h>
 #include <stdio.h>
-#include "../memory/paging.h"
+
+// deliberately keep separate to emphasize x86_64 should not be handling paging
+#ifdef __i386__
+#include <i386/memory/paging.h>
+#else
+#include <x86_64/memory/paging.h>
+#endif
 
 uint32_t *find_rsdp() {
     uint32_t *rsdp_addr;

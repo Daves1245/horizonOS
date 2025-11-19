@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <halt.h>
 #include <kernel/tty.h>
-#include <i386/common/io.h>
+#include <drivers/io.h>
 #include <i386/common/ctype.h>
 #include <i386/drivers/shell/hush.h>
 

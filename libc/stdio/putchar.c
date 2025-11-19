@@ -3,11 +3,7 @@
 #if defined(__is_libk)
 #include <kernel/tty.h>
 
-#ifdef __x86_64__
-#include "../../kernel/arch/x86_64/drivers/serial.h"
-#else
-#include "../../kernel/arch/i386/drivers/serial.h"
-#endif
+#include <drivers/serial.h>
 
 extern int serial_initialized;
 #endif

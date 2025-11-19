@@ -36,9 +36,8 @@ KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
 $(ARCHDIR)/kernel.o \
 kernel/kheap.o \
-kernel/jury/test_paging.o \
-kernel/jury/test_vm.o \
 kernel/common/logger.o \
+kernel/drivers/serial.o \
 kernel/apic/rsdp.o \
 kernel/apic/apic.o \
 kernel/apic/madt.o \

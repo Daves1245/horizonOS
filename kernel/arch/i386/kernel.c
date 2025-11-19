@@ -13,10 +13,10 @@
 #include <apic/madt.h>
 #include <apic/rsdp.h>
 #include "drivers/keyboard/keyboard.h"
-#include "drivers/serial.h"
+#include <drivers/serial.h>
 #include "drivers/timer.h"
-#include "jury/test_paging.h"
-#include "jury/test_vm.h"
+#include <jury/i386/test_paging.h>
+#include <jury/i386/test_vm.h>
 
 // declare kernel_end from linker script
 extern uint32_t kernel_end;

@@ -15,7 +15,7 @@ INCLUDEDIR?=$(PREFIX)/include
 LIBDIR?=$(EXEC_PREFIX)/lib
 
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude
+CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude -I../kernel/kernel/
 LIBK_CFLAGS:=$(CFLAGS)
 LIBK_CPPFLAGS:=$(CPPFLAGS) -D__is_libk -I../kernel/arch/i386
 
@@ -34,12 +34,7 @@ stdio/printf.o \
 stdio/putchar.o \
 stdio/puts.o \
 stdlib/abort.o \
-string/memcmp.o \
-string/memcpy.o \
-string/memmove.o \
-string/memset.o \
-string/strlen.o \
-string/itoa.o
+string/string.o
 
 HOSTEDOBJS=\
 $(ARCH_HOSTEDOBJS) \

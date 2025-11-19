@@ -1,5 +1,5 @@
-#include "apic.h"
-#include "../common/io.h"
+#include <apic/apic.h>
+#include <drivers/io.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <kernel/tty.h>
