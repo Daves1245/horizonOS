@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <kernel/tty.h>
+#include <kernel/logger.h>
 
 int check_msr() {
     uint32_t eax, ebx, ecx, edx;
@@ -106,14 +107,12 @@ void configure_ioapic_irq_with_flags(void *ioapic_base, uint8_t irq, uint8_t vec
     // configure high 32 bits: destination APIC ID in bits 56-63 (upper 8 bits of high register)
     uint32_t high_val = (uint32_t)dest_apic_id << 24;
 
-    log_debug("Configuring IOAPIC: ");
-    printf("IRQ %d -> vector %d (dest=%d, flags=0x%x)\n", irq, vector, dest_apic_id, flags);
+    log_debug("configuring IOAPIC: IRQ %d -> vector %d (dest=%d, flags=0x%x)\n", irq, vector, dest_apic_id, flags);
 
     ioapic_write(ioapic_base, high_reg, high_val);
     ioapic_write(ioapic_base, low_reg, low_val);
 
-    log_success("IOAPIC IRQ configured: ");
-    printf("%d\n", irq);
+    log_success("IOAPIC IRQ configured: %d\n", irq);
 }
 
 // configure IOAPIC pin to route to specific vector (legacy wrapper)

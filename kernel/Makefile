@@ -36,7 +36,6 @@ KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
 $(ARCHDIR)/kernel.o \
 kernel/kheap.o \
-kernel/common/logger.o \
 kernel/drivers/serial.o \
 kernel/drivers/timer.o \
 kernel/drivers/keyboard/keyboard.o \
