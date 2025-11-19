@@ -134,25 +134,38 @@ void kernel_main(void) {
     halt_without_apic();
     serial_write("APIC supported\n");
 
+    serial_write("checking rsdp response\n");
     if (rsdp_request.response == NULL) {
         serial_write("error getting rsdp address\n");
         halt();
     }
+    serial_write("rsdp response OK\n");
 
+    serial_write("initializing apic\n");
     initialize_apic();
-    disable_pic();
+    serial_write("apic initialized\n");
 
+    serial_write("disabling pic\n");
+    disable_pic();
+    serial_write("pic disabled\n");
+
+    serial_write("getting ioapic address\n");
     uint32_t ioapic_addr = get_ioapic_address();
 
     if (ioapic_addr == 0) {
         serial_write("ioapic not found\n");
         halt();
     }
+    serial_write("ioapic address obtained\n");
 
+    serial_write("getting keyboard irq info\n");
     uint32_t kbd_gsi = get_keyboard_global_irq();
     uint16_t kbd_flags = get_keyboard_irq_flags();
+    serial_write("keyboard irq info obtained\n");
 
+    serial_write("getting local apic id\n");
     uint8_t local_apic_id = get_local_apic_id();
+    serial_write("local apic id obtained\n");
 
     // configure timer interrupt (IRQ 0 -> vector 32)
     // according to MADT: IRQ 0 is overriden to GSI 2
