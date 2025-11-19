@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <kernel/logger.h>
+#include <drivers/serial.h>
 
 // deliberately keep separate to emphasize x86_64 should not be handling paging
 #ifdef __i386__
