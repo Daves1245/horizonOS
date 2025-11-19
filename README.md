@@ -1,34 +1,39 @@
 # Horizon OS
 
-A custom operating system kernel written in C for the i386 architecture.
+A toy kernel written in C targeting both x86 and x86_64
 
-## Current Features ✅
+## Currently Implemented Features
 
-### Features
+### i386
 - [x] GDT
 - [x] Segmentation
 - [x] ISR/IQR support
-- [x] Virtual Memory - Paging and heap management
+- [x] Paging
+- [x] Heap allocated memory
 - [x] APIC support
 - [x] ACPI configuration
-- [x] I/O APIC - Interrupt routing and management
+- [x] Keyboard driver
+- [x] Timer driver
+- [x] Makeshift shell
+- [x] Logging
 
-### Drivers
-- [x] Serial Debugging - qemu debug output via serial console
-- [x] Keyboard - Basic input handling
-- [x] Timer - System timer functionality
-- [x] TTY Driver - Terminal interface
+### x86_64
+- [x] Limine support
+- [x] Logging
+- [x] APIC support
 
-### Misc.
-- [x] Custom logging - with colors!
-
-### Libraries & Data Structures
+### Custom libc implementation (bootstrapped)
 - [x] Standard Library - basic stdio, stdlib, string functions
 
-## Planned features
+## Timeline
 
-- [ ] Hush - Horizon Utility Shell (Basic shell)
+### i386
 - [ ] Graphics Driver - VESA VBE framebuffer, or proper support
+
+### x86_64
+- [ ] Hush - Horizon Utility Shell (Basic shell)
+
+### Both
 - [ ] File System - Basic filesystem implementation (FAT32 or custom)
 - [ ] System Calls - User/kernel mode interface
 - [ ] Text editor - vim worsened
@@ -42,10 +47,9 @@ A custom operating system kernel written in C for the i386 architecture.
 - [ ] Ethernet driver
 - [ ] USB driver
 - [ ] ELF execution
-
 - [ ] GUI Framework - basic windowing system
 
-## Building & Testing
+## Building & Run
 
 ```bash
 
@@ -60,12 +64,6 @@ A custom operating system kernel written in C for the i386 architecture.
 
 ```
 
-## Architecture
-
-- **Target**: i386 (32-bit x86) and x86_64, with a focus on i386
-- **Bootloader**: GRUB
-- **Emulation**: QEMU
-
 ---
 
-*[I saw a man pursuing the horizon](https://www.poetryfoundation.org/poems/50457/i-saw-a-man-pursuing-the-horizon)*
+*[vibes](https://www.poetryfoundation.org/poems/50457/i-saw-a-man-pursuing-the-horizon)*
