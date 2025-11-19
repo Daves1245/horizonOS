@@ -53,10 +53,12 @@ else
             -vga std \
             -machine pc,smm=off \
             -d cpu,int,guest_errors,exec \
-            -D qemu.log
+            -D qemu.log \
+            -serial file:serial.log
     else
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
             -vga std \
-            -machine pc,smm=off
+            -machine pc,smm=off \
+            -serial stdio
     fi
 fi
