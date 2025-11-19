@@ -21,11 +21,7 @@ echo "Running $ARCH (ISO: $ISO_FILE)"
 
 if [ "$USE_CDROM" = "1" ]; then
     # i386: Direct kernel boot with ISO as CD-ROM
-    if [ "$1" = "gdb" ]; then
-        $QEMU_BIN -cdrom $ISO_FILE -S -s -kernel $KERNEL_PATH \
-            -vga std \
-            -serial file:serial.log
-    elif [ "$1" = "debug" ]; then
+    if [ "$1" = "debug" ]; then
         $QEMU_BIN -cdrom $ISO_FILE -kernel $KERNEL_PATH \
             -vga std \
             -monitor stdio \
@@ -49,11 +45,12 @@ else
     # x86_64: Boot from disk via Limine
     if [ "$1" = "debug" ]; then
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
-            -S -s \
             -vga std \
             -machine pc,smm=off \
             -d cpu,int,guest_errors,exec \
             -D qemu.log \
+            -no-reboot \
+            -no-shutdown \
             -serial file:serial.log
     else
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
