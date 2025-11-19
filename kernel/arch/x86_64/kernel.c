@@ -87,6 +87,8 @@ int check_msr() {
 extern uint64_t kernel_end;
 extern uint64_t placement_address;
 
+uint64_t rsdp_addr;
+
 void kernel_main(void) {
     // Early initialization logging
     // Ensure the bootloader actually understands our base revision (see spec).
@@ -139,6 +141,8 @@ void kernel_main(void) {
         serial_write("error getting rsdp address\n");
         halt();
     }
+
+    rsdp_addr = (uint64_t) rsdp_request.response->address;
     serial_write("rsdp response OK\n");
 
     serial_write("initializing apic\n");
@@ -187,5 +191,6 @@ void kernel_main(void) {
     serial_write("interrupts re-enabled");
     //printf("check_msr (apic base msr): %d", check_msr());
 
+    // halt and catch fire (disable interrupts for now)
     hcf();
 }
