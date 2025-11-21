@@ -49,10 +49,38 @@ A toy kernel written in C targeting both x86 and x86_64
 - [ ] ELF execution
 - [ ] GUI Framework - basic windowing system
 
-## Build & Run
+## Dependencies
 
+### Ubuntu/Debian
 ```bash
+sudo apt install cmake nasm qemu-system-x86 xorriso grub-pc-bin grub-common gcc
+```
+### Arch Linux
+```bash
+sudo pacman -S cmake nasm qemu-system-x86 libisoburn grub gcc
 
+# Cross-compilers and Limine
+yay -S i686-elf-gcc limine
+```
+
+### macOS
+```bash
+brew install cmake nasm qemu xorriso grub
+
+# Cross-compilers and Limine: build from source
+# See: https://wiki.osdev.org/GCC_Cross-Compiler
+```
+
+A cross compiler and Limine are needed to run the project. Follow
+the installation instructions at the following:
+
+
+A cross compiler targeting i386 for your host: https://wiki.osdev.org/GCC_Cross-Compiler
+Limine: https://github.com/limine-bootloader/limine/blob/v10.x/INSTALL.md
+
+
+## Build & Run
+```bash
 # i386
 cmake --preset i386
 cmake --build --preset i386
@@ -63,10 +91,9 @@ cmake --build --preset x86_64
 
 # Run with qemu
 ./qemu.sh # will automatically detect architecture
-
 ```
 
-see [CMAKE_BUILD.md](CMAKE_BUILD.md) for more details.
+See [CMAKE_BUILD.md](CMAKE_BUILD.md) for more details.
 
 ---
 

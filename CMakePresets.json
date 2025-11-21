@@ -1,0 +1,42 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "i386",
+      "displayName": "i386 Architecture",
+      "description": "Build for i386 with i686-elf-gcc",
+      "binaryDir": "${sourceDir}/build/i386",
+      "cacheVariables": {
+        "ARCH": "i386"
+      }
+    },
+    {
+      "name": "x86_64",
+      "displayName": "x86_64 Architecture",
+      "description": "Build for x86_64 with x86_64-elf-gcc",
+      "binaryDir": "${sourceDir}/build/x86_64",
+      "cacheVariables": {
+        "ARCH": "x86_64"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "i386",
+      "displayName": "Build i386",
+      "configurePreset": "i386",
+      "description": "Build i386 kernel and create ISO"
+    },
+    {
+      "name": "x86_64",
+      "displayName": "Build x86_64",
+      "configurePreset": "x86_64",
+      "description": "Build x86_64 kernel and create ISO"
+    }
+  ]
+}
