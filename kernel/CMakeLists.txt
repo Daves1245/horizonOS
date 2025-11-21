@@ -51,9 +51,12 @@ if(ARCH STREQUAL "i386")
     set(USE_CRTBEGIN ON)
 
 elseif(ARCH STREQUAL "x86_64")
+    # Include uACPI for x86_64 ACPI support
+    include(${CMAKE_SOURCE_DIR}/uacpi/uacpi.cmake)
+
     set(KERNEL_ARCH_C_FLAGS -no-pie -mcmodel=kernel -fno-pic -fstack-protector -mstack-protector-guard=global -mno-red-zone -mno-sse -mno-mmx -mno-sse2 -mno-avx -msoft-float)
     set(KERNEL_ARCH_COMPILE_DEFS "__x86_64__")
-    set(KERNEL_ARCH_INCLUDE_DIRS ${ARCHDIR}/include)
+    set(KERNEL_ARCH_INCLUDE_DIRS ${ARCHDIR}/include ${UACPI_INCLUDES})
 
     set(KERNEL_ARCH_SOURCES
         ${ARCHDIR}/boot/boot.S
@@ -68,6 +71,7 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/memory/paging.c
         ${ARCHDIR}/asm/interrupt.S
         ${ARCHDIR}/asm/apic_asm.S
+        ${UACPI_SOURCES}
     )
 
     set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/${ARCHDIR}/linker.ld)
