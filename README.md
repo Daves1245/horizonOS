@@ -1,4 +1,4 @@
-# Horizon OS
+# HorizonOS
 
 A toy kernel written in C targeting both x86 and x86_64
 
@@ -49,20 +49,24 @@ A toy kernel written in C targeting both x86 and x86_64
 - [ ] ELF execution
 - [ ] GUI Framework - basic windowing system
 
-## Building & Run
+## Build & Run
 
 ```bash
 
-# Clean build artifacts
-./clean.sh
+# i386
+cmake --preset i386
+cmake --build --preset i386
 
-# Build the kernel
-./iso.sh
+# x86_64
+cmake --preset x86_64
+cmake --build --preset x86_64
 
-# Run in QEMU
-./qemu.sh
+# Run with qemu
+./qemu.sh # will automatically detect architecture
 
 ```
+
+see [CMAKE_BUILD.md](CMAKE_BUILD.md) for more details.
 
 ---
 
