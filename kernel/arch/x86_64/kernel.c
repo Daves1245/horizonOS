@@ -33,7 +33,7 @@ static volatile struct limine_framebuffer_request framebuffer_request = {
 
 // Request HHDM (Higher Half Direct Map) from Limine
 __attribute__((used, section(".limine_requests")))
-static volatile struct limine_hhdm_request hhdm_request = {
+volatile struct limine_hhdm_request hhdm_request = {
     .id = LIMINE_HHDM_REQUEST,
     .revision = 0,
 };
@@ -87,7 +87,8 @@ int check_msr() {
 extern uint64_t kernel_end;
 extern uint64_t placement_address;
 
-uint64_t rsdp_addr;
+#include <apic/rsdp.h>
+virt_addr_t rsdp_addr;
 
 void kernel_main(void) {
     // Early initialization logging
@@ -129,7 +130,7 @@ void kernel_main(void) {
     }
 
     // initialize placement address to end of kernel
-    //placement_address = (uintptr_t) &kernel_end;
+    placement_address = (virt_addr_t) &kernel_end + hhdm_request.response->offset;
 
     init_serial();
 
@@ -142,8 +143,27 @@ void kernel_main(void) {
         halt();
     }
 
-    rsdp_addr = (uint64_t) rsdp_request.response->address;
+    // Limine provides physical address, we need to add HHDM offset for virtual address
+    uint64_t hhdm_offset = hhdm_request.response->offset;
+    uint64_t rsdp_phys = (uint64_t)rsdp_request.response->address;
+
+    log_info("RSDP phys: 0x%x\n", (uint32_t)rsdp_phys);
+    log_info("HHDM offset: 0x%x%x\n", (uint32_t)(hhdm_offset >> 32), (uint32_t)hhdm_offset);
+
+    // Test HHDM access - try reading from physical address 0x1000 via HHDM
+    serial_write("Testing HHDM access at offset+0x1000...\n");
+    volatile uint8_t *test_addr = (uint8_t *)(hhdm_offset + 0x1000);
+    uint8_t test_val = *test_addr;  // Should not crash if HHDM works
+    log_info("HHDM test read successful, value: 0x%x\n", test_val);
+
+    rsdp_addr = rsdp_phys + hhdm_offset;
+    log_info("RSDP virt: 0x%x%x\n", (uint32_t)(rsdp_addr >> 32), (uint32_t)rsdp_addr);
     serial_write("rsdp response OK\n");
+
+    // Map RSDP page (base revision 3 doesn't map ACPI/reserved memory)
+    serial_write("Mapping RSDP page...\n");
+    map_physical_range(rsdp_phys, 4096, 1, 1);  // Map 4KB, kernel, writable
+    serial_write("RSDP page mapped\n");
 
     serial_write("initializing apic\n");
     initialize_apic();
@@ -168,6 +188,16 @@ void kernel_main(void) {
     serial_write("keyboard irq info obtained\n");
 
     serial_write("getting local apic id\n");
+
+    // Map Local APIC (at 0xfee00000) and I/O APIC (at ioapic_addr)
+    serial_write("Mapping Local APIC...\n");
+    map_physical_range(0xfee00000, 4096, 1, 1);  // Local APIC is at 0xfee00000
+    serial_write("Local APIC mapped\n");
+
+    serial_write("Mapping I/O APIC...\n");
+    map_physical_range(ioapic_addr, 4096, 1, 1);  // Map I/O APIC
+    serial_write("I/O APIC mapped\n");
+
     uint8_t local_apic_id = get_local_apic_id();
     serial_write("local apic id obtained\n");
 

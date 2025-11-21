@@ -4,17 +4,24 @@
 #include <string.h>
 #include <stdio.h>
 #include <kernel/logger.h>
-#include <drivers/serial.h>
 
 // deliberately keep separate to emphasize x86_64 should not be handling paging
 #ifdef __i386__
 #include <i386/memory/paging.h>
-#else
-#include <x86_64/memory/paging.h>
 #endif
 
-uint32_t *find_rsdp() {
-    uint32_t *rsdp_addr;
+#ifdef __x86_64__
+#include <x86_64/memory/paging.h>
+#include <limine.h>
+
+// in x86_64, we get this from limine
+extern virt_addr_t rsdp_addr;
+#endif
+
+#include <drivers/serial.h>
+
+virt_addr_t find_rsdp() {
+    virt_addr_t rsdp_addr_found;
 
     // EBDA (Extended BIOS Data Area)
     uint16_t *ebda_ptr = (uint16_t *) 0x40E;
@@ -24,43 +31,57 @@ uint32_t *find_rsdp() {
     /* Note: (uint32_t *) + 16 = (char *)(uint32_t *) + 16 * sizeof(uint32_t) */
 
     // first 1KB of EBDA on 16-byte boundaries
-    for (rsdp_addr = (uint32_t *) ebda_addr;
-            rsdp_addr < (uint32_t *) (ebda_addr + 1024);
-            rsdp_addr = (uint32_t *) ((uint8_t *) rsdp_addr + 16)) {
-        if (strncmp((char *) rsdp_addr, "RSD PTR ", 8) == 0) {
-            if (validate_rsdp_checksum(rsdp_addr) == 0) {
-                return rsdp_addr;
+    for (rsdp_addr_found = ebda_addr;
+            rsdp_addr_found < ebda_addr + 1024;
+            rsdp_addr_found += 16) {
+        if (strncmp((char *) rsdp_addr_found, "RSD PTR ", 8) == 0) {
+            if (validate_rsdp_checksum(rsdp_addr_found) == 0) {
+                return rsdp_addr_found;
             }
         }
     }
 
     // if not found in EBDA, search BIOS ROM area on 16-byte boundaries
-    for (rsdp_addr = (uint32_t *) 0x000E0000;
-            rsdp_addr < (uint32_t *) 0x00100000;
-            rsdp_addr = (uint32_t *) ((uint8_t *) rsdp_addr + 16)) {
-        if (strncmp((char *) rsdp_addr, "RSD PTR ", 8) == 0) {
-            if (validate_rsdp_checksum(rsdp_addr) == 0) {
-                return rsdp_addr;
+    for (rsdp_addr_found = 0x000E0000;
+            rsdp_addr_found < 0x00100000;
+            rsdp_addr_found += 16) {
+        if (strncmp((char *) rsdp_addr_found, "RSD PTR ", 8) == 0) {
+            if (validate_rsdp_checksum(rsdp_addr_found) == 0) {
+                return rsdp_addr_found;
             }
         }
     }
 
-    return (void *) 0;
+    return 0;
 }
 
-uint32_t validate_rsdp_checksum(uint32_t *rsdp_addr) {
+uint32_t validate_rsdp_checksum(virt_addr_t rsdp_addr) {
+    serial_write("[validate_rsdp_checksum]: entry\n");
+#ifdef __x86_64__
+    log_info("[validate_rsdp_checksum]: addr=0x%x%x\n", (uint32_t)(rsdp_addr >> 32), (uint32_t)rsdp_addr);
+#else
+    log_info("[validate_rsdp_checksum]: addr=0x%x\n", (uint32_t)rsdp_addr);
+#endif
     if (!rsdp_addr) {
+        serial_write("[validate_rsdp_checksum]: null address\n");
         return 1; // null pointer error
     }
+    serial_write("[validate_rsdp_checksum]: address is non-null\n");
 
     struct rsdp_t *rsdp = (struct rsdp_t *) rsdp_addr;
+    serial_write("[validate_rsdp_checksum]: cast to rsdp_t\n");
+
     uint8_t *bytes = (uint8_t *) rsdp_addr;
+    serial_write("[validate_rsdp_checksum]: cast to bytes\n");
+
     uint8_t checksum = 0;
 
     // calculate checksum for first 20 bytes (RSDP v1.0)
+    serial_write("[validate_rsdp_checksum]: starting checksum loop\n");
     for (uint32_t i = 0; i < 20; i++) {
         checksum += bytes[i];
     }
+    serial_write("[validate_rsdp_checksum]: checksum loop complete\n");
 
     if (checksum != 0) {
         return 2; // checksum validation failed
@@ -84,9 +105,9 @@ uint32_t validate_rsdp_checksum(uint32_t *rsdp_addr) {
     return 0; // validation passed
 }
 
-uint32_t *find_madt(uint32_t *rsdp_addr) {
+virt_addr_t find_madt(virt_addr_t rsdp_addr) {
     if (!rsdp_addr) {
-        return (void *) 0;
+        return 0;
     }
 
     struct rsdp_t *rsdp = (struct rsdp_t *) rsdp_addr;
@@ -98,13 +119,24 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
         struct xsdp_t *xsdp = (struct xsdp_t *) rsdp_addr;
         log_debug("[rsdp::find_madt]: XSDT address: 0x%x%x\n", (uint32_t)(xsdp->xsdt_addr >> 32), (uint32_t)xsdp->xsdt_addr);
 
+#ifdef __x86_64__
+        // On x86_64 with Limine, we need to map ACPI tables and use HHDM offset
+        extern struct limine_hhdm_request hhdm_request;
+        uint64_t hhdm_offset = hhdm_request.response->offset;
+        uint64_t xsdt_phys = xsdp->xsdt_addr;
+
+        // Map XSDT page
+        map_physical_range(xsdt_phys, 4096, 1, 1);
+        struct xsdt_t *xsdt = (struct xsdt_t *) (xsdt_phys + hhdm_offset);
+#else
         // check if XSDT address is reasonable (< 4GB for 32-bit system)
         if (xsdp->xsdt_addr >= 0x100000000ULL) {
             log_error("ERROR: XSDT address too high for 32-bit system\n");
-            return (void *) 0;
+            return 0;
         }
 
         struct xsdt_t *xsdt = (struct xsdt_t *) (uint32_t) xsdp->xsdt_addr;
+#endif
         log_debug("[rsdp::find_madt]: Accessing XSDT at: 0x%x\n", (uint32_t) xsdt);
 
         // calculate number of entries
@@ -113,6 +145,17 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
 
         // search for MADT ("APIC" signature)
         for (uint32_t i = 0; i < num_entries; i++) {
+#ifdef __x86_64__
+            uint64_t table_phys = xsdt->entry_ptrs[i];
+            log_debug("[rsdp::find_madt]: Checking table %d at phys address: 0x%x%x\n",
+                      i, (uint32_t)(table_phys >> 32), (uint32_t)table_phys);
+
+            // Map the table page before accessing it
+            map_physical_range(table_phys, 4096, 1, 1);
+
+            uint64_t table_virt = table_phys + hhdm_offset;
+            struct apic_header *table = (struct apic_header *) table_virt;
+#else
             uint32_t table_addr = (uint32_t) xsdt->entry_ptrs[i];
             log_debug("[rsdp::find_madt]: Checking table %d at address: 0x%x\n", i, table_addr);
 
@@ -126,20 +169,31 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
             map_physical_range(table_addr, 4096, 1, 1); // kernel, writable
 
             struct apic_header *table = (struct apic_header *) table_addr;
+#endif
 
             if (strncmp(table->signature, "APIC", 4) == 0) {
                 log_debug("[rsdp::find_madt]: Found APIC table!\n");
-                return (uint32_t *) table;
+                return (virt_addr_t) table;
             }
         }
     } else {
         // use RSDT for ACPI v1.0
         log_debug("[rsdp::find_madt]: RSDT address: 0x%x\n", rsdp->rsdt_addr);
 
+#ifdef __x86_64__
+        // On x86_64 with Limine, we need to map ACPI tables and use HHDM offset
+        extern struct limine_hhdm_request hhdm_request;
+        uint64_t hhdm_offset = hhdm_request.response->offset;
+        uint32_t rsdt_phys = rsdp->rsdt_addr;
+
+        // Map the RSDT page before accessing it
+        map_physical_range(rsdt_phys, 4096, 1, 1);
+        struct rsdt_t *rsdt = (struct rsdt_t *) (rsdt_phys + hhdm_offset);
+#else
         // safety check for RSDT address
         if (rsdp->rsdt_addr < 0x1000 || rsdp->rsdt_addr >= 0x40000000) {
             log_error("ERROR: Invalid RSDT address: 0x%x\n", rsdp->rsdt_addr);
-            return (void *) 0;
+            return 0;
         }
 
         // Map the RSDT page before accessing it
@@ -147,6 +201,7 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
         map_physical_range(rsdp->rsdt_addr, 4096, 1, 1); // kernel, writable
 
         struct rsdt_t *rsdt = (struct rsdt_t *) rsdp->rsdt_addr;
+#endif
         log_debug("[rsdp::find_madt]: Accessing RSDT at: 0x%x\n", (uint32_t) rsdt);
 
         // calculate number of entries
@@ -155,6 +210,16 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
 
         // search for MADT ("APIC" signature)
         for (uint32_t i = 0; i < num_entries; i++) {
+#ifdef __x86_64__
+            uint32_t table_phys = rsdt->entry_ptrs[i];
+            log_debug("[rsdp::find_madt]: Checking table %d at phys address: 0x%x\n", i, table_phys);
+
+            // Map the table page before accessing it
+            map_physical_range(table_phys, 4096, 1, 1);
+
+            uint64_t table_virt = table_phys + hhdm_offset;
+            struct apic_header *table = (struct apic_header *) table_virt;
+#else
             uint32_t table_addr = rsdt->entry_ptrs[i];
             log_debug("[rsdp::find_madt]: Checking table %d at address: 0x%x\n", i, table_addr);
 
@@ -168,30 +233,37 @@ uint32_t *find_madt(uint32_t *rsdp_addr) {
             map_physical_range(table_addr, 4096, 1, 1); // kernel, writable
 
             struct apic_header *table = (struct apic_header *) table_addr;
+#endif
 
             if (strncmp(table->signature, "APIC", 4) == 0) {
                 log_debug("[rsdp::find_madt]: Found APIC table!\n");
-                return (uint32_t *) table;
+                return (virt_addr_t) table;
             }
         }
     }
 
-    return (void *) 0; // MADT not found
+    // madt not found
+    return 0;
 }
 
 void initialize_apic() {
     log_debug("[rsdp::init_apic]: starting ACPI/APIC initialization...\n");
 
-    // find RSDP
+    virt_addr_t rsdp;
+#ifdef __i386__
     log_debug("[rsdp::init_apic]: searching for RSDP...\n");
-    uint32_t *rsdp = find_rsdp();
+    rsdp = find_rsdp();
+#endif
+#ifdef __x86_64__
+    log_debug("[rsdp::init_apic]: using RSDP from Limine...\n");
+    rsdp = rsdp_addr;
+#endif
     if (!rsdp) {
         log_error("ERROR: RSDP not found!\n");
         return;
     }
     log_debug("[rsdp::init_apic]: RSDP found at address: 0x%x\n", (uint32_t) rsdp);
 
-    // validate RSDP checksum
     log_debug("[rsdp::init_apic]: validating RSDP checksum...\n");
     uint32_t rsdp_result = validate_rsdp_checksum(rsdp);
     if (rsdp_result != 0) {
@@ -202,7 +274,7 @@ void initialize_apic() {
 
     // find madt
     log_debug("[rsdp::init_apic]: searching for MADT table...\n");
-    uint32_t *madt = find_madt(rsdp);
+    virt_addr_t madt = find_madt(rsdp);
     if (!madt) {
         log_error("ERROR: MADT not found!\n");
         return;
@@ -211,7 +283,7 @@ void initialize_apic() {
 
     // parse madt
     log_debug("[rsdp::init_apic]: parsing MADT table...\n");
-    parse_madt(madt);
+    parse_madt((void*)madt);
     log_debug("[rsdp::init_apic]: MADT parsing complete!\n");
 
     // display results

@@ -2,7 +2,9 @@
 #define RSDP_H
 
 #include <stdint.h>
+#include <kernel/types.h>
 #include "madt.h"
+
 
 // in version 1.0
 struct rsdp_t {
@@ -27,7 +29,7 @@ struct xsdp_t {
 } __attribute((packed));
 
 
-// RSDT structure (ACPI v1.0) 
+// RSDT structure (ACPI v1.0)
 struct rsdt_t {
     struct apic_header header;
     uint32_t entry_ptrs[];
@@ -35,13 +37,13 @@ struct rsdt_t {
 
 // XSDT structure (ACPI v2.0+)
 struct xsdt_t {
-    struct apic_header header;  
+    struct apic_header header;
     uint64_t entry_ptrs[];
 } __attribute__((packed));
 
-uint32_t *find_rsdp();
-uint32_t validate_rsdp_checksum(uint32_t *rsdp_addr);
-uint32_t *find_madt(uint32_t *rsdp_addr);
+virt_addr_t find_rsdp();
+uint32_t validate_rsdp_checksum(virt_addr_t rsdp_addr);
+virt_addr_t find_madt(virt_addr_t rsdp_addr);
 void initialize_apic();
 
 #endif

@@ -1,0 +1,62 @@
+after debugging, it seems like logf fails because of the inclusion of stack-protector-guard. we can verify this by omitting the flag or adding the appropriate __attribute__ guard
+for removing stack smashing. specifically, for x86_64 architecture, it seems like the default stack smashing happens via TLS, thread local storage, and uses the segment register %fs or %gs.
+since segmentation is mostly ignored in modern 64 bit architectures, most of the segment registers aren't used - except for fs and gs. fs points to special per-cpu data structures in user space,
+and gs does the same for the kernel. if we check the disassembly, we see that we do indeed use the %gs register, and that shortly after this a triple fault is carried out - which explains our
+boot loop issue.
+
+looking at the qemu log, it seems like what causes the triple fault is RIP=ffffffff8000235a trying to access CR2=000000000000040e, which causes a GPF because the IDT is not setup (IDT=0).
+
+here's the objdump around RIP:
+objdump -d kernel/horizon.kernel | grep -B 5 -A 5 "8000235a"
+ffffffff80002350 <find_rsdp>:
+ffffffff80002350:       f3 0f 1e fa             endbr64
+ffffffff80002354:       55                      push   %rbp
+ffffffff80002355:       53                      push   %rbx
+ffffffff80002356:       48 83 ec 08             sub    $0x8,%rsp
+
+ffffffff8000235a:       0f b7 2c 25 0e 04 00    movzwl 0x40e,%ebp
+
+ffffffff80002361:       00
+ffffffff80002362:       c1 e5 04                shl    $0x4,%ebp
+ffffffff80002365:       89 eb                   mov    %ebp,%ebx
+ffffffff80002367:       81 c5 00 04 00 00       add    $0x400,%ebp
+ffffffff8000236d:       48 39 eb                cmp    %rbp,%rbx
+
+it seems like the operation in question is a moczwl of the stack base pointer.
+
+ok, it seems like the code isn't compiling with our architecture flags - whoops. that's a huge oversight on my part. fixed.
+
+we still have issues accessing the rsdp - Limine maps out memory for us, but it looks like base revision 3 (the most up to date). according to the limine protocol:
+> "The only memory map regions mapped to the HHDM are: Usable, Bootloader reclaimable, Executable and modules, Framebuffer."
+so, we still need to implement full x86_64 paging support ourselves.
+
+# CMake
+
+root file: CMakeLists.txt
+
+can add subdirectories with add_subdirectory(). nested CMakeLists.txt will be used
+
+project() - specify a project.
+ex: project(MyOS C CXX ASM)
+
+variables with set(VAR <value>)
+message("MY_VAR")
+
+## Control Flow
+if(VAR STREQUAL <value>)
+    message("yes")
+endif()
+
+// SOURCES here is a list of source files
+foreach(file ${SOURCES})
+    message("file: ${file}")
+endforeach()
+
+targets - will include dependencies
+add_executable(myprog main.c)
+
+
+### LINKING
+target_include_directories(myprog PRIVATE include/)
+target_compile_options(myprog PRIVATE -Wall -Wextra)
+target_link_libraries(myprog PRIVATE mylib)

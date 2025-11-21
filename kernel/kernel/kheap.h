@@ -2,12 +2,12 @@
 #define KHEAP_H
 
 #include <stdint.h>
-
+#include <kernel/types.h>
 #include <common.h>
 
-uint32_t kmalloc_a(uint32_t sz); // page aligned
-uint32_t kmalloc_p(uint32_t sz, uint32_t *phys); // returns a physical address
-uint32_t kmalloc_ap(uint32_t sz, uint32_t *phys); // page aligned and returns a physical address
-uint32_t kmalloc(uint32_t sz); // vanilla
+virt_addr_t kmalloc_a(uint32_t sz); // page aligned
+virt_addr_t kmalloc_p(uint32_t sz, phys_addr_t *phys); // returns virtual address and fills phys with physical address
+virt_addr_t kmalloc_ap(uint32_t sz, phys_addr_t *phys); // page aligned, returns virtual address and fills phys
+virt_addr_t kmalloc(uint32_t sz); // vanilla
 
 #endif

@@ -32,7 +32,7 @@ void kernel_main(void) {
     log_demo();
 
     // we'll use this to test paging some amount after the end of the kernel
-    placement_address = (uint32_t) &kernel_end;
+    placement_address = (virt_addr_t) &kernel_end;
 
     // IRS and segmentation (we implement paging later)
     init_descriptor_tables();

@@ -1,15 +1,15 @@
 #!/bin/sh
 
 # Detect which architecture to use (default to i386 if both exist)
-if [ -f horizon-i386.iso ]; then
+if [ -f build/i386/kernel/horizon.kernel ]; then
     ARCH="i386"
-    ISO_FILE="horizon-i386.iso"
-    KERNEL_PATH="isodir/i386/boot/horizon.kernel"
+    ISO_FILE="horizon.iso"
+    KERNEL_PATH="build/i386/kernel/horizon.kernel"
     QEMU_BIN="qemu-system-i386"
     USE_CDROM=1
-elif [ -f horizon-x86_64.iso ]; then
+elif [ -f build/x86_64/horizon.iso ]; then
     ARCH="x86_64"
-    ISO_FILE="horizon-x86_64.iso"
+    ISO_FILE="horizon.iso"
     QEMU_BIN="qemu-system-x86_64"
     USE_CDROM=0
 else

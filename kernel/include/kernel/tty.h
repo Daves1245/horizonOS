@@ -14,7 +14,7 @@ void terminal_write(const char *data, size_t size);
 void terminal_write_dec(uint32_t n);
 void terminal_writestring(const char *data);
 void terminal_scroll();
-void terminal_scrolln();
+void terminal_scrolln(size_t nrows);
 void terminal_set_cursor(size_t x, size_t y);
 void update_hardware_cursor(void);
 
