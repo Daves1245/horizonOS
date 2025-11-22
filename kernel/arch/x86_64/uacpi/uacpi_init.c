@@ -1,5 +1,6 @@
 #include <uacpi/uacpi.h>
 #include <uacpi/tables.h>
+#include <uacpi/event.h>
 #include <kernel/logger.h>
 #include <kernel/types.h>
 

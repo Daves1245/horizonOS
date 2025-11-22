@@ -8,7 +8,7 @@
 #include <common.h>
 #include <drivers/serial.h>
 #include <uacpi/types.h>
-#include <uapic/uacpi_init.h>
+#include <uacpi/uacpi_init.h>
 
 #ifdef __x86_64__
 #include <x86_64/interrupts/descriptor_tables.h>
