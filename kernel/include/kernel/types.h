@@ -10,6 +10,10 @@
  * Architecture-specific headers should define these appropriately.
  */
 
+// this is very hacky - let's bootstrap errno.h in the future instead
+// TODO XXX
+#define ENODEV 19
+
 #ifdef __i386__
 typedef uint32_t virt_addr_t;  // Virtual address type for 32-bit
 typedef uint32_t phys_addr_t;  // Physical address type for 32-bit

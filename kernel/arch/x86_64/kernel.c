@@ -7,6 +7,8 @@
 #include <kernel/tty.h>
 #include <common.h>
 #include <drivers/serial.h>
+#include <uacpi/types.h>
+#include <uapic/uacpi_init.h>
 
 #ifdef __x86_64__
 #include <x86_64/interrupts/descriptor_tables.h>
@@ -64,7 +66,7 @@ static volatile struct limine_paging_mode_request paging_mode_request = {
 
 // instead of searching the BIOS area we can just request the RSDP location from limine directly
 __attribute__((used, section(".limine_requests")))
-static volatile struct limine_rsdp_request rsdp_request = {
+volatile struct limine_rsdp_request rsdp_request = {
     .id = LIMINE_RSDP_REQUEST,
     .revision = 0,
 };
@@ -77,18 +79,20 @@ __attribute__((used, section(".limine_requests_end")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
 /*
-int check_msr() {
-    uint32_t eax, ebx, ecx, edx;
-    asm volatile ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
-    return (edx & (1 << 5)) != 0;
-}
-*/
+   int check_msr() {
+   uint32_t eax, ebx, ecx, edx;
+   asm volatile ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
+   return (edx & (1 << 5)) != 0;
+   }
+   */
 
 extern uint64_t kernel_end;
 extern uint64_t placement_address;
 
 #include <apic/rsdp.h>
 virt_addr_t rsdp_addr;
+
+// acpi_init() moved to arch/x86_64/uapic/uacpi_init.c
 
 void kernel_main(void) {
     // Early initialization logging
@@ -115,7 +119,7 @@ void kernel_main(void) {
     }
 
     if (framebuffer_request.response == NULL ||
-        framebuffer_request.response->framebuffer_count < 1) {
+            framebuffer_request.response->framebuffer_count < 1) {
         //printf("No limine framebuffer available\n");
     } else {
         // Fetch first framebuffer
@@ -165,29 +169,34 @@ void kernel_main(void) {
     map_physical_range(rsdp_phys, 4096, 1, 1);  // Map 4KB, kernel, writable
     serial_write("RSDP page mapped\n");
 
-    serial_write("initializing apic\n");
-    initialize_apic();
-    serial_write("apic initialized\n");
+    // uACPI initialization moved to acpi_init() in uapic/uacpi_init.c
+    // Call it when you're ready to initialize ACPI
+    // int acpi_result = acpi_init();
 
-    serial_write("disabling pic\n");
-    disable_pic();
-    serial_write("pic disabled\n");
+    /*
+       serial_write("initializing apic\n");
+       initialize_apic();
+       serial_write("apic initialized\n");
 
-    serial_write("getting ioapic address\n");
-    uint32_t ioapic_addr = get_ioapic_address();
+       serial_write("disabling pic\n");
+       disable_pic();
+       serial_write("pic disabled\n");
 
-    if (ioapic_addr == 0) {
-        serial_write("ioapic not found\n");
-        halt();
-    }
-    serial_write("ioapic address obtained\n");
+       serial_write("getting ioapic address\n");
+       uint32_t ioapic_addr = get_ioapic_address();
 
-    serial_write("getting keyboard irq info\n");
-    uint32_t kbd_gsi = get_keyboard_global_irq();
-    uint16_t kbd_flags = get_keyboard_irq_flags();
-    serial_write("keyboard irq info obtained\n");
+       if (ioapic_addr == 0) {
+       serial_write("ioapic not found\n");
+       halt();
+       }
+       serial_write("ioapic address obtained\n");
 
-    serial_write("getting local apic id\n");
+       serial_write("getting keyboard irq info\n");
+       uint32_t kbd_gsi = get_keyboard_global_irq();
+       uint16_t kbd_flags = get_keyboard_irq_flags();
+       serial_write("keyboard irq info obtained\n");
+
+       serial_write("getting local apic id\n");
 
     // Map Local APIC (at 0xfee00000) and I/O APIC (at ioapic_addr)
     serial_write("Mapping Local APIC...\n");
@@ -215,6 +224,7 @@ void kernel_main(void) {
 
     serial_write("keyboard initialization\n");
     init_keyboard();
+    */
 
     // ready to enable interrupts again
     asm volatile("sti");

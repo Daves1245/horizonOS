@@ -41,6 +41,10 @@ struct xsdt_t {
     uint64_t entry_ptrs[];
 } __attribute__((packed));
 
+#ifdef __x86_64__
+phys_addr_t get_rsdp_phys(); // uacpi kernel API (x86_64 only)
+#endif
+
 virt_addr_t find_rsdp();
 uint32_t validate_rsdp_checksum(virt_addr_t rsdp_addr);
 virt_addr_t find_madt(virt_addr_t rsdp_addr);
