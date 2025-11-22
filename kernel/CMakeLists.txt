@@ -55,8 +55,8 @@ elseif(ARCH STREQUAL "x86_64")
     include(${CMAKE_SOURCE_DIR}/uacpi/uacpi.cmake)
 
     set(KERNEL_ARCH_C_FLAGS -no-pie -mcmodel=kernel -fno-pic -fstack-protector -mstack-protector-guard=global -mno-red-zone -mno-sse -mno-mmx -mno-sse2 -mno-avx -msoft-float)
-    set(KERNEL_ARCH_COMPILE_DEFS "__x86_64__")
-    set(KERNEL_ARCH_INCLUDE_DIRS ${ARCHDIR}/include ${UACPI_INCLUDES})
+    set(KERNEL_ARCH_COMPILE_DEFS "__x86_64__" "UACPI_OVERRIDE_CONFIG")
+    set(KERNEL_ARCH_INCLUDE_DIRS ${ARCHDIR}/include ${ARCHDIR}/uapic ${UACPI_INCLUDES})
 
     set(KERNEL_ARCH_SOURCES
         ${ARCHDIR}/boot/boot.S
@@ -71,6 +71,8 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/memory/paging.c
         ${ARCHDIR}/asm/interrupt.S
         ${ARCHDIR}/asm/apic_asm.S
+        ${ARCHDIR}/uapic/kernel_api.c
+        ${ARCHDIR}/uapic/uacpi_init.c
         ${UACPI_SOURCES}
     )
 
