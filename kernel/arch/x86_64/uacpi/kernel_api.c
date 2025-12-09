@@ -13,7 +13,10 @@
 #include <apic/rsdp.h>
 #include <x86_64/memory/paging.h>
 #include <kernel/logger.h>
+#include <kernel/kheap.h>
 #include <limine.h>
+#include <drivers/io.h>
+#include <stdint.h>
 
 extern volatile struct limine_hhdm_request hhdm_request;
 
@@ -122,9 +125,7 @@ void uacpi_kernel_log(uacpi_log_level level, const uacpi_char *msg) {
  * The contents of the allocated memory are unspecified.
  */
 void *uacpi_kernel_alloc(uacpi_size size) {
-    // TODO implement proper memory allocation
-    (void) size;
-    return NULL;
+    return (void *) kmalloc((uint32_t) size);
 }
 
 /*
@@ -138,8 +139,8 @@ void *uacpi_kernel_alloc(uacpi_size size) {
  * calculate the object size.
  */
 void uacpi_kernel_free(void *mem) {
-    // TODO memory deallocation
-    (void)mem;
+    // since we use a bump allocator for now, this is a no-op
+    (void) mem;
 }
 
 /*
@@ -247,10 +248,11 @@ uacpi_status uacpi_kernel_pci_write32(uacpi_handle device, uacpi_size offset, ua
  *       to access the SystemIO address space.
  */
 uacpi_status uacpi_kernel_io_map(uacpi_io_addr base, uacpi_size len, uacpi_handle *out_handle) {
-    (void) base;
-    (void) len;
-    (void) out_handle;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    // on x86/x86_64, I/O ports don't need mapping like memory does.
+    // we just store the base port address as the handle.
+    (void)len;  // length is unused, but validated by uacpi
+    *out_handle = (uacpi_handle)(uintptr_t)base;
+    return UACPI_STATUS_OK;
 }
 
 void uacpi_kernel_io_unmap(uacpi_handle handle) {
@@ -269,76 +271,141 @@ void uacpi_kernel_io_unmap(uacpi_handle handle) {
  * Hardware ALWAYS expects accesses to be of the exact width.
  */
 uacpi_status uacpi_kernel_io_read8(uacpi_handle handle, uacpi_size offset, uacpi_u8 *out_value) {
-    (void) handle;
-    (void) offset;
-    (void) out_value;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    uacpi_io_addr port = (uacpi_io_addr)(uintptr_t)handle + offset;
+    *out_value = inb((uint16_t)port);
+    return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_read16(uacpi_handle handle, uacpi_size offset, uacpi_u16 *out_value) {
-    (void) handle;
-    (void) offset;
-    (void) out_value;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    uacpi_io_addr port = (uacpi_io_addr)(uintptr_t)handle + offset;
+    *out_value = inw((uint16_t)port);
+    return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_read32(uacpi_handle handle, uacpi_size offset, uacpi_u32 *out_value) {
-    (void) handle;
-    (void) offset;
-    (void) out_value;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    uacpi_io_addr port = (uacpi_io_addr)(uintptr_t)handle + offset;
+    *out_value = inl((uint16_t)port);
+    return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_write8(uacpi_handle handle, uacpi_size offset, uacpi_u8 value) {
-    (void) handle;
-    (void) offset;
-    (void) value;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    uacpi_io_addr port = (uacpi_io_addr)(uintptr_t)handle + offset;
+    outb((uint16_t)port, value);
+    return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_write16(uacpi_handle handle, uacpi_size offset, uacpi_u16 value) {
-    (void) handle;
-    (void) offset;
-    (void) value;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    uacpi_io_addr port = (uacpi_io_addr)(uintptr_t)handle + offset;
+    outw((uint16_t)port, value);
+    return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_write32(uacpi_handle handle, uacpi_size offset, uacpi_u32 value) {
-    (void) handle;
-    (void) offset;
-    (void) value;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    uacpi_io_addr port = (uacpi_io_addr)(uintptr_t)handle + offset;
+    outl((uint16_t)port, value);
+    return UACPI_STATUS_OK;
 }
 
 /*
  * ============================================================================
- * Timing and Sleep Functions
+ * Timing and Sleep
  * ============================================================================
  */
+
+/*
+ * read the Time Stamp Counter (TSC)
+ *
+ * https://wiki.osdev.org/TSC
+ * https://aakinshin.net/vignettes/tsc/
+ */
+static inline uint64_t rdtsc(void) {
+    uint32_t low, high;
+    asm volatile("rdtsc" : "=a"(low), "=d"(high));
+    return ((uint64_t) high << 32) | low;
+}
+
+/*
+ * get TSC frequency in Hz using cpuid (if available)
+ * returns 0 if not supported
+ */
+static uint64_t get_tsc_frequency_cpuid(void) {
+    uint32_t eax, ebx, ecx, edx;
+
+    // check if cpuid leaf 0x15 (tsc/crystal clock info) is available
+    asm volatile("cpuid" : "=a"(eax) : "a"(0) : "ebx", "ecx", "edx");
+    if (eax < 0x15) {
+        return 0;
+    }
+
+    asm volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(0x15));
+
+    // not supported
+    if (!eax || !ebx) {
+        return 0;
+    }
+
+    if (ecx != 0) {
+        // tsc frequency = (crystal_hz * ebx) / eax
+        return ((uint64_t) ecx * ebx) / eax;
+    }
+
+    return 0;  // need to calibrate
+}
 
 /*
  * Returns the number of nanosecond ticks elapsed since boot,
  * strictly monotonic.
  */
 uacpi_u64 uacpi_kernel_get_nanoseconds_since_boot(void) {
-    // TODO implement timer
-    return 0;
+    static uint64_t boot_tsc = 0;
+    static uint64_t tsc_frequency = 0;
+
+    // initialize on first call
+    if (boot_tsc == 0) {
+        boot_tsc = rdtsc();
+
+        tsc_frequency = get_tsc_frequency_cpuid();
+
+        // for fallback, we assume 2ghz (common for qemu)
+        if (tsc_frequency == 0) {
+            tsc_frequency = 2000000000ULL;  // 2 ghz
+            log_warning("[uacpi timing]: tsc frequency unknown, assuming 2 GHz");
+        } else {
+            log_info("[uacpi timing]: tsc frequency: %llu hz", tsc_frequency);
+        }
+    }
+
+    uint64_t current_tsc = rdtsc();
+    uint64_t elapsed_cycles = current_tsc - boot_tsc;
+
+    // cycles to nanoseconds: (cycles * 1'000'000'000) / freq
+    return (elapsed_cycles * 1000000000ULL) / tsc_frequency;
 }
 
 /*
  * Spin for N microseconds.
  */
 void uacpi_kernel_stall(uacpi_u8 usec) {
-    // TODO implement microsecond delay
-    (void) usec;
+    uint64_t start = uacpi_kernel_get_nanoseconds_since_boot();
+    uint64_t target = start + (usec * 1000ULL);  // micro -> nano
+
+    // busy wait
+    while (uacpi_kernel_get_nanoseconds_since_boot() < target) {
+        asm volatile("pause");  // hint to the processor that we're spinning
+    }
 }
 
 /*
  * Sleep for N milliseconds.
  */
 void uacpi_kernel_sleep(uacpi_u64 msec) {
-    // TODO implement millisecond delay
-    (void) msec;
+    // TODO in the future, this should yield to a scheduler
+    uint64_t start = uacpi_kernel_get_nanoseconds_since_boot();
+    uint64_t target = start + (msec * 1000000ULL);  // milli -> nano
+
+    while (uacpi_kernel_get_nanoseconds_since_boot() < target) {
+        asm volatile("pause"); // suggest we're in a spin again
+    }
 }
 
 /*
@@ -568,4 +635,4 @@ uacpi_status uacpi_kernel_handle_firmware_request(uacpi_firmware_request *req) {
     return UACPI_STATUS_OK;
 }
 
-#endir
+#endif
