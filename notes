@@ -60,3 +60,27 @@ add_executable(myprog main.c)
 target_include_directories(myprog PRIVATE include/)
 target_compile_options(myprog PRIVATE -Wall -Wextra)
 target_link_libraries(myprog PRIVATE mylib)
+
+
+# ACPI 	(https://uefi.org/specs/ACPI/6.6/)
+
+Terms:
+ACPI - Advanced Configuration and Power Interface
+OSPM - Operating Systems Power Management
+acpi hardware - hardware that can support OSPM and features in the Description Tables
+acpi namespace - tree w/ nodes that can be:
+	- data objects
+	- control method objects
+	- bus/device package objects
+	- so on (very descriptive)
+AML - ACPI Machine Language
+	* pseudocode for a virtual machine supported by an acpi-compatbile os
+APIC - Advanced Programmable Interface Controller
+	* interrupt controller architecture supports multiprocessor interrupt management (symmetric distribution across
+		all processors)
+	* consists of local APICs attached directly to processors and I/O APICs in chip sets
+Component - synonym for device
+control method - a definition for how the OS can perform a simple hardware task. not like a syscall - it's written in AML bytecode,
+		read by an ACPI-compatible OS, and executed.
+device - generic term for anything that computes, i/o, storage, etc. on a platform. GPU, APU, HHD, etc.
+device context - (usually) volatile data held by a device. OS is responsible of saving this when it is needed
