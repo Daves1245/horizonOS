@@ -10,13 +10,8 @@
 #include <uacpi/types.h>
 #include <uacpi/uacpi_init.h>
 
-#ifdef __x86_64__
 #include <x86_64/interrupts/descriptor_tables.h>
 #include <x86_64/memory/paging.h>
-#else
-#include "../arch/i386/interrupts/descriptor_tables.h"
-#include <i386/memory/paging.h>
-#endif
 
 extern void halt_without_apic();
 extern void hcf(void);
@@ -173,7 +168,6 @@ void kernel_main(void) {
     // Call it when you're ready to initialize ACPI
     // int acpi_result = acpi_init();
 
-    /*
        serial_write("initializing apic\n");
        initialize_apic();
        serial_write("apic initialized\n");
@@ -224,7 +218,6 @@ void kernel_main(void) {
 
     serial_write("keyboard initialization\n");
     init_keyboard();
-    */
 
     // ready to enable interrupts again
     asm volatile("sti");
