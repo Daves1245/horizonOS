@@ -9,6 +9,7 @@
 #include <uacpi/resources.h>
 #include <acpi/acpi_driver.h>
 #include <drivers/io.h>
+#include <drivers/serial.h>
 #include <apic/apic.h>
 
 #define PS2K_PNP_ID "PNP0303"
@@ -63,7 +64,6 @@ static int wait_for_kbd_output(void) {
 static void ps2k_irq_handler(struct interrupt_context *regs) {
     (void) regs;
     uint8_t scancode = inb(ps2k_resources.port_data);
-    log_debug("[ps2k] scancode=0x%x\n", scancode);
 
     if (scancode == 0x2A || scancode == 0x36) {
         shift_pressed = 1;
@@ -74,10 +74,8 @@ static void ps2k_irq_handler(struct interrupt_context *regs) {
             char c = shift_pressed
                 ? scancode_to_ascii_uppercase[scancode]
                 : scancode_to_ascii[scancode];
-            if (c != 0) {
-                log_debug("[ps2k] key='%c'\n", c);
-                printf("%c", c);
-            }
+            if (c != 0)
+                serial_putchar(c);
         }
     }
 
@@ -204,7 +202,8 @@ static int ps2k_create_device(void) {
              ps2k_resources.irq, ps2k_resources.port_data, ps2k_resources.port_cmd);
 
     uint8_t vector = 32 + ps2k_resources.irq;
-    log_info("[ps2k] registering IRQ handler at vector %d\n", vector);
+    log_info("[ps2k] routing GSI %d -> vector %d, APIC id %d\n",
+             ps2k_resources.irq, vector, local_apic_id);
     register_interrupt_handler(vector, ps2k_irq_handler);
 
     init_ps2k_driver();
