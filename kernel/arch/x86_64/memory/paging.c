@@ -123,10 +123,7 @@ void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable) {
     vaddr &= ~0xFFFUL;
     paddr &= ~0xFFFUL;
 
-    serial_write("C");
-    // Get or create page table entry
     page_entry_t *pte = get_page_entry(vaddr, 1);
-    serial_write("D");
     if (!pte) {
         log_error("[paging]: Failed to get page entry for vaddr 0x%x%x\n",
                   (uint32_t)(vaddr >> 32), (uint32_t)vaddr);
@@ -162,13 +159,9 @@ void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int wri
     uint64_t start = phys_addr & ~0xFFFUL;
     uint64_t end = (phys_addr + size + 0xFFF) & ~0xFFFUL;
 
-    serial_write("[paging]: Mapping physical range 0x");
-    log_info("%x%x", (uint32_t)(start >> 32), (uint32_t)start);
-    serial_write(" to 0x");
-    log_info("%x%x", (uint32_t)(end >> 32), (uint32_t)end);
-    serial_write(" (");
-    log_info("%u", (uint32_t)(end - start));
-    serial_write(" bytes)\n");
+    log_debug("[paging]: mapping phys 0x%x%x - 0x%x%x\n",
+              (uint32_t)(start >> 32), (uint32_t)start,
+              (uint32_t)(end >> 32), (uint32_t)end);
 
     // Map using HHDM offset
     uint64_t hhdm_offset = hhdm_request.response->offset;
@@ -183,11 +176,6 @@ void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int wri
             continue;
         }
 
-        serial_write("A");
-        // Map the page
         map_page(virt, phys, iskernel, writeable);
-        serial_write("B");
     }
-
-    serial_write("[paging]: Range mapping complete\n");
 }
