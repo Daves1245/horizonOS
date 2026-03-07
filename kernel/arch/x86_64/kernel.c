@@ -229,6 +229,8 @@ void kernel_main(void) {
     map_physical_range(lapic_phys, 4096, 1, 1);
     uintptr_t lapic_virt = hhdm_offset + lapic_phys;
     apic_set_base(lapic_virt);
+    enable_api_hardware();
+    enable_apic_software();
     log_info("local APIC: phys=0x%x virt=0x%x%x\n",
              lapic_phys, (uint32_t)(lapic_virt >> 32), (uint32_t)lapic_virt);
 
