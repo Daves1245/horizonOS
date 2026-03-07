@@ -258,10 +258,8 @@ void kernel_main(void) {
     ps2k_register();
     acpi_bus_enumerate();
 
-    // ready to enable interrupts again
     asm volatile("sti");
     serial_write("interrupts re-enabled\n");
 
-    // halt and catch fire (disable interrupts for now)
-    hcf();
+    halt();
 }
