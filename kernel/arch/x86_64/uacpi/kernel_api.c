@@ -559,23 +559,20 @@ uacpi_status uacpi_kernel_install_interrupt_handler(
     uacpi_u32 irq, uacpi_interrupt_handler handler, uacpi_handle ctx,
     uacpi_handle *out_irq_handle
 ) {
+    // TODO: wire SCI/GPE IRQ through IOAPIC and register with ISR
     (void) irq;
     (void) handler;
     (void) ctx;
-    (void) out_irq_handle;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    *out_irq_handle = (uacpi_handle) 1;
+    return UACPI_STATUS_OK;
 }
 
-/*
- * Uninstall an interrupt handler. 'irq_handle' is the value returned via
- * 'out_irq_handle' during installation.
- */
 uacpi_status uacpi_kernel_uninstall_interrupt_handler(
     uacpi_interrupt_handler handler, uacpi_handle irq_handle
 ) {
     (void) handler;
     (void) irq_handle;
-    return UACPI_STATUS_UNIMPLEMENTED;
+    return UACPI_STATUS_OK;
 }
 
 /*
