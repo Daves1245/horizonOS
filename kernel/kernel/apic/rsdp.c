@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <kernel/logger.h>
+#include <limine.h>
 
 // deliberately keep separate to emphasize x86_64 should not be handling paging
 #ifdef __i386__
@@ -19,6 +20,22 @@ extern virt_addr_t rsdp_addr;
 #endif
 
 #include <drivers/serial.h>
+
+extern volatile struct limine_hhdm_request hhdm_request;
+
+#ifdef __x86_64__
+extern volatile struct limine_rsdp_request rsdp_request;
+
+/* UAPIC Kernel API uacpi_kernel_get_rsdp internal */
+phys_addr_t get_rsdp_phys() {
+    if (!rsdp_request.response) {
+        return 0;
+    }
+
+    // limine already provides the RSDP as a physical address
+    return (phys_addr_t)rsdp_request.response->address;
+}
+#endif
 
 virt_addr_t find_rsdp() {
     virt_addr_t rsdp_addr_found;
@@ -121,7 +138,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 
 #ifdef __x86_64__
         // On x86_64 with Limine, we need to map ACPI tables and use HHDM offset
-        extern struct limine_hhdm_request hhdm_request;
+        extern volatile struct limine_hhdm_request hhdm_request;
         uint64_t hhdm_offset = hhdm_request.response->offset;
         uint64_t xsdt_phys = xsdp->xsdt_addr;
 
@@ -182,7 +199,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 
 #ifdef __x86_64__
         // On x86_64 with Limine, we need to map ACPI tables and use HHDM offset
-        extern struct limine_hhdm_request hhdm_request;
+        extern volatile struct limine_hhdm_request hhdm_request;
         uint64_t hhdm_offset = hhdm_request.response->offset;
         uint32_t rsdt_phys = rsdp->rsdt_addr;
 

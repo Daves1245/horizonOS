@@ -30,13 +30,15 @@
       "name": "i386",
       "displayName": "Build i386",
       "configurePreset": "i386",
-      "description": "Build i386 kernel and create ISO"
+      "description": "Build i386 kernel and iso",
+      "targets": ["iso"]
     },
     {
       "name": "x86_64",
       "displayName": "Build x86_64",
       "configurePreset": "x86_64",
-      "description": "Build x86_64 kernel and create ISO"
+      "description": "Build x86_64 kernel and iso",
+      "targets": ["iso"]
     }
   ]
 }

@@ -1,0 +1,9 @@
+#ifndef PANIC_H
+#define PANIC_H
+
+void panic(const char *reason) {
+  struct registers_t regs;
+
+}
+
+#endif

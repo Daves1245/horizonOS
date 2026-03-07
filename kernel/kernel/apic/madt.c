@@ -8,6 +8,9 @@ static uint32_t ioapic_address = 0;
 static uint32_t ioapic_irq_base = 0;
 static uint8_t ioapic_id = 0;
 
+// store local APIC physical address (from MADT header)
+static uint32_t lapic_address = 0;
+
 // store IRQ overrides
 static struct {
     uint8_t source_irq;
@@ -22,6 +25,8 @@ void parse_madt(void *madt_addr) {
 
     struct madt_extended_header *header = (struct madt_extended_header *) madt_addr;
     uint32_t length = header->header.length;
+    lapic_address = header->addr_flags.apic_address;
+    log_debug("[madt::parse_madt]: Local APIC physical address: 0x%x\n", lapic_address);
 
     uint8_t *entry = (uint8_t *) madt_addr + sizeof(struct madt_extended_header);
     uint8_t *end = (uint8_t *) madt_addr + length;
@@ -108,6 +113,10 @@ void parse_madt(void *madt_addr) {
 }
 
 // access parsed MADT data
+uint32_t get_lapic_address(void) {
+    return lapic_address;
+}
+
 uint32_t get_ioapic_address(void) {
     return ioapic_address;
 }

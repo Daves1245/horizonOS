@@ -5,6 +5,12 @@
 #include <kernel/tty.h>
 #include <kernel/logger.h>
 
+uintptr_t lapic_virt_base = APIC_BASE;
+
+void apic_set_base(uintptr_t virt) {
+    lapic_virt_base = virt;
+}
+
 int check_msr() {
     uint32_t eax, ebx, ecx, edx;
     asm volatile ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
@@ -33,7 +39,7 @@ void enable_api_hardware() {
 
 // spurious vector register (APIC 0xF0)
 void enable_apic_software() {
-    volatile uint32_t *spurious_reg = (uint32_t *)(APIC_BASE + 0xF0);
+    volatile uint32_t *spurious_reg = (uint32_t *)(lapic_virt_base + 0xF0);
     *spurious_reg |= (1 << 8); // apic software enable
     *spurious_reg |= 0xFF;
 }
@@ -70,7 +76,7 @@ void disable_pic() {
 
 // get Local APIC ID from the APIC ID register
 uint8_t get_local_apic_id() {
-    volatile uint32_t *apic_id_reg = (volatile uint32_t *)(APIC_BASE + APIC_ID);
+    volatile uint32_t *apic_id_reg = (volatile uint32_t *)(lapic_virt_base + APIC_ID);
     // APIC ID is in bits 24-31 of the APIC ID register
     return (*apic_id_reg >> 24) & 0xFF;
 }
@@ -124,12 +130,6 @@ void configure_ioapic_irq(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_
 // Send End of Interrupt (EOI) to Local APIC
 // Works on both i386 (xAPIC) and x86_64 (will use x2APIC there)
 void apic_send_eoi(void) {
-#ifdef __x86_64__
-    // x2APIC: Write to MSR 0x80B
-    write_msr(0x80B, 0, 0);
-#else
-    // xAPIC: Write to memory-mapped EOI register
-    volatile uint32_t *apic_eoi = (volatile uint32_t *)(APIC_BASE + APIC_EOI);
+    volatile uint32_t *apic_eoi = (volatile uint32_t *)(lapic_virt_base + APIC_EOI);
     *apic_eoi = 0;
-#endif
 }

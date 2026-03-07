@@ -3,8 +3,12 @@
 
 #include <stdint.h>
 
-/* register offsets */
+/* physical base address of the local APIC (default; overridden at runtime) */
 #define APIC_BASE 0xFEE00000
+
+/* virtual base used for MMIO - set via apic_set_base() with phys + hhdm_offset */
+extern uintptr_t lapic_virt_base;
+void apic_set_base(uintptr_t virt);
 
 #define APIC_ID 0x020
 #define APIC_VERSION 0x030

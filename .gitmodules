@@ -1,0 +1,3 @@
+[submodule "uacpi"]
+	path = uacpi
+	url = https://github.com/UltraOS/uACPI.git

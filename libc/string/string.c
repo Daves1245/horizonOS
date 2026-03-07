@@ -1,4 +1,7 @@
 #include <string.h>
+#include <kernel/panic.h>
+
+#define MAX_STRCMP_COMPARISONS 1000
 
 int memcmp(const void* aptr, const void* bptr, size_t size) {
 	const unsigned char* a = (const unsigned char*) aptr;
@@ -67,6 +70,21 @@ int strncmp(const char *s1, const char *s2, size_t n) {
 		}
 	}
 	return 0;
+}
+
+int strcmp(const char *s1, const char *s2) {
+	// sanity check - let's assume relatively large strings are indicative of bugs
+	for (size_t i = 0; i < MAX_STRCMP_COMPARISONS; i++) {
+		if (s1[i] == '\0' || s2[i] == '\0') {
+			return s1[i] - s2[i];
+		}
+
+		if (s1[i] != s2[i]) {
+			return s1[i] - s2[i];
+		}
+	}
+
+	panic("strcmp exceeded MAX_STRCMP_COMPARISONS");
 }
 
 void itoa(char *dest, int num) {

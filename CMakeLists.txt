@@ -18,6 +18,7 @@ if(ARCH STREQUAL "i386")
     set(CMAKE_SYSTEM_PROCESSOR i686)
     set(TOOLCHAIN_PREFIX i686-elf)
 elseif(ARCH STREQUAL "x86_64")
+    include(uacpi/uacpi.cmake)
     set(CMAKE_SYSTEM_NAME Generic)
     set(CMAKE_SYSTEM_PROCESSOR x86_64)
     # Match default-host.sh: try x86_64-linux-gnu-gcc first, then x86_64-elf-gcc

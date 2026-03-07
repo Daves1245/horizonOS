@@ -41,3 +41,6 @@ kernel_output.txt
 
 # disassembly debugging
 kernel/horizon.kernel*
+
+# ctags
+.tags

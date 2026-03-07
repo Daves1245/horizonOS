@@ -2,6 +2,7 @@
 #define PAGING_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 /*
  * x86-64 4-Level Paging Structure
@@ -63,6 +64,7 @@ void init_paging(void);
 void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable);
 page_entry_t *get_page_entry(uint64_t vaddr, int create);
 void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable);
+void unmap(void *addr, size_t len);
 
 // TLB management
 static inline void invalidate_page(uint64_t vaddr) {

@@ -60,3 +60,97 @@ add_executable(myprog main.c)
 target_include_directories(myprog PRIVATE include/)
 target_compile_options(myprog PRIVATE -Wall -Wextra)
 target_link_libraries(myprog PRIVATE mylib)
+
+
+# ACPI 	(https://uefi.org/specs/ACPI/6.6/)
+
+Terms:
+ACPI - Advanced Configuration and Power Interface
+OSPM - Operating Systems Power Management
+acpi hardware - hardware that can support OSPM and features in the Description Tables
+acpi namespace - tree w/ nodes that can be:
+	- data objects
+	- control method objects
+	- bus/device package objects
+	- so on (very descriptive)
+AML - ACPI Machine Language
+	* pseudocode for a virtual machine supported by an acpi-compatbile os
+APIC - Advanced Programmable Interface Controller
+	* interrupt controller architecture supports multiprocessor interrupt management (symmetric distribution across
+		all processors)
+	* consists of local APICs attached directly to processors and I/O APICs in chip sets
+Component - synonym for device
+control method - a definition for how the OS can perform a simple hardware task. not like a syscall - it's written in AML bytecode,
+		read by an ACPI-compatible OS, and executed.
+device - generic term for anything that computes, i/o, storage, etc. on a platform. GPU, APU, HHD, etc.
+device context - (usually) volatile data held by a device. OS is responsible of saving this when it is needed
+
+## PS2 recap
+Links:
+- https://wiki.osdev.org/PS/2_Keyboard
+- [2] https://www.burtonsys.com/ps2_chapweske.htm
+
+PS/2 is a legacy standardization protocol that outlines synchronous communication between a host and a device.
+PS/2 keyboard: consists of commands, data, and ACKs.
+
+### PS/2 Command Protocol (change keyboard settings, send commands, setting LEDs)
+communication between a host computer and a keyboard starts out with both ends of the bus in high - this is the only
+time at which a keyboard can send data.
+the clock is generated on the device and the command to send this - "request to send" - is done by the host by
+pulling the clock line low, pulling the data line low, and then releasing the clock. the device starts generating
+pulses.
+
+information is always sent in 11 bit frames:
+- 1 start bit.  This is always 0.
+- 8 data bits, least significant bit first.
+- 1 parity bit (odd parity).
+- 1 stop bit.  This is always 1.
+
+the host always ultimately controls when communication happens. if the device wants to send over information but the
+clock isn't high for at least 50 microseconds (check 2 for more details), then the device adds the data to a queue and
+waits until the host allows communication.
+
+###
+
+from claude, refering to what to work on next:
+
+  └───────────────────────────┴────────────────────────────────────────────────────────────────────────────┘
+  The Problem
+
+  The pieces exist but aren't connected:
+
+  1. acpi_init() is never called - it's commented out in kernel.c:174
+  2. acpi_bus_enumerate() is never called - drivers are never probed
+  3. PS/2 driver isn't registered - no call to acpi_register_driver(&ps2k_driver)
+  4. ps2k_create_device() is a stub - probe does nothing with the resources
+
+  Currently, the keyboard works because kernel.c manually initializes everything (hardcodes IRQ 1/vector 33, calls init_keyboard() directly). The ACPI path is completely bypassed.
+
+  ---
+  Next Tasks for uACPI Keyboard Support
+
+  Task 1: Wire up ACPI initialization and enumeration
+  - Uncomment/call acpi_init() in kernel_main()
+  - Add acpi_register_driver(&ps2k_driver) before enumeration
+  - Call acpi_bus_enumerate() to trigger device matching
+
+  Task 2: Complete ps2k_create_device() in ps2k.c
+  - Parse the uacpi_resources to extract IO port base and IRQ
+  - Either call the existing init_keyboard() or refactor it to accept parameters
+  - Register the interrupt handler dynamically based on ACPI resource info
+
+  Task 3: (Optional) Implement uACPI interrupt handler registration
+  - Complete uacpi_kernel_install_interrupt_handler() in kernel_api.c
+  - This enables GPE and ACPI event handling
+
+  ---
+  Recommended Starting Point
+
+  The cleanest approach is to complete ps2k.c to:
+  1. Parse ACPI resources (IO ports, IRQ)
+  2. Initialize the PS/2 controller with extracted resources
+  3. Register the interrupt handler
+
+  Would you like me to implement Task 2 (complete the PS/2 ACPI driver) as the next step?
+
+✻

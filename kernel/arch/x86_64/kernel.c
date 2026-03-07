@@ -7,17 +7,22 @@
 #include <kernel/tty.h>
 #include <common.h>
 #include <drivers/serial.h>
+#include <uacpi/types.h>
+#include <uacpi/uacpi_init.h>
+#include <kernel/panic.h>
+#include <x86_64/acpi/acpi_bus.h>
 
-#ifdef __x86_64__
 #include <x86_64/interrupts/descriptor_tables.h>
 #include <x86_64/memory/paging.h>
-#else
-#include "../arch/i386/interrupts/descriptor_tables.h"
-#include <i386/memory/paging.h>
-#endif
+#include <apic/apic.h>
+#include <apic/madt.h>
 
 extern void halt_without_apic();
 extern void hcf(void);
+
+/* global so that drivers may route IRQ through ioapic (virtual address) */
+void *ioapic_addr;
+uint8_t local_apic_id;
 
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -64,7 +69,7 @@ static volatile struct limine_paging_mode_request paging_mode_request = {
 
 // instead of searching the BIOS area we can just request the RSDP location from limine directly
 __attribute__((used, section(".limine_requests")))
-static volatile struct limine_rsdp_request rsdp_request = {
+volatile struct limine_rsdp_request rsdp_request = {
     .id = LIMINE_RSDP_REQUEST,
     .revision = 0,
 };
@@ -77,18 +82,20 @@ __attribute__((used, section(".limine_requests_end")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
 /*
-int check_msr() {
-    uint32_t eax, ebx, ecx, edx;
-    asm volatile ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
-    return (edx & (1 << 5)) != 0;
-}
-*/
+   int check_msr() {
+   uint32_t eax, ebx, ecx, edx;
+   asm volatile ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
+   return (edx & (1 << 5)) != 0;
+   }
+   */
 
 extern uint64_t kernel_end;
 extern uint64_t placement_address;
 
 #include <apic/rsdp.h>
 virt_addr_t rsdp_addr;
+
+// acpi_init() moved to arch/x86_64/uapic/uacpi_init.c
 
 void kernel_main(void) {
     // Early initialization logging
@@ -115,7 +122,7 @@ void kernel_main(void) {
     }
 
     if (framebuffer_request.response == NULL ||
-        framebuffer_request.response->framebuffer_count < 1) {
+            framebuffer_request.response->framebuffer_count < 1) {
         //printf("No limine framebuffer available\n");
     } else {
         // Fetch first framebuffer
@@ -129,10 +136,43 @@ void kernel_main(void) {
         }
     }
 
-    // initialize placement address to end of kernel
-    placement_address = (virt_addr_t) &kernel_end + hhdm_request.response->offset;
-
     init_serial();
+
+    // walk the memory map and find a usable region for the bump allocator
+    if (memmap_request.response == NULL) {
+        serial_write("FATAL: no memory map from Limine\n");
+        hcf();
+    }
+
+    uint64_t hhdm_offset = hhdm_request.response->offset;
+    uint64_t bump_phys = 0;
+
+    serial_write("Limine memory map:\n");
+    struct limine_memmap_response *memmap = memmap_request.response;
+    for (uint64_t i = 0; i < memmap->entry_count; i++) {
+        struct limine_memmap_entry *e = memmap->entries[i];
+        log_info("  [%d] base=0x%x%x len=0x%x%x type=%d\n",
+                 (int)i,
+                 (uint32_t)(e->base >> 32), (uint32_t)e->base,
+                 (uint32_t)(e->length >> 32), (uint32_t)e->length,
+                 (int)e->type);
+        // LIMINE_MEMMAP_USABLE == 0; pick first usable region >= 4MB
+        if (bump_phys == 0 && e->type == LIMINE_MEMMAP_USABLE && e->length >= 0x400000) {
+            bump_phys = e->base;
+        }
+    }
+
+    if (bump_phys == 0) {
+        serial_write("FATAL: no suitable usable memory region found\n");
+        hcf();
+    }
+
+    // point the bump allocator at this region via HHDM (already mapped by Limine)
+    placement_address = hhdm_offset + bump_phys;
+    log_info("bump allocator base: phys=0x%x%x virt=0x%x%x\n",
+             (uint32_t)(bump_phys >> 32), (uint32_t)bump_phys,
+             (uint32_t)(placement_address >> 32), (uint32_t)placement_address);
+    init_descriptor_tables();
 
     halt_without_apic();
     serial_write("APIC supported\n");
@@ -143,8 +183,6 @@ void kernel_main(void) {
         halt();
     }
 
-    // Limine provides physical address, we need to add HHDM offset for virtual address
-    uint64_t hhdm_offset = hhdm_request.response->offset;
     uint64_t rsdp_phys = (uint64_t)rsdp_request.response->address;
 
     log_info("RSDP phys: 0x%x\n", (uint32_t)rsdp_phys);
@@ -165,6 +203,11 @@ void kernel_main(void) {
     map_physical_range(rsdp_phys, 4096, 1, 1);  // Map 4KB, kernel, writable
     serial_write("RSDP page mapped\n");
 
+    // uACPI initialization moved to acpi_init() in uapic/uacpi_init.c
+    // Call it when you're ready to initialize ACPI
+    int acpi_result = acpi_init();
+    log_info("acpi_init returned: %d\n", acpi_result);
+
     serial_write("initializing apic\n");
     initialize_apic();
     serial_write("apic initialized\n");
@@ -173,54 +216,50 @@ void kernel_main(void) {
     disable_pic();
     serial_write("pic disabled\n");
 
-    serial_write("getting ioapic address\n");
-    uint32_t ioapic_addr = get_ioapic_address();
+    // get physical addresses from MADT
+    uint32_t lapic_phys = get_lapic_address();
+    uint32_t ioapic_phys = get_ioapic_address();
 
-    if (ioapic_addr == 0) {
+    if (ioapic_phys == 0) {
         serial_write("ioapic not found\n");
         halt();
     }
-    serial_write("ioapic address obtained\n");
 
-    serial_write("getting keyboard irq info\n");
-    uint32_t kbd_gsi = get_keyboard_global_irq();
-    uint16_t kbd_flags = get_keyboard_irq_flags();
-    serial_write("keyboard irq info obtained\n");
+    // map MMIO regions and set virtual (HHDM) base addresses
+    map_physical_range(lapic_phys, 4096, 1, 1);
+    uintptr_t lapic_virt = hhdm_offset + lapic_phys;
+    apic_set_base(lapic_virt);
+    enable_api_hardware();
+    enable_apic_software();
+    log_info("local APIC: phys=0x%x virt=0x%x%x\n",
+             lapic_phys, (uint32_t)(lapic_virt >> 32), (uint32_t)lapic_virt);
 
-    serial_write("getting local apic id\n");
+    map_physical_range(ioapic_phys, 4096, 1, 1);
+    ioapic_addr = (void *)(hhdm_offset + ioapic_phys);
+    log_info("I/O APIC: phys=0x%x virt=0x%x%x\n",
+             ioapic_phys, (uint32_t)((uintptr_t)ioapic_addr >> 32), (uint32_t)(uintptr_t)ioapic_addr);
 
-    // Map Local APIC (at 0xfee00000) and I/O APIC (at ioapic_addr)
-    serial_write("Mapping Local APIC...\n");
-    map_physical_range(0xfee00000, 4096, 1, 1);  // Local APIC is at 0xfee00000
-    serial_write("Local APIC mapped\n");
-
-    serial_write("Mapping I/O APIC...\n");
-    map_physical_range(ioapic_addr, 4096, 1, 1);  // Map I/O APIC
-    serial_write("I/O APIC mapped\n");
-
-    uint8_t local_apic_id = get_local_apic_id();
-    serial_write("local apic id obtained\n");
+    local_apic_id = get_local_apic_id();
+    log_info("local APIC id: %d\n", (int)local_apic_id);
 
     // configure timer interrupt (IRQ 0 -> vector 32)
     // according to MADT: IRQ 0 is overriden to GSI 2
     uint32_t timer_gsi = 2; // madt override
     uint16_t timer_flags = 0x0; // madt itself
     serial_write("configuring timer\n");
-    configure_ioapic_irq_with_flags((void *) ioapic_addr, timer_gsi, 32, local_apic_id, timer_flags);
+    configure_ioapic_irq_with_flags(ioapic_addr, timer_gsi, 32, local_apic_id, timer_flags);
     serial_write("timer interrupt configured via IOAPIC\n");
-    configure_ioapic_irq_with_flags((void *) ioapic_addr, kbd_gsi, 33, local_apic_id, kbd_flags);
-
     serial_write("timer initialization\n");
     init_timer();
 
-    serial_write("keyboard initialization\n");
-    init_keyboard();
+    // register ACPI device drivers, then enumerate the bus
+    // to discover and initialize devices (e.g. PS/2 keyboard)
+    extern void ps2k_register(void);
+    ps2k_register();
+    acpi_bus_enumerate();
 
-    // ready to enable interrupts again
     asm volatile("sti");
-    serial_write("interrupts re-enabled");
-    //printf("check_msr (apic base msr): %d", check_msr());
+    serial_write("interrupts re-enabled\n");
 
-    // halt and catch fire (disable interrupts for now)
-    hcf();
+    halt();
 }
