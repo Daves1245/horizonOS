@@ -231,6 +231,13 @@ uacpi_iteration_decision ps2k_handle_resource(void *user, uacpi_resource *resour
 		res->port_cmd = resource->fixed_io.address;
 	    }
 	    break;
+	case UACPI_RESOURCE_TYPE_IO:
+	    if (!res->port_data) {
+		res->port_data = resource->io.minimum;
+	    } else {
+		res->port_cmd = resource->io.minimum;
+	    }
+	    break;
 	case UACPI_RESOURCE_TYPE_IRQ:
 	    res->irq = resource->irq.irqs[0];
 	    break;
