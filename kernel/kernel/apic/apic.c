@@ -5,6 +5,12 @@
 #include <kernel/tty.h>
 #include <kernel/logger.h>
 
+uintptr_t lapic_virt_base = APIC_BASE;
+
+void apic_set_base(uintptr_t virt) {
+    lapic_virt_base = virt;
+}
+
 int check_msr() {
     uint32_t eax, ebx, ecx, edx;
     asm volatile ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));

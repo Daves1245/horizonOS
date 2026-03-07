@@ -99,6 +99,7 @@ configured properly
 */
 
 void parse_madt(void *madt_addr);
+uint32_t get_lapic_address(void);
 uint32_t get_ioapic_address(void);
 uint8_t get_ioapic_id(void);
 uint32_t get_keyboard_global_irq(void);

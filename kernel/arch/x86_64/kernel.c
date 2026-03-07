@@ -134,13 +134,42 @@ void kernel_main(void) {
         }
     }
 
-    // initialize placement address to end of kernel
-    placement_address = (virt_addr_t) &kernel_end;
-
-    // align to page boundary
-    placement_address = (placement_address + 0xFFF) & ~0xFFF;
-
     init_serial();
+
+    // walk the memory map and find a usable region for the bump allocator
+    if (memmap_request.response == NULL) {
+        serial_write("FATAL: no memory map from Limine\n");
+        hcf();
+    }
+
+    uint64_t hhdm_offset = hhdm_request.response->offset;
+    uint64_t bump_phys = 0;
+
+    serial_write("Limine memory map:\n");
+    struct limine_memmap_response *memmap = memmap_request.response;
+    for (uint64_t i = 0; i < memmap->entry_count; i++) {
+        struct limine_memmap_entry *e = memmap->entries[i];
+        log_info("  [%d] base=0x%x%x len=0x%x%x type=%d\n",
+                 (int)i,
+                 (uint32_t)(e->base >> 32), (uint32_t)e->base,
+                 (uint32_t)(e->length >> 32), (uint32_t)e->length,
+                 (int)e->type);
+        // LIMINE_MEMMAP_USABLE == 0; pick first usable region >= 4MB
+        if (bump_phys == 0 && e->type == LIMINE_MEMMAP_USABLE && e->length >= 0x400000) {
+            bump_phys = e->base;
+        }
+    }
+
+    if (bump_phys == 0) {
+        serial_write("FATAL: no suitable usable memory region found\n");
+        hcf();
+    }
+
+    // point the bump allocator at this region via HHDM (already mapped by Limine)
+    placement_address = hhdm_offset + bump_phys;
+    log_info("bump allocator base: phys=0x%x%x virt=0x%x%x\n",
+             (uint32_t)(bump_phys >> 32), (uint32_t)bump_phys,
+             (uint32_t)(placement_address >> 32), (uint32_t)placement_address);
     init_descriptor_tables();
 
     halt_without_apic();
@@ -152,8 +181,6 @@ void kernel_main(void) {
         halt();
     }
 
-    // Limine provides physical address, we need to add HHDM offset for virtual address
-    uint64_t hhdm_offset = hhdm_request.response->offset;
     uint64_t rsdp_phys = (uint64_t)rsdp_request.response->address;
 
     log_info("RSDP phys: 0x%x\n", (uint32_t)rsdp_phys);
