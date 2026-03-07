@@ -49,31 +49,37 @@ int acpi_init(void) {
      * tables, brings the event subsystem online, and enters ACPI mode. We pass
      * in 0 as the flags as we don't want to override any default behavior for now.
      */
+    log_info("[acpi] calling uacpi_initialize\n");
     uacpi_status ret = uacpi_initialize(0);
     if (uacpi_unlikely_error(ret)) {
-        log_error("uacpi_initialize error: %s", uacpi_status_to_string(ret));
+        log_error("uacpi_initialize error: %s\n", uacpi_status_to_string(ret));
         return -ENODEV;
     }
+    log_success("[acpi] uacpi_initialize done\n");
 
     /*
      * Load the AML namespace. This feeds DSDT and all SSDTs to the interpreter
      * for execution.
      */
+    log_info("[acpi] loading namespace\n");
     ret = uacpi_namespace_load();
     if (uacpi_unlikely_error(ret)) {
-        log_error("uacpi_namespace_load error: %s", uacpi_status_to_string(ret));
+        log_error("uacpi_namespace_load error: %s\n", uacpi_status_to_string(ret));
         return -ENODEV;
     }
+    log_success("[acpi] namespace loaded\n");
 
     /*
      * Initialize the namespace. This calls all necessary _STA/_INI AML methods,
      * as well as _REG for registered operation region handlers.
      */
+    log_info("[acpi] initializing namespace\n");
     ret = uacpi_namespace_initialize();
     if (uacpi_unlikely_error(ret)) {
-        log_error("uacpi_namespace_initialize error: %s", uacpi_status_to_string(ret));
+        log_error("uacpi_namespace_initialize error: %s\n", uacpi_status_to_string(ret));
         return -ENODEV;
     }
+    log_success("[acpi] namespace initialized\n");
 
     /*
      * Tell uACPI that we have marked all GPEs we wanted for wake (even though we haven't
@@ -82,11 +88,13 @@ int acpi_init(void) {
      * These handlers are used by the firmware to dynamically execute AML code at runtime
      * to e.g. react to thermal events or device hotplug.
      */
+    log_info("[acpi] finalizing GPE initialization\n");
     ret = uacpi_finalize_gpe_initialization();
     if (uacpi_unlikely_error(ret)) {
-        log_error("uACPI GPE initialization error: %s", uacpi_status_to_string(ret));
+        log_error("uACPI GPE initialization error: %s\n", uacpi_status_to_string(ret));
         return -ENODEV;
     }
+    log_success("[acpi] fully initialized\n");
 
     /*
      * That's it, uACPI is now fully initialized and working! You can proceed to

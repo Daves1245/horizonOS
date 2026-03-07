@@ -9,7 +9,7 @@ if [ -f build/i386/kernel/horizon.kernel ]; then
     USE_CDROM=1
 elif [ -f build/x86_64/horizon.iso ]; then
     ARCH="x86_64"
-    ISO_FILE="horizon.iso"
+    ISO_FILE="build/x86_64/horizon.iso"
     QEMU_BIN="qemu-system-x86_64"
     USE_CDROM=0
 else
@@ -27,14 +27,12 @@ if [ "$USE_CDROM" = "1" ]; then
             -monitor stdio \
             -d int,cpu_reset,guest_errors \
             -D debug.log \
-            -no-reboot \
             -no-shutdown \
             -serial file:serial.log
     elif [ "$1" = "serial" ]; then
         $QEMU_BIN -cdrom $ISO_FILE -kernel $KERNEL_PATH \
             -nographic \
             -serial mon:stdio \
-            -no-reboot \
             -no-shutdown
     else
         $QEMU_BIN -cdrom $ISO_FILE -kernel $KERNEL_PATH \
@@ -49,7 +47,6 @@ else
             -machine pc,smm=off \
             -d cpu,int,guest_errors,exec \
             -D qemu.log \
-            -no-reboot \
             -no-shutdown \
             -serial file:serial.log
     else

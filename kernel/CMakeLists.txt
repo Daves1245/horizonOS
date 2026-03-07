@@ -42,6 +42,7 @@ if(ARCH STREQUAL "i386")
         ../libc/string/string.c
         ${ARCHDIR}/drivers/shell/hush.c
         ${ARCHDIR}/drivers/shell/builtins/maze.c
+        ${ARCHDIR}/panic.c
         kernel/jury/i386/test_paging.c
         kernel/jury/i386/test_vm.c
         ${ARCHDIR}/boot/crtn.S
@@ -75,6 +76,7 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/uacpi/uacpi_init.c
         ${ARCHDIR}/acpi/acpi_bus.c
         ${ARCHDIR}/drivers/ps2k.c
+        ${ARCHDIR}/panic.c
         ${UACPI_SOURCES}
     )
 

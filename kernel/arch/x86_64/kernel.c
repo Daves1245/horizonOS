@@ -9,12 +9,18 @@
 #include <drivers/serial.h>
 #include <uacpi/types.h>
 #include <uacpi/uacpi_init.h>
+#include <kernel/panic.h>
+#include <x86_64/acpi/acpi_bus.h>
 
 #include <x86_64/interrupts/descriptor_tables.h>
 #include <x86_64/memory/paging.h>
 
 extern void halt_without_apic();
 extern void hcf(void);
+
+/* global so that drivers may route IRQ through ioapic */
+uint32_t ioapic_addr;
+uint8_t local_apic_id;
 
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -129,9 +135,13 @@ void kernel_main(void) {
     }
 
     // initialize placement address to end of kernel
-    placement_address = (virt_addr_t) &kernel_end + hhdm_request.response->offset;
+    placement_address = (virt_addr_t) &kernel_end;
+
+    // align to page boundary
+    placement_address = (placement_address + 0xFFF) & ~0xFFF;
 
     init_serial();
+    init_descriptor_tables();
 
     halt_without_apic();
     serial_write("APIC supported\n");
@@ -166,31 +176,26 @@ void kernel_main(void) {
 
     // uACPI initialization moved to acpi_init() in uapic/uacpi_init.c
     // Call it when you're ready to initialize ACPI
-    // int acpi_result = acpi_init();
+    int acpi_result = acpi_init();
 
-       serial_write("initializing apic\n");
-       initialize_apic();
-       serial_write("apic initialized\n");
+    serial_write("initializing apic\n");
+    initialize_apic();
+    serial_write("apic initialized\n");
 
-       serial_write("disabling pic\n");
-       disable_pic();
-       serial_write("pic disabled\n");
+    serial_write("disabling pic\n");
+    disable_pic();
+    serial_write("pic disabled\n");
 
-       serial_write("getting ioapic address\n");
-       uint32_t ioapic_addr = get_ioapic_address();
+    serial_write("getting ioapic address\n");
+    ioapic_addr = get_ioapic_address();
 
-       if (ioapic_addr == 0) {
-       serial_write("ioapic not found\n");
-       halt();
-       }
-       serial_write("ioapic address obtained\n");
+    if (ioapic_addr == 0) {
+        serial_write("ioapic not found\n");
+        halt();
+    }
+    serial_write("ioapic address obtained\n");
 
-       serial_write("getting keyboard irq info\n");
-       uint32_t kbd_gsi = get_keyboard_global_irq();
-       uint16_t kbd_flags = get_keyboard_irq_flags();
-       serial_write("keyboard irq info obtained\n");
-
-       serial_write("getting local apic id\n");
+    serial_write("getting local apic id\n");
 
     // Map Local APIC (at 0xfee00000) and I/O APIC (at ioapic_addr)
     serial_write("Mapping Local APIC...\n");
@@ -201,7 +206,7 @@ void kernel_main(void) {
     map_physical_range(ioapic_addr, 4096, 1, 1);  // Map I/O APIC
     serial_write("I/O APIC mapped\n");
 
-    uint8_t local_apic_id = get_local_apic_id();
+    local_apic_id = get_local_apic_id();
     serial_write("local apic id obtained\n");
 
     // configure timer interrupt (IRQ 0 -> vector 32)
@@ -211,18 +216,18 @@ void kernel_main(void) {
     serial_write("configuring timer\n");
     configure_ioapic_irq_with_flags((void *) ioapic_addr, timer_gsi, 32, local_apic_id, timer_flags);
     serial_write("timer interrupt configured via IOAPIC\n");
-    configure_ioapic_irq_with_flags((void *) ioapic_addr, kbd_gsi, 33, local_apic_id, kbd_flags);
-
     serial_write("timer initialization\n");
     init_timer();
 
-    serial_write("keyboard initialization\n");
-    init_keyboard();
+    // register ACPI device drivers, then enumerate the bus
+    // to discover and initialize devices (e.g. PS/2 keyboard)
+    extern void ps2k_register(void);
+    ps2k_register();
+    acpi_bus_enumerate();
 
     // ready to enable interrupts again
     asm volatile("sti");
-    serial_write("interrupts re-enabled");
-    //printf("check_msr (apic base msr): %d", check_msr());
+    serial_write("interrupts re-enabled\n");
 
     // halt and catch fire (disable interrupts for now)
     hcf();

@@ -52,7 +52,7 @@ static void init_idt(void) {
     idt_ptr.limit = sizeof(struct idt_entry) * 256 - 1;
     idt_ptr.base = (uint64_t) &idt_entries;
     memset(&idt_entries, 0, sizeof(struct idt_entry) * 256);
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 48; i++) {
         idt_set_gate(i, (uint64_t) isr_stub_table[i], 0x08, 0x8E);
     }
     idt_flush((uint64_t) &idt_ptr);

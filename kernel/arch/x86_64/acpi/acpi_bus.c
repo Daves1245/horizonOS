@@ -1,4 +1,6 @@
+#include <x86_64/acpi/acpi_driver.h>
 #include <x86_64/acpi/acpi_bus.h>
+#include <string.h>
 #include <uacpi/types.h>
 #include <kernel/logger.h>
 
@@ -25,19 +27,48 @@ static uacpi_iteration_decision acpi_init_one_device(void *ctx, uacpi_namespace_
         return UACPI_ITERATION_DECISION_CONTINUE;
     }
 
-    struct acpi_driver *drv = NULL;
+    struct acpi_driver *driver = NULL;
 
+    // check each driver's pnp list to see if we support
+    // the device's hid value
     if (info->flags & UACPI_NS_NODE_INFO_HAS_HID) {
-        // match the HID against every existing acpi_driver pnp id list
+        for (struct acpi_driver *driver_it = acpi_drivers_head; driver_it; driver_it = driver_it->next) {
+            for (const char *const *id = driver_it->pnp_ids; *id; id++) {
+                if (strcmp(info->hid.value, *id) == 0) {
+                    driver = driver_it;
+                    break;
+                }
+            }
+            if (driver) {
+                break;
+            }
+        }
     }
 
-    if (drv == NULL && (info->flags & UACPI_NS_NODE_INFO_HAS_CID)) {
+    // otherwise if we have a cid list, check it against every acpi driver
+    if (!driver && (info->flags & UACPI_NS_NODE_INFO_HAS_CID)) {
         // match the CID list against every existing acpi_driver pnp id list
+        for (struct acpi_driver *driver_it = acpi_drivers_head; driver_it; driver_it = driver_it->next) {
+            for (uint32_t i = 0; i < info->cid.num_ids; i++) {
+                for (const char *const *id = driver_it->pnp_ids; *id; id++) {
+                    if (strcmp(*id, info->cid.ids[i].value) == 0) {
+                        driver = driver_it;
+                        break;
+                    }
+                }
+                if (driver) {
+                    break;
+                }
+            }
+            if (driver) {
+                break;
+            }
+        }
     }
 
-    if (drv != NULL) {
+    if (driver) {
         // probe the driver and do something with the error code if desired
-        drv->device_probe(node, info);
+        driver->device_probe(node, info);
     }
 
     uacpi_free_namespace_node_info(info);
@@ -47,6 +78,6 @@ static uacpi_iteration_decision acpi_init_one_device(void *ctx, uacpi_namespace_
 void acpi_bus_enumerate() {
     uacpi_namespace_for_each_child(
             uacpi_namespace_root(), acpi_init_one_device, UACPI_NULL,
-                UACPI_OBJECT_DEVICE_BIT, UACPI_MAX_DEPTH_ANY, UACPI_NULL
+            UACPI_OBJECT_DEVICE_BIT, UACPI_MAX_DEPTH_ANY, UACPI_NULL
             );
 }

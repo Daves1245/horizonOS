@@ -13,7 +13,7 @@
 #include <apic/rsdp.h>
 #include <x86_64/memory/paging.h>
 #include <kernel/logger.h>
-#include <kernel/kheap.h>
+#include <kheap.h>
 #include <limine.h>
 #include <drivers/io.h>
 #include <stdint.h>

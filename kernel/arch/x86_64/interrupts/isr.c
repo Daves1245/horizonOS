@@ -14,5 +14,3 @@ void isr_handler(struct interrupt_context *regs) {
         interrupt_handlers[regs->int_no](regs);
     }
 }
-
-void* isr_stub_table[32] = {0};
