@@ -12,7 +12,7 @@ A toy kernel written in C targeting both x86 and x86_64
 - [x] Heap allocated memory
 - [x] APIC support
 - [x] ACPI configuration
-- [x] Keyboard driver
+- [x] PS/2 keyboard driver
 - [x] Timer driver
 - [x] Makeshift shell
 - [x] Logging
@@ -21,6 +21,8 @@ A toy kernel written in C targeting both x86 and x86_64
 - [x] Limine support
 - [x] Logging
 - [x] APIC support
+- [x] uACPI full mode
+- [x] PS/2 keyboard driver  
 
 ### Custom libc implementation (bootstrapped)
 - [x] Standard Library - basic stdio, stdlib, string functions
