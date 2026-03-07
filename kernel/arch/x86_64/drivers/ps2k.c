@@ -13,7 +13,7 @@
 
 #define PS2K_PNP_ID "PNP0303"
 
-extern uint32_t ioapic_addr;
+extern void *ioapic_addr;
 extern uint8_t local_apic_id;
 
 static const char *const ps2k_pnp_ids[] = {
