@@ -14,6 +14,8 @@
 
 #include <x86_64/interrupts/descriptor_tables.h>
 #include <x86_64/memory/paging.h>
+#include <apic/apic.h>
+#include <apic/madt.h>
 
 extern void halt_without_apic();
 extern void hcf(void);
@@ -213,35 +215,36 @@ void kernel_main(void) {
     disable_pic();
     serial_write("pic disabled\n");
 
-    serial_write("getting ioapic address\n");
+    // get physical addresses from MADT
+    uint32_t lapic_phys = get_lapic_address();
     ioapic_addr = get_ioapic_address();
 
     if (ioapic_addr == 0) {
         serial_write("ioapic not found\n");
         halt();
     }
-    serial_write("ioapic address obtained\n");
 
-    serial_write("getting local apic id\n");
+    // map MMIO regions and set virtual (HHDM) base addresses
+    map_physical_range(lapic_phys, 4096, 1, 1);
+    uintptr_t lapic_virt = hhdm_offset + lapic_phys;
+    apic_set_base(lapic_virt);
+    log_info("local APIC: phys=0x%x virt=0x%x%x\n",
+             lapic_phys, (uint32_t)(lapic_virt >> 32), (uint32_t)lapic_virt);
 
-    // Map Local APIC (at 0xfee00000) and I/O APIC (at ioapic_addr)
-    serial_write("Mapping Local APIC...\n");
-    map_physical_range(0xfee00000, 4096, 1, 1);  // Local APIC is at 0xfee00000
-    serial_write("Local APIC mapped\n");
-
-    serial_write("Mapping I/O APIC...\n");
-    map_physical_range(ioapic_addr, 4096, 1, 1);  // Map I/O APIC
-    serial_write("I/O APIC mapped\n");
+    map_physical_range(ioapic_addr, 4096, 1, 1);
+    void *ioapic_virt = (void *)(hhdm_offset + ioapic_addr);
+    log_info("I/O APIC: phys=0x%x virt=0x%x%x\n",
+             ioapic_addr, (uint32_t)((uintptr_t)ioapic_virt >> 32), (uint32_t)(uintptr_t)ioapic_virt);
 
     local_apic_id = get_local_apic_id();
-    serial_write("local apic id obtained\n");
+    log_info("local APIC id: %d\n", (int)local_apic_id);
 
     // configure timer interrupt (IRQ 0 -> vector 32)
     // according to MADT: IRQ 0 is overriden to GSI 2
     uint32_t timer_gsi = 2; // madt override
     uint16_t timer_flags = 0x0; // madt itself
     serial_write("configuring timer\n");
-    configure_ioapic_irq_with_flags((void *) ioapic_addr, timer_gsi, 32, local_apic_id, timer_flags);
+    configure_ioapic_irq_with_flags(ioapic_virt, timer_gsi, 32, local_apic_id, timer_flags);
     serial_write("timer interrupt configured via IOAPIC\n");
     serial_write("timer initialization\n");
     init_timer();
