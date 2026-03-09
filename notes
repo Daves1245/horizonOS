@@ -154,3 +154,43 @@ from claude, refering to what to work on next:
   Would you like me to implement Task 2 (complete the PS/2 ACPI driver) as the next step?
 
 ✻
+
+uacpi_resources - each device lists its resources needed in the AML, and uacpi
+parses and wraps this in a neat little C object for us instead of us having to 
+read and parse the raw bytes ourselves.
+uacpi resources represents the hardware resources a particular device owns - such
+as IRQ lines, IO ports, memory ranges, DMA channels, bus-specific interfaces
+
+
+'probing' a device means 'feeling out' whether or not a driver supports a device
+that was discovered via enumeration.
+
+we can probe a device by matching one of its ID types:
+
+hardware id (_HID): the primary identifier. either a PNP ID or an ACPI ID
+compatible id (_CID): a list of additional ids the device is compatible with, for
+fallback matching. a device may have _HID = "MSFT0001" but _CID = "PNP0303", meaning
+"from microsoft, and compatible with standard PS/2"
+unique id (_UID): distinguishes multiple instances of the same device. if two
+devices share a HID, they will differ in UIDs
+address (_ADR): used instead of _HID for devices on *enumerable* buses like PCI,
+where the bus itself discovers them.
+
+PS/2 PNP IDs:
+keyboard: PNP0303
+mouse: PNP0F03 / PNP0F13
+
+
+# Filesystems
+
+## FAT
+
+- views the storage media as a flat array of *clusters*.
+storage media is organized into three areas:
+- boot record
+- File Allocation Table
+- the directory and data area
+
+Resources:
+https://www.tavi.co.uk/phobos/fat.html
+https://wiki.osdev.org/FAT
