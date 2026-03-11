@@ -51,34 +51,51 @@ A toy kernel written in C targeting both x86 and x86_64
 - [ ] ELF execution
 - [ ] GUI Framework - basic windowing system
 
-## Dependencies
-
 ### Ubuntu/Debian
 ```bash
-sudo apt install cmake nasm qemu-system-x86 xorriso grub-pc-bin grub-common gcc
+sudo apt install cmake nasm xorriso qemu-system-x86 grub-pc-bin grub-common binutils
+
+# x86_64 cross-compiler
+sudo apt install gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu
+# or build x86_64-elf-gcc from source: https://wiki.osdev.org/GCC_Cross-Compiler
+
+# i386 cross-compiler
+sudo apt install gcc-i686-linux-gnu binutils-i686-linux-gnu
+
+# Limine (x86_64 only)
+# See: https://github.com/limine-bootloader/limine/blob/v10.x/INSTALL.md
 ```
+
 ### Arch Linux
 ```bash
-sudo pacman -S cmake nasm qemu-system-x86 libisoburn grub gcc
+sudo pacman -S cmake nasm libisoburn qemu-system-x86 grub gcc binutils
 
-# Cross-compilers and Limine
-yay -S i686-elf-gcc limine
+# Cross-compilers and Limine (AUR)
+yay -S i686-elf-gcc x86_64-elf-gcc limine
 ```
 
 ### macOS
 ```bash
-brew install cmake nasm qemu xorriso grub
+brew install cmake nasm xorriso qemu
 
-# Cross-compilers and Limine: build from source
-# See: https://wiki.osdev.org/GCC_Cross-Compiler
+# Cross-compilers
+brew install x86_64-elf-gcc x86_64-elf-binutils  # x86_64
+brew install i686-elf-gcc i686-elf-binutils        # i386
+
+# Limine (x86_64 only)
+# See: https://github.com/limine-bootloader/limine/blob/v10.x/INSTALL.md
 ```
 
-A cross compiler and Limine are needed to run the project. Follow
-the installation instructions at the following:
+### Windows (MSYS2)
 
+Untested, YMMV
 
-A cross compiler targeting i386 for your host: https://wiki.osdev.org/GCC_Cross-Compiler
-Limine: https://github.com/limine-bootloader/limine/blob/v10.x/INSTALL.md
+```bash
+pacman -S cmake nasm mingw-w64-cross-gcc mingw-w64-cross-binutils xorriso
+
+# Limine (x86_64 only)
+# See: https://github.com/limine-bootloader/limine/blob/v10.x/INSTALL.md
+```
 
 
 ## Build & Run

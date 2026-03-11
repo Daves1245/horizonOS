@@ -179,9 +179,9 @@ set_target_properties(horizon.kernel PROPERTIES
 
 # Post-build commands: generate disassembly, symbols, and elf info
 add_custom_command(TARGET horizon.kernel POST_BUILD
-    COMMAND objdump -d $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.dis
-    COMMAND objdump -t $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.sym
-    COMMAND readelf -a $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.elf
+    COMMAND ${TOOLCHAIN_PREFIX}-objdump -d $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.dis
+    COMMAND ${TOOLCHAIN_PREFIX}-objdump -t $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.sym
+    COMMAND ${READELF_BINARY} -a $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.elf
     COMMENT "Generating kernel disassembly, symbols, and ELF info"
 )
 

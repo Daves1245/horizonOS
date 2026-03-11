@@ -22,15 +22,33 @@ elseif(ARCH STREQUAL "x86_64")
     set(CMAKE_SYSTEM_NAME Generic)
     set(CMAKE_SYSTEM_PROCESSOR x86_64)
     # Match default-host.sh: try x86_64-linux-gnu-gcc first, then x86_64-elf-gcc
-    find_program(X86_64_LINUX_GNU_GCC x86_64-linux-gnu-gcc)
-    if(X86_64_LINUX_GNU_GCC)
-        set(TOOLCHAIN_PREFIX x86_64-linux-gnu)
-    else()
-        find_program(X86_64_ELF_GCC x86_64-elf-gcc)
-        if(X86_64_ELF_GCC)
+
+    # detect OS and set proper gcc
+    if(WIN32)
+        find_program(WIN32_X86_64_ELF_GCC x86_64-elf-gcc)
+        if(WIN32_X86_64_ELF_GCC)
             set(TOOLCHAIN_PREFIX x86_64-elf)
         else()
-            message(FATAL_ERROR "x86_64-linux-gnu-gcc or x86_64-elf-gcc not found. Install x86_64 cross-compiler or set ARCH=i386")
+            message(FATAL_ERROR "x86_64-elf-gcc not found. try: pacman -S mingw-w64-cross-gcc, or download from winlibs.com")
+        endif()
+    elseif(APPLE)
+        find_program(MACOS_X86_64_ELF_GCC x86_64-elf-gcc)
+        if(MACOS_X86_64_ELF_GCC)
+            set(TOOLCHAIN_PREFIX x86_64-elf)
+        else()
+            message(FATAL_ERROR "x86_64-elf-gcc not found. try: brew install x86_64-elf-gcc")
+        endif()
+    else()
+        find_program(X86_64_LINUX_GNU_GCC x86_64-linux-gnu-gcc)
+        if(X86_64_LINUX_GNU_GCC)
+            set(TOOLCHAIN_PREFIX x86_64-linux-gnu)
+        else()
+            find_program(X86_64_ELF_GCC x86_64-elf-gcc)
+            if(X86_64_ELF_GCC)
+                set(TOOLCHAIN_PREFIX x86_64-elf)
+            else()
+                message(FATAL_ERROR "x86_64-linux-gnu-gcc or x86_64-elf-gcc not found. Install x86_64 cross-compiler or set ARCH=i386")
+            endif()
         endif()
     endif()
 else()
@@ -42,8 +60,33 @@ set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}-gcc)
 set(CMAKE_AR ${TOOLCHAIN_PREFIX}-ar)
 set(CMAKE_RANLIB ${TOOLCHAIN_PREFIX}-ranlib)
 
+# Check for readelf
+find_program(READELF_BINARY ${TOOLCHAIN_PREFIX}-readelf)
+if(NOT READELF_BINARY)
+    if(WIN32)
+        message(FATAL_ERROR "${TOOLCHAIN_PREFIX}-readelf not found. try: pacman -S mingw-w64-cross-binutils")
+    elseif(APPLE)
+        message(FATAL_ERROR "${TOOLCHAIN_PREFIX}-readelf not found. try: brew install x86_64-elf-binutils")
+    else()
+        message(FATAL_ERROR "${TOOLCHAIN_PREFIX}-readelf not found. try: sudo apt install binutils (or equivalent)")
+    endif()
+endif()
+
 set(CMAKE_C_COMPILER_WORKS 1)
 set(CMAKE_ASM_COMPILER_WORKS 1)
+
+# Check for NASM
+find_program(NASM_BINARY nasm)
+if(NOT NASM_BINARY)
+    if(WIN32)
+        message(FATAL_ERROR "nasm not found. try: pacman -S nasm, or download from nasm.us")
+    elseif(APPLE)
+        message(FATAL_ERROR "nasm not found. try: brew install nasm")
+    else()
+        message(FATAL_ERROR "nasm not found. try: sudo apt install nasm  (or equivalent)")
+    endif()
+endif()
+set(CMAKE_ASM_NASM_COMPILER ${NASM_BINARY})
 
 project(Horizon C ASM ASM_NASM)
 
@@ -112,6 +155,17 @@ elseif(ARCH STREQUAL "x86_64")
         message(WARNING "limine not found, x86_64 ISO target may not work")
     endif()
 
+    find_program(XORRISO_BINARY xorriso)
+    if(NOT XORRISO_BINARY)
+        if(WIN32)
+            message(FATAL_ERROR "xorriso not found. try: pacman -S xorriso")
+        elseif(APPLE)
+            message(FATAL_ERROR "xorriso not found. try: brew install xorriso")
+        else()
+            message(FATAL_ERROR "xorriso not found. try: sudo apt install xorriso")
+        endif()
+    endif()
+
     add_custom_target(iso
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_BINARY_DIR}/isodir
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/isodir
@@ -125,7 +179,7 @@ elseif(ARCH STREQUAL "x86_64")
             -DLIMINE_BINARY=${LIMINE_BINARY}
             -DISODIR=${CMAKE_BINARY_DIR}/isodir
             -P ${CMAKE_SOURCE_DIR}/cmake/copy_limine_files.cmake
-        COMMAND xorriso -as mkisofs
+        COMMAND ${XORRISO_BINARY} -as mkisofs
             -b limine-bios.sys
             -no-emul-boot
             -boot-load-size 4
