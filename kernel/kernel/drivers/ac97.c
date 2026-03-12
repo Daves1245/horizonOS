@@ -1,9 +1,13 @@
 #include "ac97.h"
 #include <drivers/io.h>
 #include <drivers/pci.h>
+#include <drivers/timer.h>
+#include <drivers/serial.h>
+#include <halt.h>
 
 static void controller_reset(uint32_t);
 static void ready_codec(uint32_t);
+static void abort();
 
 int ac97_init() {
     struct pci_address_t ac97_bdf = pci_find_device(AC97_VENDOR_ID, AC97_DEVICE_ID);
@@ -11,23 +15,43 @@ int ac97_init() {
         return 1;
     }
 
-    uint32_t nambar_addr = pci_read(ac97_bdf, AC97_NAMBAR);
-    controller_reset(nambar_addr);
-    ready_codec(nambar_addr);
+    // nambar holds codec mixer registers
+    uint32_t nambar = pci_read(ac97_bdf, AC97_NAMBAR);
+    // nabmbar holds bus master / dma control
+    uint32_t nabmbar = pci_read(ac97_bdf, AC97_NABMBAR);
+
+    controller_reset(nabmbar);
+    ready_codec(nambar);
 
     return 0;
 }
 
-static void controller_reset(uint32_t nambar_addr) {
-    // write the global reset bit to NAMBAR + 0x2C
+static void controller_reset(uint32_t nabmbar) {
+    /* write the global reset bit to NABMBAR + 0x2C */
+    // there's two resets - cold completely resets the hardware, warm only resets the 'AC-link'
+    outl(nabmbar + AC97_GLOBAL_CONTROL, AC97_GLOBAL_CONTROL_COLD_RESET);
 
-    // wait for it to clear
+    // wait at least one uS
+    sleep_ms(1);
 
-    // wait some amount for the codec
+    /* unwrite the global reset bit */
+    outl(nabmbar + AC97_GLOBAL_CONTROL, 0);
 }
 
-static void ready_codec(uint32_t nambar_addr) {
+static void ready_codec(uint32_t nabmbar) {
     // poll until the codec ready bit in NAMBAR + 0x30 is set (global status register)
+
+    // timeout and abort 1000ms if status register doesn't reflect codec is ready
+    if (!timeout(10000, !(inl(nabmbar + AC97_GLOBAL_STATUS) & AC97_GLOBAL_STATUS_CODEC_READY))) {
+        abort();
+    }
+
+    serial_write("[ OK ]: ac97.c: codec ready\n");
+}
+
+static void abort() {
+    serial_write("[ERROR]: ac97.c: timeout while awaiting codec to be ready\n");
+    hcf();
 }
 
 void ac97_setup_bdl() {

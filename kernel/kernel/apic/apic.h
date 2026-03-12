@@ -17,6 +17,14 @@ void apic_set_base(uintptr_t virt);
 #define APIC_LVT_TIMER 0x320
 #define APIC_ICR_LOW 0x300
 #define APIC_ICR_HIGH 0x310
+#define APIC_TIMER_DIVIDE 0x3E0
+#define APIC_TIMER_INITCNT 0x380
+#define APIC_TIMER_CURRCNT 0x390
+
+/* LVT timer mode bits */
+#define APIC_TIMER_ONESHOT  0x00000000
+#define APIC_TIMER_PERIODIC (1 << 17)
+#define APIC_TIMER_MASKED   (1 << 16)
 
 /* helper macro */
 #define APIC_REG(offset) (*(volatile uint32_t)(APIC_BASE + offset))
@@ -59,5 +67,6 @@ void disable_pic();
 
 // abstractino for architecture-independent implementation
 void apic_send_eoi(void);
+void apic_timer_init(uint32_t hz);
 
 #endif

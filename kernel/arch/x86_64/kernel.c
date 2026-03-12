@@ -260,16 +260,16 @@ void kernel_main(void) {
     ps2k_register();
     acpi_bus_enumerate();
 
-    // find and setup AC97
-    if (!ac97_init()) {
+    asm volatile("sti");
+    serial_write("interrupts re-enabled\n");
+
+    // find and setup AC97 (hopefully this works with interrupts enabled)
+    if (ac97_init()) {
         serial_write("[ERROR]: kernel.c: could not initialize ac97 driver\n");
         hcf();
     } else {
         serial_write("[ OK ]: kernel.c: found AC97\n");
     }
-
-    asm volatile("sti");
-    serial_write("interrupts re-enabled\n");
 
     halt();
 }
