@@ -4,17 +4,12 @@
 #include <stdio.h>
 #include <kernel/tty.h>
 
-static uint32_t tick_count = 0;
+#define TIMER_HZ 1000
+
+static volatile uint32_t tick_count = 0;
 
 void timer_interrupt_handler(struct interrupt_context *regs) {
     tick_count++;
-
-    // print every 10000 ticks to avoid spam
-    if (tick_count % 10000 == 0) {
-        printf("[timer]: tick %d\n", tick_count);
-    }
-
-    // send APIC EOI (architecture-independent)
     apic_send_eoi();
 }
 
@@ -25,5 +20,15 @@ uint32_t timer_ticks() {
 void init_timer() {
     log_debug("[timer]: registering timer handler for vector 32\n");
     register_interrupt_handler(32, timer_interrupt_handler);
-    log_success("[timer]: timer handler registered\n");
+    apic_timer_init(TIMER_HZ);
+    log_success("[timer]: APIC timer initialized at %d Hz\n", TIMER_HZ);
+}
+
+void sleep_ms(uint32_t ms) {
+    uint32_t start = tick_count;
+    while ((tick_count - start) < ms);
+}
+
+void sleep(uint32_t s) {
+    sleep_ms(s * 1000);
 }
