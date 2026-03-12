@@ -9,7 +9,6 @@ a quick glance at QEMU's bug trackers mentions some of these issues are still un
 
 - AC'97 is a bit more complicated but probably a good choice for now.
 	- connected into PCI
-	- 
 
 Direct Memory Access (DMA):
 A method for hardware to read/write system memory without involving the CPU for every transfer.

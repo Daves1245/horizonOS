@@ -91,6 +91,8 @@ set(KERNEL_COMMON_SOURCES
     kernel/drivers/serial.c
     kernel/drivers/timer.c
     kernel/drivers/keyboard/keyboard.c
+    kernel/drivers/ac97.c
+    kernel/drivers/pci.c
     kernel/apic/rsdp.c
     kernel/apic/apic.c
     kernel/apic/madt.c

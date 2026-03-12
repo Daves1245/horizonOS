@@ -16,6 +16,10 @@
 #include <x86_64/memory/paging.h>
 #include <apic/apic.h>
 #include <apic/madt.h>
+#include <halt.h>
+#include <drivers/timer.h>
+
+#include <drivers/ac97.h>
 
 extern void halt_without_apic();
 extern void hcf(void);
@@ -203,8 +207,6 @@ void kernel_main(void) {
     map_physical_range(rsdp_phys, 4096, 1, 1);  // Map 4KB, kernel, writable
     serial_write("RSDP page mapped\n");
 
-    // uACPI initialization moved to acpi_init() in uapic/uacpi_init.c
-    // Call it when you're ready to initialize ACPI
     int acpi_result = acpi_init();
     log_info("acpi_init returned: %d\n", acpi_result);
 
@@ -257,6 +259,14 @@ void kernel_main(void) {
     extern void ps2k_register(void);
     ps2k_register();
     acpi_bus_enumerate();
+
+    // find and setup AC97
+    if (!ac97_init()) {
+        serial_write("[ERROR]: kernel.c: could not initialize ac97 driver\n");
+        hcf();
+    } else {
+        serial_write("[ OK ]: kernel.c: found AC97\n");
+    }
 
     asm volatile("sti");
     serial_write("interrupts re-enabled\n");

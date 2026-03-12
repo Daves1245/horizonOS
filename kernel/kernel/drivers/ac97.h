@@ -2,6 +2,7 @@
 #define AC97_H
 
 #include <stdint.h>
+#include <drivers/pci.h>
 
 /* PCI BAR offsets */
 #define AC97_NAMBAR  0x10  /* native audio mixer base address (NAM) */
@@ -64,10 +65,19 @@
 #define AC97_BDL_IOC (1 << 15)  /* Interrupt on Completion */
 #define AC97_BDL_BUP (1 << 14)  /* Buffer Underrun Policy */
 
+/* vendor and device IDs (pic lookup) */
+#define AC97_VENDOR_ID 0x8086
+#define AC97_DEVICE_ID 0x2415
+
 struct bdl_entry {
     uint32_t buffer_addr_phys;
     uint16_t num_samples;
     uint16_t flags;
 };
+
+int ac97_init();
+void ac97_setup_bdl();
+void ac97_start_playback();
+void ac97_runtime_loop();
 
 #endif

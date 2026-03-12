@@ -194,3 +194,125 @@ storage media is organized into three areas:
 Resources:
 https://www.tavi.co.uk/phobos/fat.html
 https://wiki.osdev.org/FAT
+
+# PCI - Peripheral Component Interconnect
+
+See:
+https://wiki.osdev.org/PCI
+https://wiki.osdev.org/PCI_Express
+
+
+>The PCI bus was defined to establish a high performance, low cost local bus.
+- non-extended verison has an upper limit of some amount, due to [physics shenanigans from devices affecting capacitance on the bus](https://electronics.stackexchange.com/questions/470771/what-is-the-maximum-number-of-devices-a-single-pci-bus-can-handle) I suspect this isn't present in code, but was a part of the reason for the shift to PCIe (extended), so likely best to not use legacy hardware in unintended ways, even if the emulation might support it (TODO verify)
+several sites report conflicting number of devices, would require manually checking but that's outside the scope of this project for now - we only wish to read AC97. even setting up PCI device enumeration through the bus is overkill :^)
+
+- PCI devices are accessible through a load/store mechanism:
+	- memory address (MMIO) space
+	- I/O address spaces
+	- *Configuration* space
+
+The *Host Bus* connects the CPU and memory subsystem to the PCI bus
+
+Each device is addressed through a three tuple: `Bus:Device:Function` (BDF). Bus is 8 bits, device is 5 bits, function
+is 3 bits.
+Note that this means that there can be _multiple_ PCI buses.
+
+Every PCI function exposes 256 bytes of configuration space, standardized register layout to identify and configure the device without device-specific knowledge.
+
+QEMU PCI notes:
+- reports max of 32 multi-function devices per bus
+- bridges have two PCI interface - primary, secondary
+gotchas:
+- highly parallel shared-bus architecture holds it back by limiting bus speed and scalability
+- simple load/store, flat-memory model less robust than routed packet-based model
+
+PCIe improvements:
+- point to point bus topology
+- each device sits on its own dedicated bus, which is called a *link*
+*continued in QEMU pci presentation*
+
+PCI Configuration
+- I/O mapped
+- addresses identical across machines
+- only supports 256 bytes/device
+- only supports 256 buses
+
+PCI IO Space -> PCI Configuration Space (header + device specific configuration space)
+
+Comand Register:
+- provides ability for a device to respond to and generate PCI cycles
+- 0 => device is *logically* disconnected from the PCI bus
+
+Status Register:
+- used to record status information for PCI bus related events
+* device may not need to implement all bits, depending on device functionality:
+	- interrupt status (3)
+	- capabilities list (4)
+	- 66 Mhz compatible (5) [assumed 33Mhz otherwise]
+	- Reserved (bit 6)
+	- Fast back-to-back capable (7)
+	- Master data parity error (8)
+	- DEVSEL timing (9)
+	- (10) [00 - fast; 01 - medium; 10 - slow]
+	- signaled target abort
+	- received target abort
+	- received master abort
+	- signaled system error
+	- detected parity error
+
+Configuration Space
+256 bytes are required per device specifically for configuration registers. These provide software-driven initialization
+and configuration for each device or target on the PCI bus via the Configuration Space Address. Read/Write cycles are
+used to access the configuration space for each target device. the IDSEL signal acts as the "chip select" signal.
+
+Once an address is written to 0xCF8, a read or write to 0xCFC causes the host bridge to initiate a PCI configuration
+transaction on the bus
+
+Configuration - Capabilities
+- set of registers added to a linked list
+- enabled if "capabilites" is set ON in status register
+capabilities examples:
+	- MSI / MSI X
+	- PCI-X
+	- PCIe
+
+Configuration - Base Address Registers (BARs) // lol
+- BAR dual usage:
+	- Used to determine how much memory space or I/O space the device requires
+	- stores the base address of the memory region which is used to access the device registers
+
+Configuration space triggering - PCIe (ECAM)
+- Memory mapped
+- Supports 4k bytes/devices
+	- Each device has its own 4k memory page
+- Requires up to 28 bits of memory
+	- 256MB
+- Supports 256 buses per base address
+
+Configuration PCIe Configuration - PCIe Extended Capabilities
+- It is not the PCI Express "capability"
+- begins at offset 100h
+- Resembles PCI Capability structure
+
+Configuration - Multiple host bridges / Root complexes
+- NUMA-how servers scales up
+- A PCI host bridge can be connected to a single NUMA node
+- device assignment for a VM with multiple NUMA nodes
+
+PCI Hot Plug
+- concept of removing or inserting a standard PCI adapter card from a system without interrupting normal system operation or powering down the system as a whole
+ACPI hot plug, as part of ACPI spec
+
+Interrupts handling
+Legacy interrupts
+- Legacy interrupts are dedicated side-band signals
+- Multiple interrupt signals may share a single physical line
+MSI
+- In-band messages are implemented as memory writes to an address with a data value, as specified by software
+	- Required for PCI express devices, optional for PCI drives
+	- Maximum of 32 MSIs per function
+
+- MSI has a number of distinct advantages over INTx
+	- Sharing of interrupt vectors is eliminated
+	- Devices may have multiple interrupts per function
+

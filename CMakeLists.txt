@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(NOT DEFINED ARCH)
     set(ARCH "x86_64" CACHE STRING "target architecture: i386 or x86_64")
 endif()
