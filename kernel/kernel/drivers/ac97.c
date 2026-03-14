@@ -85,8 +85,8 @@ static void controller_reset() {
     // wait at least one uS
     sleep_ms(1);
 
-    /* unwrite the global reset bit */
-    outl(nabmbar + AC97_GLOBAL_CONTROL, 0);
+    /* clear cold reset, keep global interrupt enable */
+    outl(nabmbar + AC97_GLOBAL_CONTROL, AC97_GLOBAL_CONTROL_INTERRUPT_ENABLE);
 }
 
 static void ready_codec() {
