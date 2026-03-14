@@ -24,6 +24,7 @@ static void abort();
 static struct bdl_entry ring_buffer[NUM_BDL_ENTRIES] = {0};
 
 static int last_valid_index = 0;
+static int bdl_entries_filled = 0;
 
 static void get_embedded_audio_addr() {
 
@@ -125,7 +126,8 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
     }
 
     // fill the ring buffer with audio data
-    for (int i = 0; i < NUM_BDL_ENTRIES && audio_start < audio_end; i++) {
+    int i;
+    for (i = 0; i < NUM_BDL_ENTRIES && audio_start < audio_end; i++) {
         ring_buffer[i].buffer_addr_phys = audio_start;
         ring_buffer[i].num_samples = 0xFFE; // max. sample number should always be even for some
                                             // reason (check notes?)
@@ -138,17 +140,21 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
                                              // code for now
         audio_start += 0xFFE * 2;
     }
+    bdl_entries_filled = i;
 }
 
 void ac97_start_playback() {
     // tell NABMBAR + BDL_BASE_ADDRESS where our data (ring_buffer) lies
     outl(nabmbar + AC97_PCM_OUT_BASE + AC97_BDL_BASE_ADDR, (uint32_t)virt_to_phys((virt_addr_t)ring_buffer));
 
-    // write an initial LVI to NABMBAR + 0x15 (PCM out last valid index)
-    outb(nabmbar + AC97_PCM_OUT_BASE + AC97_LAST_VALID_INDEX, last_valid_index++);
+    // set LVI to the last filled BDL entry
+    last_valid_index = bdl_entries_filled - 1;
+    outb(nabmbar + AC97_PCM_OUT_BASE + AC97_LAST_VALID_INDEX, last_valid_index);
 
-    // write the run/pause bit (0x1) to NABMBAR + 0x1B (pcm out transfer control)
-    outb(nabmbar + AC97_PCM_OUT_TRANSFER_CONTROL, AC97_CONTROL_REGISTER_RUN_PAUSE_BUS_MASTER);
+    // start DMA: set run/pause bit while preserving interrupt enable bits in the control register
+    uint8_t cr = inb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER);
+    outb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER,
+        cr | AC97_CONTROL_REGISTER_RUN_PAUSE_BUS_MASTER);
 }
 
 static void ac97_irq_handler(struct interrupt_context *regs) {
