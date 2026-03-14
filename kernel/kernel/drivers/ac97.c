@@ -74,7 +74,7 @@ int ac97_init() {
 
 static void enable_bus_master(struct pci_address_t bdf) {
     uint32_t cmd = pci_read(bdf, AC97_PCI_COMMAND_REGISTER);
-    cmd |= AC97_BUS_MASTER_ENABLE;
+    cmd |= AC97_BUS_MASTER_ENABLE | (1 << 0); // bus master + I/O space enable
     pci_write(bdf, AC97_PCI_COMMAND_REGISTER, cmd);
 }
 
