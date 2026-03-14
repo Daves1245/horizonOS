@@ -41,3 +41,10 @@ uint32_t pci_read(struct pci_address_t addr, uint8_t reg_offset) {
     outl(0xCF8, config_addr);
     return inl(0xCFC);
 }
+
+void pci_write(struct pci_address_t addr, uint8_t reg_offset, uint32_t value) {
+    uint32_t config_addr = (1 << 31) | (addr.bus << 16) | (addr.device << 11) | (addr.function << 8) |
+        (reg_offset & 0xFC);
+    outl(0xCF8, config_addr);
+    outl(0xCFC, value);
+}

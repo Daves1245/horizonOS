@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <drivers/pci.h>
+#include <mm.h>
 
 /* PCI BAR offsets */
 #define AC97_NAMBAR  0x10  /* native audio mixer base address (NAM) */
@@ -69,14 +70,27 @@
 #define AC97_VENDOR_ID 0x8086
 #define AC97_DEVICE_ID 0x2415
 
+#define NUM_BDL_ENTRIES 32
+
+/* wrirte a run/pause bit here to start/pause playback */
+#define AC97_PCM_OUT_TRANSFER_CONTROL 0x1B
+
+/* enable the bus master */
+#define AC97_PCI_COMMAND_REGISTER 0x04
+#define AC97_BUS_MASTER_ENABLE (1 << 2)
+
 struct bdl_entry {
     uint32_t buffer_addr_phys;
     uint16_t num_samples;
     uint16_t flags;
 };
 
+/* linker-provided symbols for embedded audio data */
+extern uint8_t _binary_audio_start[];
+extern uint8_t _binary_audio_end[];
+
 int ac97_init();
-void ac97_setup_bdl();
+void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end);
 void ac97_start_playback();
 void ac97_runtime_loop();
 

@@ -58,3 +58,13 @@ References:
 https://web.archive.org/web/20210422185924/https://www.intel.com/assets/pdf/manual/252751.pdf
 https://web.archive.org/web/20180508155315id_/http://www-inst.eecs.berkeley.edu/~cs150/Documents/ac97_r23.pdf
 https://web.archive.org/web/20170226174953im_/http://www.intel.com/content/dam/doc/manual/io-controller-hub-7-hd-audio-ac97-manual.pdf
+
+Next steps for ac97:
+- embed raw audio data directly into memory
+	- qemu provides an option for adding devices/drives, but this would require
+	both recognizing the drive, and loading the appropriate driver to match the I/O that
+	qemu expects. it's its own sidequest
+	* we can use the linker and embed the audio directly into it.
+- figure out what data format ac97 takes, and the ffmpeg command to do so
+	* PCM, 16 or 20 bit resolution. let's go with 16
+

@@ -316,3 +316,6 @@ MSI
 	- Sharing of interrupt vectors is eliminated
 	- Devices may have multiple interrupts per function
 
+ld can embed our audio data into the binary, but we need to read that in. let's check:
+	- limine
+worst comes to worst, we can hardcode the address.

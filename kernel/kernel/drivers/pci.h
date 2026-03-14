@@ -14,5 +14,6 @@ struct pci_address_t {
 // so we can just scan for it manually. TODO replace with proper lookup
 struct pci_address_t pci_find_device(int vendor, int device);
 uint32_t pci_read(struct pci_address_t addr, uint8_t reg_offset);
+void pci_write(struct pci_address_t addr, uint8_t reg_offset, uint32_t value);
 
 #endif

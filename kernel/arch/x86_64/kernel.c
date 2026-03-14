@@ -96,6 +96,9 @@ static volatile LIMINE_REQUESTS_END_MARKER;
 extern uint64_t kernel_end;
 extern uint64_t placement_address;
 
+// mm.h requires this for virt->phys translation
+uint64_t hhdm_offset;
+
 #include <apic/rsdp.h>
 virt_addr_t rsdp_addr;
 
@@ -148,7 +151,7 @@ void kernel_main(void) {
         hcf();
     }
 
-    uint64_t hhdm_offset = hhdm_request.response->offset;
+    hhdm_offset = hhdm_request.response->offset;
     uint64_t bump_phys = 0;
 
     serial_write("Limine memory map:\n");
@@ -263,12 +266,22 @@ void kernel_main(void) {
     asm volatile("sti");
     serial_write("interrupts re-enabled\n");
 
+    serial_write("[kernel.c]: [INFO]: sleep test:");
+    sleep(1);
+    serial_write("[kernel.c]: [INFO]: OK");
+
     // find and setup AC97 (hopefully this works with interrupts enabled)
     if (ac97_init()) {
         serial_write("[ERROR]: kernel.c: could not initialize ac97 driver\n");
         hcf();
     } else {
-        serial_write("[ OK ]: kernel.c: found AC97\n");
+        serial_write("[kernel.c]: [ OK ]: initialized AC97\n");
+        ac97_setup_bdl(
+            virt_to_phys((virt_addr_t)_binary_audio_start),
+            virt_to_phys((virt_addr_t)_binary_audio_end)
+        );
+        ac97_start_playback();
+        serial_write("[kernel.c]: [ OK ]: AC97 playback started\n");
     }
 
     halt();
