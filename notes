@@ -319,3 +319,17 @@ MSI
 ld can embed our audio data into the binary, but we need to read that in. let's check:
 	- limine
 worst comes to worst, we can hardcode the address.
+
+ac97 not firing debugging:
+- no debug print coming from interrupt, interrupt not firing
+- interrupts enabled
+- in qemu monitor mode, inspecting the IDT shows an empty entry for the entry at AC97_PCI_INTERRUPT_LINE
+nope, wrong IRQ value. it's at offset 0x0000000b
+- anything above int 32 isn't mapped out by the isr stub
+- we don't persist status bits after reading them from ac97 interrupts
+
+looks like no buffer completion interrupts are ever sent through SR? DMA is halted without any refilling
+we could try polling, but it looks like QEMU *does* support per-buffer interrupts, according to its source code
+(we look at hw/audio/ac97.c in the qemu source repo: https://gitlab.com/qemu-project/qemu/-/blob/master/hw/audio/ac97.c?ref_type=heads)
+
+the IDT entry looks correct - it's pointing to our function, but it never gets called

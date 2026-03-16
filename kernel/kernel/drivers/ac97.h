@@ -92,6 +92,7 @@ extern uint8_t _binary_audio_end[];
 int ac97_init();
 void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end);
 void ac97_start_playback();
+void ac97_debug_status();
 void ac97_runtime_loop();
 
 #endif

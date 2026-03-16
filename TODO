@@ -66,5 +66,6 @@ Next steps for ac97:
 	qemu expects. it's its own sidequest
 	* we can use the linker and embed the audio directly into it.
 - figure out what data format ac97 takes, and the ffmpeg command to do so
-	* PCM, 16 or 20 bit resolution. let's go with 16
+	* PCM, 16bit revolution. claude gives this ffmpeg command:
+		`ffmpeg -i input.mp3 -ar 48000 -ac 2 -f s16le audio.raw`
 
