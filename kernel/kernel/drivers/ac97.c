@@ -47,20 +47,9 @@ int ac97_init() {
     nambar &= ~0x3;
     nabmbar &= ~0x3;
 
-    serial_write_hex("[DEBUG]: ac97.c: nambar  = ", nambar);
-    serial_write_hex("[DEBUG]: ac97.c: nabmbar = ", nabmbar);
-
     enable_bus_master(ac97_bdf);
 
-    // verify bus master was enabled
-    uint32_t pci_cmd = pci_read(ac97_bdf, AC97_PCI_COMMAND_REGISTER);
-    serial_write_hex("[DEBUG]: ac97.c: PCI command register after enable_bus_master = ", pci_cmd);
-
     controller_reset();
-
-    // dump global control register after reset
-    uint32_t glob_cnt = inl(nabmbar + AC97_GLOBAL_CONTROL);
-    serial_write_hex("[DEBUG]: ac97.c: GLOB_CNT after reset = ", glob_cnt);
 
     ready_codec();
     configure_codec();
@@ -68,52 +57,17 @@ int ac97_init() {
     // read the PCI interrupt line to determine which IRQ the device is on
     uint8_t irq = pci_read(ac97_bdf, AC97_PCI_INTERRUPT_LINE) & 0xFF;
     uint8_t vector = 32 + irq;
-    serial_write_hex("[DEBUG]: ac97.c: IRQ = ", irq);
-    serial_write_hex("[DEBUG]: ac97.c: vector = ", vector);
 
     register_interrupt_handler(vector, ac97_irq_handler);
 
-    // verify IDT entry for this vector is valid (diagnose the garbage-stub-address bug)
-    // IDTR gives us the IDT base; each entry is 16 bytes
-    struct { uint16_t limit; uint64_t base; } __attribute__((packed)) idtr;
-    asm volatile("sidt %0" : "=m"(idtr));
-    uint8_t *idt_entry_bytes = (uint8_t *)(idtr.base + vector * 16);
-    // reconstruct handler address from the packed IDT gate fields
-    uint16_t e_off_low  = *(uint16_t *)(idt_entry_bytes + 0);
-    uint16_t e_sel      = *(uint16_t *)(idt_entry_bytes + 2);
-    uint8_t  e_attr     = *(uint8_t  *)(idt_entry_bytes + 5);
-    uint16_t e_off_mid  = *(uint16_t *)(idt_entry_bytes + 6);
-    uint32_t e_off_high = *(uint32_t *)(idt_entry_bytes + 8);
-    serial_write_hex("[DEBUG]: ac97.c: IDT[43] selector = ", e_sel);
-    serial_write_hex("[DEBUG]: ac97.c: IDT[43] type_attr= ", e_attr);
-    serial_write_hex("[DEBUG]: ac97.c: IDT[43] off_high = ", e_off_high);
-    serial_write_hex("[DEBUG]: ac97.c: IDT[43] off_mid  = ", e_off_mid);
-    serial_write_hex("[DEBUG]: ac97.c: IDT[43] off_low  = ", e_off_low);
-    // expected: selector=0x0008, type_attr=0x8E, off_high=0xffffffff, off_mid=0x8000..., off_low=<stub>
-
-    // MADT override for IRQ 11 specifies active-HIGH, level-triggered (flags=0xd: bits[1:0]=01=active-high, bits[3:2]=11=level).
-    // QEMU's PCI model asserts interrupts active-HIGH internally, so active-low polarity in the IOAPIC
-    // redirection entry would suppress delivery. Use 0x08 (level-triggered, active-high).
     configure_ioapic_irq_with_flags(ioapic_addr, irq, vector, local_apic_id,
         0x08); // level-triggered, active-high (matches MADT override flags=0xd for IRQ 11)
-
-    // read back the IOAPIC redirection entry to verify it was written correctly
-    // IRQ N entry: low=reg 0x10+N*2, high=reg 0x10+N*2+1
-    // expected low: 0x0000802b (vector=43, level-triggered, active-high, unmasked, fixed delivery)
-    // expected high: 0x00000000 (dest APIC id=0)
-    uint32_t ioapic_low  = ioapic_read(ioapic_addr, 0x10 + irq * 2);
-    uint32_t ioapic_high = ioapic_read(ioapic_addr, 0x10 + irq * 2 + 1);
-    serial_write_hex("[DEBUG]: ac97.c: IOAPIC entry low  = ", ioapic_low);
-    serial_write_hex("[DEBUG]: ac97.c: IOAPIC entry high = ", ioapic_high);
 
     // enable interrupts on the PCM out channel (IOC + FIFO error)
     outb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER,
         AC97_CONTROL_REGISTER_LAST_VALID_BUFFER_INTERRUPT_ENABLE |
         AC97_CONTROL_REGISTER_ERROR_INTERRUPT_ENABLE |
         AC97_CONTROL_REGISTER_INTERRUPT_ON_COMPLETION_ENABLE);
-
-    uint8_t cr_after_irq_enable = inb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER);
-    serial_write_hex("[DEBUG]: ac97.c: PCM out CR after enabling IRQs = ", cr_after_irq_enable);
 
     serial_write("[ OK ]: ac97.c: interrupt handler registered\n");
 
@@ -147,15 +101,10 @@ static void controller_reset() {
 
 static void ready_codec() {
     // poll until the codec ready bit in NAMBAR + 0x30 is set (global status register)
-
     // timeout and abort 1000ms if status register doesn't reflect codec is ready
     if (!timeout(10000, inl(nabmbar + AC97_GLOBAL_STATUS) & AC97_GLOBAL_STATUS_CODEC_READY)) {
         abort();
     }
-
-    uint32_t glob_status = inl(nabmbar + AC97_GLOBAL_STATUS);
-    serial_write_hex("[DEBUG]: ac97.c: GLOB_STATUS = ", glob_status);
-    serial_write("[ OK ]: ac97.c: codec ready\n");
 }
 
 static void configure_codec() {
@@ -163,16 +112,9 @@ static void configure_codec() {
     outw(nambar + AC97_NAM_MASTER_VOLUME, 0x0000);
     outw(nambar + AC97_NAM_PCM_OUT_VOLUME, 0x0000);
 
-    // this is where we should set the sample rate. 4800 is the default - leave it unchanged
-    outw(nambar + AC97_NAM_SAMPLE_RATE, 48000);
-
-    // readback to verify codec accepted the writes
-    uint16_t master_vol = inw(nambar + AC97_NAM_MASTER_VOLUME);
-    uint16_t pcm_vol    = inw(nambar + AC97_NAM_PCM_OUT_VOLUME);
-    uint16_t rate       = inw(nambar + AC97_NAM_SAMPLE_RATE);
-    serial_write_hex("[DEBUG]: ac97.c: master volume readback = ", master_vol);
-    serial_write_hex("[DEBUG]: ac97.c: PCM out volume readback = ", pcm_vol);
-    serial_write_hex("[DEBUG]: ac97.c: sample rate readback = ", rate);
+    // set the sample rate (default 48000)
+    // the audio in question has a sample rate of 44100
+    outw(nambar + AC97_NAM_SAMPLE_RATE, 44100);
 
     serial_write("[ OK ]: ac97.c: codec configured\n");
 }
@@ -185,10 +127,6 @@ static void abort() {
 // reference driver: https://github.com/klange/toaruos/blob/master/modules/ac97.c
 
 void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
-    serial_write_hex("[DEBUG]: ac97.c: audio_start phys = ", (uint32_t)audio_start);
-    serial_write_hex("[DEBUG]: ac97.c: audio_end phys = ", (uint32_t)audio_end);
-    serial_write_hex("[DEBUG]: ac97.c: audio size (bytes) = ", (uint32_t)(audio_end - audio_start));
-
     if (audio_start > 0xFFFFFFFF || audio_end > 0xFFFFFFFF) {
         serial_write("[ERROR]: ac97.c: audio data not in 32-bit addressable memory\n");
         hcf();
@@ -213,44 +151,22 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
     /* audio_start has been advanced by the loop; save it as the next position to fill */
     audio_cur_pos  = audio_start;
     audio_data_end = audio_end;
-
-    serial_write_hex("[DEBUG]: ac97.c: BDL entries filled = ", bdl_entries_filled);
-    serial_write_hex("[DEBUG]: ac97.c: ring_buffer phys = ", (uint32_t)virt_to_phys((virt_addr_t)ring_buffer));
-    if (bdl_entries_filled > 0) {
-        serial_write_hex("[DEBUG]: ac97.c: BDL[0].buffer_addr_phys = ", ring_buffer[0].buffer_addr_phys);
-        serial_write_hex("[DEBUG]: ac97.c: BDL[0].num_samples = ", ring_buffer[0].num_samples);
-        serial_write_hex("[DEBUG]: ac97.c: BDL[0].flags = ", ring_buffer[0].flags);
-    }
 }
 
 void ac97_start_playback() {
     uint32_t bdl_phys = (uint32_t)virt_to_phys((virt_addr_t)ring_buffer);
-    serial_write_hex("[DEBUG]: ac97.c: writing BDL base addr = ", bdl_phys);
 
     // tell NABMBAR + BDL_BASE_ADDRESS where our data (ring_buffer) lies
     outl(nabmbar + AC97_PCM_OUT_BASE + AC97_BDL_BASE_ADDR, bdl_phys);
 
-    // verify BDL address was accepted
-    uint32_t bdl_readback = inl(nabmbar + AC97_PCM_OUT_BASE + AC97_BDL_BASE_ADDR);
-    serial_write_hex("[DEBUG]: ac97.c: BDL base addr readback = ", bdl_readback);
-
     // set LVI to the last filled BDL entry
     last_valid_index = bdl_entries_filled - 1;
     outb(nabmbar + AC97_PCM_OUT_BASE + AC97_LAST_VALID_INDEX, last_valid_index);
-    serial_write_hex("[DEBUG]: ac97.c: LVI set to             = ", last_valid_index);
-
-    // check status register before starting
-    uint16_t sr_before = inw(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_STATUS_REGISTER);
-    serial_write_hex("[DEBUG]: ac97.c: status reg before start = ", sr_before);
 
     // start DMA: set run/pause bit while preserving interrupt enable bits in the control register
     uint8_t cr = inb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER);
-    serial_write_hex("[DEBUG]: ac97.c: CR before RUN           = ", cr);
     outb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER,
         cr | AC97_CONTROL_REGISTER_RUN_PAUSE_BUS_MASTER);
-
-    uint8_t cr_after = inb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER);
-    serial_write_hex("[DEBUG]: ac97.c: CR after RUN            = ", cr_after);
 }
 
 void ac97_debug_status() {
@@ -278,11 +194,6 @@ static void ac97_irq_handler(struct interrupt_context *regs) {
 
     // read per-channel status register for PCM out
     uint16_t status = inw(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_STATUS_REGISTER);
-    uint8_t civ = inb(nabmbar + AC97_PCM_OUT_BASE + AC97_CURRENT_INDEX_VALUE);
-
-    serial_write_hex("[DEBUG]: [ac97.c]: interrupt - status = ", status);
-    serial_write_hex("[DEBUG]: [ac97.c]: CIV = ", civ);
-    serial_write_hex("[DEBUG]: [ac97.c]: LVI = ", last_valid_index);
 
     int complete = status & AC97_STATUS_REGISTER_BUFFER_COMPLETION_INTERRUPT_STATUS;
     int is_fifo_error = status & AC97_STATUS_REGISTER_FIFO_ERROR;
