@@ -20,6 +20,7 @@
 #include <drivers/timer.h>
 
 #include <drivers/ac97.h>
+#include <mm.h>
 
 extern void halt_without_apic();
 extern void hcf(void);
@@ -58,6 +59,13 @@ static volatile struct limine_memmap_request memmap_request = {
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_kernel_file_request kernel_file_request = {
     .id = LIMINE_KERNEL_FILE_REQUEST,
+    .revision = 0,
+};
+
+// Request kernel physical/virtual base addresses from Limine
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_kernel_address_request kernel_address_request = {
+    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
     .revision = 0,
 };
 
@@ -152,6 +160,13 @@ void kernel_main(void) {
     }
 
     hhdm_offset = hhdm_request.response->offset;
+
+    if (kernel_address_request.response == NULL) {
+        serial_write("FATAL: no kernel address response from Limine\n");
+        hcf();
+    }
+    kernel_phys_base = kernel_address_request.response->physical_base;
+    kernel_virt_base = kernel_address_request.response->virtual_base;
     uint64_t bump_phys = 0;
 
     serial_write("Limine memory map:\n");
@@ -270,7 +285,6 @@ void kernel_main(void) {
     sleep(1);
     serial_write("[kernel.c]: [INFO]: OK");
 
-    // find and setup AC97 (hopefully this works with interrupts enabled)
     if (ac97_init()) {
         serial_write("[ERROR]: kernel.c: could not initialize ac97 driver\n");
         hcf();

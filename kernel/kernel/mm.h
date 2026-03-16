@@ -7,6 +7,8 @@
 typedef uint64_t virt_addr_t;
 typedef uint64_t phys_addr_t;
 extern uint64_t hhdm_offset;
+extern uint64_t kernel_phys_base;
+extern uint64_t kernel_virt_base;
 #else
 typedef uint32_t virt_addr_t;
 typedef uint32_t phys_addr_t;
