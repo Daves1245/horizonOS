@@ -48,5 +48,5 @@ kernel/horizon.kernel*
 # misc
 .cache/
 
-# data
-data/*
+# audio
+audio/*
