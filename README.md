@@ -22,7 +22,8 @@ A toy kernel written in C targeting both x86 and x86_64
 - [x] Logging
 - [x] APIC support
 - [x] uACPI full mode
-- [x] PS/2 keyboard driver  
+- [x] PS/2 keyboard driver
+- [x] AC97 audio driver 
 
 ### Custom libc implementation (bootstrapped)
 - [x] Standard Library - basic stdio, stdlib, string functions
