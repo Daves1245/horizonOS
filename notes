@@ -195,6 +195,66 @@ Resources:
 https://www.tavi.co.uk/phobos/fat.html
 https://wiki.osdev.org/FAT
 
+# Sound
+
+- SB Pro, SB16 seem promising, however QEMU seems to have bugs / issues related to writing drivers in the past:
+https://forum.osdev.org/viewtopic.php?t=39652
+
+a quick glance at QEMU's bug trackers mentions some of these issues are still under works or 'not yet understood', and SB16 support isn't even maintained, so it's safer to assume it's been abandoned (ancient card)
+
+- AC'97 is a bit more complicated but probably a good choice for now.
+	- connected into PCI
+
+Direct Memory Access (DMA):
+A method for hardware to read/write system memory without involving the CPU for every transfer.
+
+Buffer Descriptor List (BDL):
+core DMA mechanism AC97 uses to transfer audio data between system memory and the codec.
+set up buffers in memory with audio data ahead of time, and point the AC97 at it,
+the DMA controller will consume them automatically while the CPU does other things.
+the BDL is a ring buffer array of 32 entries, each entry being 8 bytes. this includes:
+- physical address of the audio buffer
+- number of samples in this buffer
+- control bits (flags)
+
+important flags include IOC (Interrupt On Completion) and BUP (Buffer Underrun Policy) - what to do if the controller runs out of buffers (output silence, stop, etc.). the other are reserved
+
+basic flow (from https://wiki.osdev.org/AC97):
+/* reset the controller */
+- write the global reset bit to NAMBAR + 0x2C (global control register)
+- wait for it to clear (poll until the bit reads back as 0)
+- wait some amount for the codec to complete its cold reset
+
+/* ready codec */
+- poll until the codec ready bit in NAMBAR + 0x30 is set (global status register)
+
+/* configure codec */
+- set the volume of the desired output (Master Volume Register is NAM register 0x02, which is speakers)
+- optionally, set the sample rate here (default is 48000Hz) via register 0x2C
+- write PCM out volume to codec register 0x18
+
+
+/* BDL setup */
+- allocate a ring buffer of 32 audio buffer entries, fill them with audio data
+- addon: write the *physical* address and sample count for each entry, and set IOC flag on entries from which you want interrupts from
+
+/* start playback */
+- write an initial LVI to NAMBAR + 0x15 (PCM out last valid index)
+- write the run/pause bit (0x1) to NAMBAR + 0x1B (PCM out transfer control)
+
+/* runtime loop */
+- poll or handle interrupts from NAMBAR + 0x16 (PCM out status register) for buffer completion
+- refill the consumed buffer with new audio data
+- advance LVI by 1 modulo 32 and write it to NAMBAR + 0x15
+loop
+
+
+References:
+https://web.archive.org/web/20210422185924/https://www.intel.com/assets/pdf/manual/252751.pdf
+https://web.archive.org/web/20180508155315id_/http://www-inst.eecs.berkeley.edu/~cs150/Documents/ac97_r23.pdf
+https://web.archive.org/web/20170226174953im_/http://www.intel.com/content/dam/doc/manual/io-controller-hub-7-hd-audio-ac97-manual.pdf
+
+
 # PCI - Peripheral Component Interconnect
 
 See:
@@ -333,3 +393,8 @@ we could try polling, but it looks like QEMU *does* support per-buffer interrupt
 (we look at hw/audio/ac97.c in the qemu source repo: https://gitlab.com/qemu-project/qemu/-/blob/master/hw/audio/ac97.c?ref_type=heads)
 
 the IDT entry looks correct - it's pointing to our function, but it never gets called
+
+fix: incorrect address translation, idt not stubbed out on ac97 irq
+
+03-16-2026: cleaned up debug prints
+
