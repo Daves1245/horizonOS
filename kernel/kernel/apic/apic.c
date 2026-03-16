@@ -133,3 +133,48 @@ void apic_send_eoi(void) {
     volatile uint32_t *apic_eoi = (volatile uint32_t *)(lapic_virt_base + APIC_EOI);
     *apic_eoi = 0;
 }
+
+#define PIT_FREQ 1193182
+
+/* use PIT channel 2 (no IRQ) to spin-wait for a given number of milliseconds */
+static void pit_wait_ms(uint32_t ms) {
+    uint32_t count = (PIT_FREQ * ms) / 1000;
+
+    /* gate channel 2 on, speaker off */
+    uint8_t tmp = inb(0x61);
+    outb(0x61, (tmp & ~0x02) | 0x01);
+
+    /* channel 2, lobyte/hibyte, mode 0 (one-shot), binary */
+    outb(0x43, 0xB0);
+    outb(0x42, count & 0xFF);
+    outb(0x42, (count >> 8) & 0xFF);
+
+    /* wait for output bit (bit 5 of port 0x61) to go high */
+    while (!(inb(0x61) & 0x20));
+}
+
+void apic_timer_init(uint32_t hz) {
+    volatile uint32_t *divide   = (volatile uint32_t *)(lapic_virt_base + APIC_TIMER_DIVIDE);
+    volatile uint32_t *initcnt  = (volatile uint32_t *)(lapic_virt_base + APIC_TIMER_INITCNT);
+    volatile uint32_t *currcnt  = (volatile uint32_t *)(lapic_virt_base + APIC_TIMER_CURRCNT);
+    volatile uint32_t *lvt      = (volatile uint32_t *)(lapic_virt_base + APIC_LVT_TIMER);
+
+    /* divide by 1 */
+    *divide = 0x0B;
+
+    /* mask + one-shot mode for calibration, vector 32 */
+    *lvt = APIC_TIMER_MASKED | APIC_TIMER_ONESHOT | 32;
+    *initcnt = 0xFFFFFFFF;
+
+    pit_wait_ms(10);
+
+    uint32_t ticks_per_10ms = 0xFFFFFFFF - *currcnt;
+    uint32_t ticks_per_tick = (ticks_per_10ms / 10) * (1000 / hz);
+
+    log_debug("[apic]: timer calibrated: %d ticks per ms\n", ticks_per_10ms / 10);
+
+    /* set up periodic timer at hz */
+    *divide  = 0x0B;
+    *lvt     = APIC_TIMER_PERIODIC | 32;
+    *initcnt = ticks_per_tick;
+}

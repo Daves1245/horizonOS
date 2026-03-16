@@ -80,6 +80,28 @@ elseif(ARCH STREQUAL "x86_64")
         ${UACPI_SOURCES}
     )
 
+    # Convert mp3 to raw 16-bit signed LE PCM at 48kHz stereo
+    set(AUDIO_MP3 ${CMAKE_SOURCE_DIR}/audio/audio.mp3)
+    set(AUDIO_RAW ${CMAKE_CURRENT_BINARY_DIR}/audio.raw)
+    add_custom_command(
+        OUTPUT ${AUDIO_RAW}
+        COMMAND ffmpeg -y -i ${AUDIO_MP3} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_RAW}
+        DEPENDS ${AUDIO_MP3}
+        COMMENT "Converting audio.mp3 to raw PCM (16-bit LE, 48kHz, stereo)"
+    )
+
+    # Embed raw audio data into a linkable object
+    set(AUDIO_OBJ ${CMAKE_CURRENT_BINARY_DIR}/audio.o)
+    add_custom_command(
+        OUTPUT ${AUDIO_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
+            --rename-section .data=.audio_data,alloc,load,readonly,contents
+            ${AUDIO_RAW} ${AUDIO_OBJ}
+        DEPENDS ${AUDIO_RAW}
+        COMMENT "Embedding audio.raw into audio.o"
+    )
+    add_custom_target(audio_object DEPENDS ${AUDIO_OBJ})
+
     set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/${ARCHDIR}/linker.ld)
     set(USE_CRTBEGIN OFF)
 endif()
@@ -91,10 +113,13 @@ set(KERNEL_COMMON_SOURCES
     kernel/drivers/serial.c
     kernel/drivers/timer.c
     kernel/drivers/keyboard/keyboard.c
+    kernel/drivers/ac97.c
+    kernel/drivers/pci.c
     kernel/apic/rsdp.c
     kernel/apic/apic.c
     kernel/apic/madt.c
     kernel/halt.c
+    kernel/mm.c
 )
 
 # All kernel sources
@@ -108,6 +133,12 @@ add_executable(horizon.kernel ${KERNEL_SOURCES})
 
 # Ensure headers and libk are ready before building kernel
 add_dependencies(horizon.kernel install-kernel-headers install-libc-headers k)
+
+# Link embedded audio data (x86_64 only)
+if(ARCH STREQUAL "x86_64")
+    add_dependencies(horizon.kernel audio_object)
+    target_link_libraries(horizon.kernel ${AUDIO_OBJ})
+endif()
 
 # Set compile options
 target_compile_options(horizon.kernel PRIVATE
@@ -179,9 +210,9 @@ set_target_properties(horizon.kernel PROPERTIES
 
 # Post-build commands: generate disassembly, symbols, and elf info
 add_custom_command(TARGET horizon.kernel POST_BUILD
-    COMMAND objdump -d $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.dis
-    COMMAND objdump -t $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.sym
-    COMMAND readelf -a $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.elf
+    COMMAND ${TOOLCHAIN_PREFIX}-objdump -d $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.dis
+    COMMAND ${TOOLCHAIN_PREFIX}-objdump -t $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.sym
+    COMMAND ${READELF_BINARY} -a $<TARGET_FILE:horizon.kernel> > ${CMAKE_CURRENT_BINARY_DIR}/horizon.kernel.elf
     COMMENT "Generating kernel disassembly, symbols, and ELF info"
 )
 

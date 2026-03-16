@@ -44,6 +44,14 @@ SECTIONS
 		*(.rodata)
 	} :rodata
 
+	/* Embedded audio data (from objcopy binary) */
+	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	.audio_data : {
+		_binary_audio_start = .;
+		KEEP(*(.audio_data))
+		_binary_audio_end = .;
+	} :rodata
+
 	/* Move to the next memory page for .data */
 	. = ALIGN(CONSTANT(MAXPAGESIZE));
 

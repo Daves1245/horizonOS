@@ -16,6 +16,11 @@
 #include <x86_64/memory/paging.h>
 #include <apic/apic.h>
 #include <apic/madt.h>
+#include <halt.h>
+#include <drivers/timer.h>
+
+#include <drivers/ac97.h>
+#include <mm.h>
 
 extern void halt_without_apic();
 extern void hcf(void);
@@ -57,6 +62,13 @@ static volatile struct limine_kernel_file_request kernel_file_request = {
     .revision = 0,
 };
 
+// Request kernel physical/virtual base addresses from Limine
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_kernel_address_request kernel_address_request = {
+    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
+    .revision = 0,
+};
+
 // Request specific paging mode from Limine
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_paging_mode_request paging_mode_request = {
@@ -91,6 +103,9 @@ static volatile LIMINE_REQUESTS_END_MARKER;
 
 extern uint64_t kernel_end;
 extern uint64_t placement_address;
+
+// mm.h requires this for virt->phys translation
+uint64_t hhdm_offset;
 
 #include <apic/rsdp.h>
 virt_addr_t rsdp_addr;
@@ -144,7 +159,14 @@ void kernel_main(void) {
         hcf();
     }
 
-    uint64_t hhdm_offset = hhdm_request.response->offset;
+    hhdm_offset = hhdm_request.response->offset;
+
+    if (kernel_address_request.response == NULL) {
+        serial_write("FATAL: no kernel address response from Limine\n");
+        hcf();
+    }
+    kernel_phys_base = kernel_address_request.response->physical_base;
+    kernel_virt_base = kernel_address_request.response->virtual_base;
     uint64_t bump_phys = 0;
 
     serial_write("Limine memory map:\n");
@@ -203,8 +225,6 @@ void kernel_main(void) {
     map_physical_range(rsdp_phys, 4096, 1, 1);  // Map 4KB, kernel, writable
     serial_write("RSDP page mapped\n");
 
-    // uACPI initialization moved to acpi_init() in uapic/uacpi_init.c
-    // Call it when you're ready to initialize ACPI
     int acpi_result = acpi_init();
     log_info("acpi_init returned: %d\n", acpi_result);
 
@@ -260,6 +280,23 @@ void kernel_main(void) {
 
     asm volatile("sti");
     serial_write("interrupts re-enabled\n");
+
+    serial_write("[kernel.c]: [INFO]: sleep test:");
+    sleep(1);
+    serial_write("[kernel.c]: [INFO]: OK");
+
+    if (ac97_init()) {
+        serial_write("[ERROR]: kernel.c: could not initialize ac97 driver\n");
+        hcf();
+    } else {
+        serial_write("[kernel.c]: [ OK ]: initialized AC97\n");
+        ac97_setup_bdl(
+            virt_to_phys((virt_addr_t)_binary_audio_start),
+            virt_to_phys((virt_addr_t)_binary_audio_end)
+        );
+        ac97_start_playback();
+        serial_write("[kernel.c]: [ OK ]: AC97 playback started\n");
+    }
 
     halt();
 }

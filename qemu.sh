@@ -1,5 +1,13 @@
 #!/bin/sh
 
+# Detect audio backend
+case "$(uname)" in
+    Darwin) AUDIODEV="-audiodev coreaudio,id=snd0" ;;
+    Linux)  AUDIODEV="-audiodev pa,id=snd0" ;;
+    *)      AUDIODEV="-audiodev sdl,id=snd0" ;;
+esac
+AC97="-device AC97,audiodev=snd0"
+
 # Detect which architecture to use (default to i386 if both exist)
 if [ -f build/i386/kernel/horizon.kernel ]; then
     ARCH="i386"
@@ -45,7 +53,8 @@ else
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
             -vga std \
             -machine pc,smm=off \
-            -d cpu,int,guest_errors,exec \
+            $AUDIODEV $AC97 \
+            -d int,guest_errors \
             -D qemu.log \
             -no-shutdown \
             -serial file:serial.log
@@ -53,6 +62,7 @@ else
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
             -vga std \
             -machine pc,smm=off \
+            $AUDIODEV $AC97 \
             -serial stdio
     fi
 fi

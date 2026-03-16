@@ -53,3 +53,17 @@ void serial_write(const char *str) {
         serial_putchar(*str++);
     }
 }
+
+void serial_write_hex(const char *prefix, uint32_t val) {
+    serial_write(prefix);
+    serial_write("0x");
+    static const char hex[] = "0123456789abcdef";
+    char buf[9];
+    buf[8] = '\0';
+    for (int i = 7; i >= 0; i--) {
+        buf[i] = hex[val & 0xF];
+        val >>= 4;
+    }
+    serial_write(buf);
+    serial_write("\n");
+}

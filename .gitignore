@@ -44,3 +44,9 @@ kernel/horizon.kernel*
 
 # ctags
 .tags
+
+# misc
+.cache/
+
+# data
+data/*
