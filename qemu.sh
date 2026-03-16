@@ -54,7 +54,7 @@ else
             -vga std \
             -machine pc,smm=off \
             $AUDIODEV $AC97 \
-            -d cpu,int,guest_errors,exec \
+            -d int,guest_errors \
             -D qemu.log \
             -no-shutdown \
             -serial file:serial.log
