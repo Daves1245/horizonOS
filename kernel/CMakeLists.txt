@@ -81,7 +81,7 @@ elseif(ARCH STREQUAL "x86_64")
     )
 
     # Convert mp3 to raw 16-bit signed LE PCM at 48kHz stereo
-    set(AUDIO_MP3 ${CMAKE_SOURCE_DIR}/data/audio.mp3)
+    set(AUDIO_MP3 ${CMAKE_SOURCE_DIR}/audio/audio.mp3)
     set(AUDIO_RAW ${CMAKE_CURRENT_BINARY_DIR}/audio.raw)
     add_custom_command(
         OUTPUT ${AUDIO_RAW}
