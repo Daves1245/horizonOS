@@ -18,6 +18,7 @@
 #include <apic/madt.h>
 #include <halt.h>
 #include <drivers/timer.h>
+#include <drivers/graphics.h>
 
 #include <drivers/ac97.h>
 #include <mm.h>
@@ -139,15 +140,23 @@ void kernel_main(void) {
     if (framebuffer_request.response == NULL ||
             framebuffer_request.response->framebuffer_count < 1) {
         //printf("No limine framebuffer available\n");
+        serial_write("[kernel.c]: did not receive a framebuffer from limine. exiting\n");
     } else {
+        serial_printf("[kernel.c]: framebuffer count: %d\n", framebuffer_request.response->framebuffer_count);
+
+        serial_write("framebuffers: ");
+        for (uint64_t i = 0; i < framebuffer_request.response->framebuffer_count; i++) {
+            serial_printf("%d: ", i);
+            print_framebuffer(framebuffer_request.response->framebuffers[i]);
+        }
         // Fetch first framebuffer
         struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-        //printf("Limine framebuffer detected:\n");
-
-        for (size_t i = 0; i < 100; i++) {
-            volatile uint32_t *fb_ptr = framebuffer->address;
-            fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
+        // test printing a pixel by filling in a grid
+        for (int i = 0; i < 500; i++) {
+            for (int j = 0; j < 500; j++) {
+                put_pixel(framebuffer, i, j, 0xffffff);
+            }
         }
     }
 
