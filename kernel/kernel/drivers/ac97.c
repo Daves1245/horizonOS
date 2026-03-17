@@ -114,7 +114,7 @@ static void configure_codec() {
 
     // set the sample rate (default 48000)
     // the audio in question has a sample rate of 44100
-    outw(nambar + AC97_NAM_SAMPLE_RATE, 44100);
+    outw(nambar + AC97_NAM_SAMPLE_RATE, 48000);
 
     serial_write("[ OK ]: ac97.c: codec configured\n");
 }

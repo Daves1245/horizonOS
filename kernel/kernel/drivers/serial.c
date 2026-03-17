@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdarg.h>
 
 #define COM1_PORT 0x3F8
 
@@ -52,6 +53,76 @@ void serial_write(const char *str) {
     while (*str) {
         serial_putchar(*str++);
     }
+}
+
+static void serial_write_uint(uint64_t val, int base) {
+    const char digits[] = "0123456789abcdef";
+    // uint max - 1e19 + 1 null byte
+    // whoops, if we pass in base = 2 then
+    // we need 64 bits to display this
+    char buf[65] = {0};
+    int i = 64;
+    buf[i] = '\0';
+    if (val == 0) {
+        serial_putchar('0');
+        return;
+    }
+    while (val && i > 0) {
+        buf[--i] = digits[val % base];
+        val /= base;
+    }
+    serial_write(&buf[i]);
+}
+
+static void serial_write_int(int64_t val) {
+    if (val < 0) {
+        serial_putchar('-');
+        val = -val;
+    }
+    serial_write_uint((uint64_t) val, 10);
+}
+
+void serial_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    for (const char *p = fmt; *p; p++) {
+        if (*p != '%') {
+            serial_putchar(*p);
+            continue;
+        }
+        p++;
+        switch (*p) {
+            case 'd':
+                serial_write_int(va_arg(args, int64_t));
+                break;
+            case 'u':
+                serial_write_uint(va_arg(args, uint64_t), 10);
+                break;
+            case 'x':
+                serial_write_uint(va_arg(args, uint64_t), 16);
+                break;
+            case 'p':
+                serial_write("0x");
+                serial_write_uint((uint64_t)(uintptr_t) va_arg(args, void *), 16);
+                break;
+            case 's':
+                serial_write(va_arg(args, const char *));
+                break;
+            case 'c':
+                serial_putchar((char) va_arg(args, unsigned int));
+                break;
+            case '%':
+                serial_putchar('%');
+                break;
+            default:
+                serial_putchar('%');
+                serial_putchar(*p);
+                break;
+        }
+    }
+
+    va_end(args);
 }
 
 void serial_write_hex(const char *prefix, uint32_t val) {
