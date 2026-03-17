@@ -93,14 +93,33 @@ void serial_printf(const char *fmt, ...) {
         }
         p++;
         switch (*p) {
+            case 'l':
+                p++;
+                switch (*p) {
+                    case 'd':
+                        serial_write_int(va_arg(args, int64_t));
+                        break;
+                    case 'u':
+                        serial_write_uint(va_arg(args, uint64_t), 10);
+                        break;
+                    case 'x':
+                        serial_write_uint(va_arg(args, uint64_t), 16);
+                        break;
+                    default:
+                        serial_putchar('%');
+                        serial_putchar('l');
+                        serial_putchar(*p);
+                        break;
+                }
+                break;
             case 'd':
-                serial_write_int(va_arg(args, int64_t));
+                serial_write_int((int64_t) va_arg(args, int));
                 break;
             case 'u':
-                serial_write_uint(va_arg(args, uint64_t), 10);
+                serial_write_uint((uint64_t) va_arg(args, unsigned int), 10);
                 break;
             case 'x':
-                serial_write_uint(va_arg(args, uint64_t), 16);
+                serial_write_uint((uint64_t) va_arg(args, unsigned int), 16);
                 break;
             case 'p':
                 serial_write("0x");
