@@ -53,8 +53,9 @@ else
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
             -vga std \
             -machine pc,smm=off \
+            -no-reboot \
             $AUDIODEV $AC97 \
-            -d int,guest_errors \
+            -d int,guest_errors,cpu_reset \
             -D qemu.log \
             -no-shutdown \
             -serial file:serial.log

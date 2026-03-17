@@ -1,9 +1,28 @@
 #include "graphics.h"
 #include <drivers/serial.h>
 
-void put_pixel(struct limine_framebuffer *framebuffer, int x, int y, uint32_t val) {
-    volatile uint32_t *pixel = &framebuffer->address[framebuffer->width * y + x];
+uint32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
+    return (r << 16) | (g << 8) | b;
+}
+
+void put_pixel(struct limine_framebuffer *framebuffer, uint64_t x, uint64_t y, uint32_t val) {
+    if (x >= framebuffer->width || y >= framebuffer->height) {
+        return;
+    }
+    uint64_t bpp = framebuffer->bpp / 8;
+    volatile uint32_t *pixel = (volatile uint32_t *)((uint8_t *)framebuffer->address + framebuffer->pitch * y + x * bpp);
     *pixel = val;
+}
+
+void fill_rect(struct limine_framebuffer *framebuffer, uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint32_t val) {
+    uint32_t *fb = framebuffer->address;
+    for (uint64_t i = a; i <= c; i++) {
+        if (i >= framebuffer->width) continue;
+        for (uint64_t j = b; j <= d; j++) {
+            if (j >= framebuffer->height) continue;
+            fb[j * (framebuffer->pitch / 4) + i] = val;
+        }
+    }
 }
 
 void print_framebuffer(struct limine_framebuffer *framebuffer) {

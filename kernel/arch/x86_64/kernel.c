@@ -149,15 +149,12 @@ void kernel_main(void) {
             serial_printf("%d: ", i);
             print_framebuffer(framebuffer_request.response->framebuffers[i]);
         }
+
         // Fetch first framebuffer
         struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
         // test printing a pixel by filling in a grid
-        for (int i = 0; i < 500; i++) {
-            for (int j = 0; j < 500; j++) {
-                put_pixel(framebuffer, i, j, 0xffffff);
-            }
-        }
+        fill_rect(framebuffer, 0, 0, framebuffer->width, framebuffer->height, rgb(0xFF, 0xFF, 0xFF));
     }
 
     init_serial();
@@ -303,7 +300,7 @@ void kernel_main(void) {
             virt_to_phys((virt_addr_t)_binary_audio_start),
             virt_to_phys((virt_addr_t)_binary_audio_end)
         );
-        ac97_start_playback();
+        //ac97_start_playback();
         serial_write("[kernel.c]: [ OK ]: AC97 playback started\n");
     }
 
