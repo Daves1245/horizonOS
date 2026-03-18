@@ -45,6 +45,8 @@ set(FREEOBJS_SOURCES
     stdio/puts.c
     stdlib/abort.c
     string/string.c
+    math/math.c
+    rand.c
 )
 
 # Build libk (kernel libc)
