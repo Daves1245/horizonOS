@@ -7,14 +7,21 @@
 #define TIMER_HZ 1000
 
 static volatile uint32_t tick_count = 0;
+static volatile uint32_t uptime_ms = 0;
+
+uint32_t timer_ticks() {
+    return tick_count;
+}
+
+// timer hz is set at 1000 so it already fires once every ms
+// for now, just return tick_count
+uint32_t get_uptime_ms() {
+    return tick_count;
+}
 
 void timer_interrupt_handler(struct interrupt_context *regs) {
     tick_count++;
     apic_send_eoi();
-}
-
-uint32_t timer_ticks() {
-    return tick_count;
 }
 
 void init_timer() {
