@@ -23,6 +23,8 @@
 #include <drivers/ac97.h>
 #include <mm.h>
 
+#include <games/pong.h>
+
 extern void halt_without_apic();
 extern void hcf(void);
 
@@ -137,27 +139,6 @@ void kernel_main(void) {
         //printf("Paging mode: %d\n", paging_mode_request.response->mode);
     }
 
-    if (framebuffer_request.response == NULL ||
-            framebuffer_request.response->framebuffer_count < 1) {
-        //printf("No limine framebuffer available\n");
-        serial_write("[kernel.c]: did not receive a framebuffer from limine. exiting\n");
-        hcf();
-    }
-
-    serial_write("framebuffers: ");
-    for (uint64_t i = 0; i < framebuffer_request.response->framebuffer_count; i++) {
-        serial_printf("%d: ", i);
-        print_framebuffer(framebuffer_request.response->framebuffers[i]);
-    }
-
-    // Fetch first framebuffer
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-
-    graphics_init(framebuffer);
-
-    // test printing a pixel by filling in a grid
-    gfx_fill_rect(0, 0, framebuffer->width, framebuffer->height, rgb(0xFF, 0xFF, 0xFF));
-
     init_serial();
 
     // walk the memory map and find a usable region for the bump allocator
@@ -181,10 +162,10 @@ void kernel_main(void) {
     for (uint64_t i = 0; i < memmap->entry_count; i++) {
         struct limine_memmap_entry *e = memmap->entries[i];
         log_info("  [%d] base=0x%x%x len=0x%x%x type=%d\n",
-                (int)i,
-                (uint32_t)(e->base >> 32), (uint32_t)e->base,
-                (uint32_t)(e->length >> 32), (uint32_t)e->length,
-                (int)e->type);
+                (int) i,
+                (uint32_t)(e->base >> 32), (uint32_t) e->base,
+                (uint32_t)(e->length >> 32), (uint32_t) e->length,
+                (int) e->type);
         // LIMINE_MEMMAP_USABLE == 0; pick first usable region >= 4MB
         if (bump_phys == 0 && e->type == LIMINE_MEMMAP_USABLE && e->length >= 0x400000) {
             bump_phys = e->base;
@@ -298,11 +279,42 @@ void kernel_main(void) {
     } else {
         serial_write("[kernel.c]: [ OK ]: initialized AC97\n");
         ac97_setup_bdl(
-                virt_to_phys((virt_addr_t)_binary_audio_start),
-                virt_to_phys((virt_addr_t)_binary_audio_end)
-                );
+            virt_to_phys((virt_addr_t)_binary_audio_start),
+            virt_to_phys((virt_addr_t)_binary_audio_end)
+        );
         //ac97_start_playback();
         serial_write("[kernel.c]: [ OK ]: AC97 playback started\n");
+    }
+
+    if (framebuffer_request.response == NULL ||
+            framebuffer_request.response->framebuffer_count < 1) {
+        //printf("No limine framebuffer available\n");
+        serial_write("[kernel.c]: did not receive a framebuffer from limine. exiting\n");
+        hcf();
+    }
+
+    // Fetch first framebuffer
+    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+
+    serial_write("framebuffers: ");
+    for (uint64_t i = 0; i < framebuffer_request.response->framebuffer_count; i++) {
+        serial_printf("%d: ", i);
+        gfx_print_framebuffer(framebuffer_request.response->framebuffers[i]);
+    }
+
+    graphics_init(framebuffer);
+    pong_init(framebuffer->width, framebuffer->height);
+
+    pong_start();
+    int last = (int)timer_ticks();
+    for (;;) {
+        int now = (int)timer_ticks();
+        int delta = now - last;
+        last = now;
+        pong_handle_input();
+        pong_update(delta);
+        pong_draw();
+        gfx_render();
     }
 
     halt();

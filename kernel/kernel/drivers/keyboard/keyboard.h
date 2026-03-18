@@ -6,5 +6,6 @@
 void setup_keyboard_irq();
 void keyboard_interrupt_handler(struct interrupt_context *);
 void init_keyboard();
+void is_key_pressed();
 
 #endif

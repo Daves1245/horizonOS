@@ -20,6 +20,8 @@ ac97.c: `void play(struct file pcm_data);`
 ## Graphics
 - draw_rectangle(a, b, c, d);
 - clear_screen();
+- implement the double pointer method
+`render()` - swap buffers
 
 ## Keyboard API
 

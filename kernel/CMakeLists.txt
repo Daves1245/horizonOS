@@ -78,6 +78,7 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/drivers/ps2k.c
         ${ARCHDIR}/drivers/graphics.c
         ${ARCHDIR}/panic.c
+        ${ARCHDIR}/games/pong.c
         ${UACPI_SOURCES}
     )
 
