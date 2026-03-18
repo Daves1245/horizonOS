@@ -82,14 +82,38 @@ elseif(ARCH STREQUAL "x86_64")
         ${UACPI_SOURCES}
     )
 
-    # Convert mp3 to raw 16-bit signed LE PCM at 48kHz stereo
-    set(AUDIO_MP3 ${CMAKE_SOURCE_DIR}/audio/audio.mp3)
-    set(AUDIO_RAW ${CMAKE_CURRENT_BINARY_DIR}/audio.raw)
+    # convert to 16 bit 49kHz raw for ac97
+    set(AUDIO_RICK_SRC ${CMAKE_SOURCE_DIR}/audio/rick.mp3)
+    set(AUDIO_RICK ${CMAKE_CURRENT_BINARY_DIR}/audio.raw)
+
+    set(AUDIO_PONG_WALL_SRC ${CMAKE_CURRENT_BINARY_DIR}/wall.ogg)
+    set(AUDIO_PONG_WALL ${CMAKE_CURRENT_BINARY_DIR}/wall.raw)
+    set(AUDIO_PONG_PADDLE_SRC ${CMAKE_CURRENT_BINARY_DIR}/paddle.ogg)
+    set(AUDIO_PONG_PADDLE ${CMAKE_CURRENT_BINARY_DIR}/paddle.raw)
+    set(AUDIO_PONG_SCORE_SRC ${CMAKE_CURRENT_BINARY_DIR}/score.ogg)
+    set(AUDIO_PONG_SCORE ${CMAKE_CURRENT_BINARY_DIR}/score.raw)
+
     add_custom_command(
         OUTPUT ${AUDIO_RAW}
         COMMAND ffmpeg -y -i ${AUDIO_MP3} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_RAW}
-        DEPENDS ${AUDIO_MP3}
+        DEPENDS ${AUDIO_RICK}
         COMMENT "Converting audio.mp3 to raw PCM (16-bit LE, 48kHz, stereo)"
+
+        # - -f s16le — output format: raw signed 16-bit little-endian PCM
+        # - -acodec pcm_s16le — codec: 16-bit LE PCM
+        # - -ar 48000 — sample rate: 48kHz (default in AC97 standard)
+        # - -ac 2 — stereo (2 channels)
+        OUTPUT ${AUDIO_PONG_WALL}
+        COMMAND ffmpeg -y -i input.ogg -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_WALL}
+        DEPENDS ${AUDIO_PONG_WALL_SRC}
+
+        OUTPUT ${AUDIO_PONG_PADDLE}
+        COMMAND ffmpeg -y -i input.ogg -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_PADDLE}
+        DEPENDS ${AUDIO_PONG_PADDLE_SRC}
+
+        OUTPUT ${AUDIO_PONG_SCORE}
+        COMMAND ffmpeg -y -i input.ogg -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_SCORE}
+        DEPENDS ${AUDIO_PONG_SCORE_SRC}
     )
 
     # Embed raw audio data into a linkable object
@@ -97,8 +121,8 @@ elseif(ARCH STREQUAL "x86_64")
     add_custom_command(
         OUTPUT ${AUDIO_OBJ}
         COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
-            --rename-section .data=.audio_data,alloc,load,readonly,contents
-            ${AUDIO_RAW} ${AUDIO_OBJ}
+        --rename-section .data=.audio_data,alloc,load,readonly,contents
+        ${AUDIO_RAW} ${AUDIO_OBJ}
         DEPENDS ${AUDIO_RAW}
         COMMENT "Embedding audio.raw into audio.o"
     )
@@ -235,8 +259,8 @@ install(TARGETS horizon.kernel
 add_custom_target(install-kernel-headers ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${SYSROOT}${INCLUDEDIR}
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${SYSROOT}${INCLUDEDIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${SYSROOT}${INCLUDEDIR}
     COMMENT "Installing kernel headers"
 )
 # Make sure this runs early

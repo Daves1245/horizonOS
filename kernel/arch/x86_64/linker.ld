@@ -46,10 +46,31 @@ SECTIONS
 
 	/* Embedded audio data (from objcopy binary) */
 	. = ALIGN(CONSTANT(MAXPAGESIZE));
-	.audio_data : {
-		_binary_audio_start = .;
-		KEEP(*(.audio_data))
-		_binary_audio_end = .;
+	.sound_rick: {
+		_audio_rick_start = .;
+		KEEP(*(.sound_rick))
+		_audio_rick_end = .;
+	} :rodata
+
+	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	.sound_wall: {
+		_audio_pong_wall_start = .;
+		KEEP(*(.sound_wall))
+		_audio_pong_wall_end = .;
+	} :rodata
+
+	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	.sound_paddle: {
+		_audio_pong_paddle_start = .;
+		KEEP(*(.sound_paddle))
+		_audio_pong_paddle_end = .;
+	} :rodata
+
+	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	.sound_score: {
+		_audio_pong_score_start = .;
+		KEEP(*(.sound_score))
+		_audio_pong_score_end = .;
 	} :rodata
 
 	/* Move to the next memory page for .data */
