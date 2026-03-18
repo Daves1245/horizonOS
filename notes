@@ -398,3 +398,58 @@ fix: incorrect address translation, idt not stubbed out on ac97 irq
 
 03-16-2026: cleaned up debug prints
 
+serial.c: adding printf
+triple fault on %d, logs say serial.c:53 is the culprit with a PF, - `while (*str)`
+incorrect serial_write_uint - uint max has 1e19, which means buf in serial_write_uint should be 21 bytes long (+1 null terminator)
+the format string only has %d, so it's likely that &buf[i] is passing a NULL to serial_write
+actually, worst case is base = 2 with 64 characters printed, need 65 bytes
+fix: use %d instead of %s for displaying strings x(
+
+audio sounds slowed down now - 44100 is the rate of the song, and this was playing at the right
+speed before, but now it only sounds correct if setting ac97 at the default 48000 sample rate.
+something's going on here, but i'm not sure what. voodoo perhaps? i suspect nefarious actors are at play.
+
+here's our framebuffer data:
+framebuffers: 0: framebuffer:
+address        = 0xffff8000fd000000
+width          = 1280
+height         = 800
+pitch          = 5120
+bpp            = 32
+memory_model   = 1
+red_mask_size  = 8
+red_mask_shift = 16
+green_mask_size  = 8
+green_mask_shift = 8
+blue_mask_size   = 8
+blue_mask_shift  = 0
+edid_size      = 128
+edid           = 0xffff800000060000
+mode_count     = 66
+
+it's possible to specify in the limine configuration or programmatically according to the limine
+protocol, for a specific height / width / likely other properties for the framebuffer. for now,
+this works.
+
+from osdev wiki, pitch is *how many bytes of VRAM you should skip to go one pixel down*
+in other words, number of bytes from the start of one row of pixels to the next
+
+naive put_pixel from the osdev wiki works, but rectangles are repeated for some reason
+
+given the resolution is 1280 by 800, I wonder if the display is larger, but tiling / repeating
+a small resolution.
+
+we can't use width reliably since the hardware might pad on extra bytes between rows - have to
+use pitch. but since each entry/pixel is 4 bytes (32 bit int), we divide by 4 to get our index.
+limine describes this in their protocol but makes no mention of what each of these fields are for.
+
+so our put_pixel functions were correct, but the reason we didn't fill the screen was because we
+were given wrong values by passing uint64_t arguments to the stack, when the caller only provided 32 from regular ints. thus, the upper bits were garbage and changing the values.
+
+the double pointer method iirc, is to have two buffers for displaying: one that's always on the
+screen, and one that's being built. that way, no matter the timing, only the display that's
+completely built will be shown. this keeps a smooth screen without jitteryness (assuming
+everything else holds))
+
+we should lift the framebuffer argument to avoid passing it to every function. we can also
+make global several variables from this in a `graphics_init()` function.

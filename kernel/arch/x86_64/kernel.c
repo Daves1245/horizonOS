@@ -18,9 +18,12 @@
 #include <apic/madt.h>
 #include <halt.h>
 #include <drivers/timer.h>
+#include <drivers/graphics.h>
 
 #include <drivers/ac97.h>
 #include <mm.h>
+
+#include <games/pong.h>
 
 extern void halt_without_apic();
 extern void hcf(void);
@@ -136,21 +139,6 @@ void kernel_main(void) {
         //printf("Paging mode: %d\n", paging_mode_request.response->mode);
     }
 
-    if (framebuffer_request.response == NULL ||
-            framebuffer_request.response->framebuffer_count < 1) {
-        //printf("No limine framebuffer available\n");
-    } else {
-        // Fetch first framebuffer
-        struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-
-        //printf("Limine framebuffer detected:\n");
-
-        for (size_t i = 0; i < 100; i++) {
-            volatile uint32_t *fb_ptr = framebuffer->address;
-            fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
-        }
-    }
-
     init_serial();
 
     // walk the memory map and find a usable region for the bump allocator
@@ -174,10 +162,10 @@ void kernel_main(void) {
     for (uint64_t i = 0; i < memmap->entry_count; i++) {
         struct limine_memmap_entry *e = memmap->entries[i];
         log_info("  [%d] base=0x%x%x len=0x%x%x type=%d\n",
-                 (int)i,
-                 (uint32_t)(e->base >> 32), (uint32_t)e->base,
-                 (uint32_t)(e->length >> 32), (uint32_t)e->length,
-                 (int)e->type);
+                (int) i,
+                (uint32_t)(e->base >> 32), (uint32_t) e->base,
+                (uint32_t)(e->length >> 32), (uint32_t) e->length,
+                (int) e->type);
         // LIMINE_MEMMAP_USABLE == 0; pick first usable region >= 4MB
         if (bump_phys == 0 && e->type == LIMINE_MEMMAP_USABLE && e->length >= 0x400000) {
             bump_phys = e->base;
@@ -192,8 +180,8 @@ void kernel_main(void) {
     // point the bump allocator at this region via HHDM (already mapped by Limine)
     placement_address = hhdm_offset + bump_phys;
     log_info("bump allocator base: phys=0x%x%x virt=0x%x%x\n",
-             (uint32_t)(bump_phys >> 32), (uint32_t)bump_phys,
-             (uint32_t)(placement_address >> 32), (uint32_t)placement_address);
+            (uint32_t)(bump_phys >> 32), (uint32_t)bump_phys,
+            (uint32_t)(placement_address >> 32), (uint32_t)placement_address);
     init_descriptor_tables();
 
     halt_without_apic();
@@ -252,12 +240,12 @@ void kernel_main(void) {
     enable_api_hardware();
     enable_apic_software();
     log_info("local APIC: phys=0x%x virt=0x%x%x\n",
-             lapic_phys, (uint32_t)(lapic_virt >> 32), (uint32_t)lapic_virt);
+            lapic_phys, (uint32_t)(lapic_virt >> 32), (uint32_t)lapic_virt);
 
     map_physical_range(ioapic_phys, 4096, 1, 1);
     ioapic_addr = (void *)(hhdm_offset + ioapic_phys);
     log_info("I/O APIC: phys=0x%x virt=0x%x%x\n",
-             ioapic_phys, (uint32_t)((uintptr_t)ioapic_addr >> 32), (uint32_t)(uintptr_t)ioapic_addr);
+            ioapic_phys, (uint32_t)((uintptr_t)ioapic_addr >> 32), (uint32_t)(uintptr_t)ioapic_addr);
 
     local_apic_id = get_local_apic_id();
     log_info("local APIC id: %d\n", (int)local_apic_id);
@@ -294,8 +282,39 @@ void kernel_main(void) {
             virt_to_phys((virt_addr_t)_binary_audio_start),
             virt_to_phys((virt_addr_t)_binary_audio_end)
         );
-        ac97_start_playback();
+        //ac97_start_playback();
         serial_write("[kernel.c]: [ OK ]: AC97 playback started\n");
+    }
+
+    if (framebuffer_request.response == NULL ||
+            framebuffer_request.response->framebuffer_count < 1) {
+        //printf("No limine framebuffer available\n");
+        serial_write("[kernel.c]: did not receive a framebuffer from limine. exiting\n");
+        hcf();
+    }
+
+    // Fetch first framebuffer
+    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+
+    serial_write("framebuffers: ");
+    for (uint64_t i = 0; i < framebuffer_request.response->framebuffer_count; i++) {
+        serial_printf("%d: ", i);
+        gfx_print_framebuffer(framebuffer_request.response->framebuffers[i]);
+    }
+
+    graphics_init(framebuffer);
+    pong_init(framebuffer->width, framebuffer->height);
+
+    pong_start();
+    int last = (int)timer_ticks();
+    for (;;) {
+        int now = (int)timer_ticks();
+        int delta = now - last;
+        last = now;
+        pong_handle_input();
+        pong_update(delta);
+        pong_draw();
+        gfx_render();
     }
 
     halt();

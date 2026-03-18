@@ -76,7 +76,9 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/uacpi/uacpi_init.c
         ${ARCHDIR}/acpi/acpi_bus.c
         ${ARCHDIR}/drivers/ps2k.c
+        ${ARCHDIR}/drivers/graphics.c
         ${ARCHDIR}/panic.c
+        ${ARCHDIR}/games/pong.c
         ${UACPI_SOURCES}
     )
 

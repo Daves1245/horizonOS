@@ -1,3 +1,4 @@
+#include "ps2k.h"
 #include <x86_64/acpi/acpi_bus.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -42,7 +43,14 @@ static char scancode_to_ascii_uppercase[] = {
     '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 3, '*', 4, ' '
 };
 
+int key_pressed[256] = {0};
+
+int is_key_pressed(enum KeyCode code) {
+    return key_pressed[code];
+}
+
 static int shift_pressed = 0;
+static int e0_prefix = 0;
 
 static void wait_for_kbd_input(void) {
     int timeout = 100000;
@@ -65,20 +73,34 @@ static void ps2k_irq_handler(struct interrupt_context *regs) {
     (void) regs;
     uint8_t scancode = inb(ps2k_resources.port_data);
 
-    if (scancode == 0x2A || scancode == 0x36) {
-        shift_pressed = 1;
-    } else if (scancode == 0xAA || scancode == 0xB6) {
-        shift_pressed = 0;
-    } else if (!(scancode & 0x80)) {
-        if (scancode < sizeof(scancode_to_ascii)) {
+    if (scancode == 0xE0) {
+        e0_prefix = 1;
+        apic_send_eoi();
+        return;
+    }
+
+    uint8_t index = e0_prefix ? (scancode & 0x7F) | 0x80 : scancode & 0x7F;
+    int released = scancode & 0x80;
+
+    if (released) {
+        key_pressed[index] = 0;
+        if (index == 0x2A || index == 0x36)
+            shift_pressed = 0;
+    } else {
+        key_pressed[index] = 1;
+        if (index == 0x2A || index == 0x36) {
+            shift_pressed = 1;
+        } else if (index < sizeof(scancode_to_ascii)) {
             char c = shift_pressed
-                ? scancode_to_ascii_uppercase[scancode]
-                : scancode_to_ascii[scancode];
-            if (c != 0)
+                ? scancode_to_ascii_uppercase[index]
+                : scancode_to_ascii[index];
+            if (c != 0) {
                 serial_putchar(c);
+            }
         }
     }
 
+    e0_prefix = 0;
     apic_send_eoi();
 }
 
