@@ -82,51 +82,90 @@ elseif(ARCH STREQUAL "x86_64")
         ${UACPI_SOURCES}
     )
 
-    # convert to 16 bit 49kHz raw for ac97
+    # convert audio to 16-bit 48kHz stereo raw PCM for AC97
+    # -f s16le: raw signed 16-bit little-endian PCM
+    # -acodec pcm_s16le: 16-bit LE PCM codec
+    # -ar 48000: 48kHz sample rate (AC97 standard)
+    # -ac 2: stereo
+
     set(AUDIO_RICK_SRC ${CMAKE_SOURCE_DIR}/audio/rick.mp3)
-    set(AUDIO_RICK ${CMAKE_CURRENT_BINARY_DIR}/audio.raw)
-
-    set(AUDIO_PONG_WALL_SRC ${CMAKE_CURRENT_BINARY_DIR}/wall.ogg)
-    set(AUDIO_PONG_WALL ${CMAKE_CURRENT_BINARY_DIR}/wall.raw)
-    set(AUDIO_PONG_PADDLE_SRC ${CMAKE_CURRENT_BINARY_DIR}/paddle.ogg)
-    set(AUDIO_PONG_PADDLE ${CMAKE_CURRENT_BINARY_DIR}/paddle.raw)
-    set(AUDIO_PONG_SCORE_SRC ${CMAKE_CURRENT_BINARY_DIR}/score.ogg)
-    set(AUDIO_PONG_SCORE ${CMAKE_CURRENT_BINARY_DIR}/score.raw)
+    set(AUDIO_RICK_RAW ${CMAKE_CURRENT_BINARY_DIR}/rick.raw)
+    set(AUDIO_PONG_WALL_SRC ${CMAKE_SOURCE_DIR}/audio/wall.ogg)
+    set(AUDIO_PONG_WALL_RAW ${CMAKE_CURRENT_BINARY_DIR}/wall.raw)
+    set(AUDIO_PONG_PADDLE_SRC ${CMAKE_SOURCE_DIR}/audio/paddle.ogg)
+    set(AUDIO_PONG_PADDLE_RAW ${CMAKE_CURRENT_BINARY_DIR}/paddle.raw)
+    set(AUDIO_PONG_SCORE_SRC ${CMAKE_SOURCE_DIR}/audio/score.ogg)
+    set(AUDIO_PONG_SCORE_RAW ${CMAKE_CURRENT_BINARY_DIR}/score.raw)
 
     add_custom_command(
-        OUTPUT ${AUDIO_RAW}
-        COMMAND ffmpeg -y -i ${AUDIO_MP3} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_RAW}
-        DEPENDS ${AUDIO_RICK}
-        COMMENT "Converting audio.mp3 to raw PCM (16-bit LE, 48kHz, stereo)"
-
-        # - -f s16le — output format: raw signed 16-bit little-endian PCM
-        # - -acodec pcm_s16le — codec: 16-bit LE PCM
-        # - -ar 48000 — sample rate: 48kHz (default in AC97 standard)
-        # - -ac 2 — stereo (2 channels)
-        OUTPUT ${AUDIO_PONG_WALL}
-        COMMAND ffmpeg -y -i input.ogg -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_WALL}
+        OUTPUT ${AUDIO_RICK_RAW}
+        COMMAND ffmpeg -y -i ${AUDIO_RICK_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_RICK_RAW}
+        DEPENDS ${AUDIO_RICK_SRC}
+        COMMENT "Converting rick.mp3 to raw PCM"
+    )
+    add_custom_command(
+        OUTPUT ${AUDIO_PONG_WALL_RAW}
+        COMMAND ffmpeg -y -i ${AUDIO_PONG_WALL_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_WALL_RAW}
         DEPENDS ${AUDIO_PONG_WALL_SRC}
-
-        OUTPUT ${AUDIO_PONG_PADDLE}
-        COMMAND ffmpeg -y -i input.ogg -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_PADDLE}
-        DEPENDS ${AUDIO_PONG_PADDLE_SRC}
-
-        OUTPUT ${AUDIO_PONG_SCORE}
-        COMMAND ffmpeg -y -i input.ogg -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_SCORE}
-        DEPENDS ${AUDIO_PONG_SCORE_SRC}
+        COMMENT "Converting wall.ogg to raw PCM"
     )
-
-    # Embed raw audio data into a linkable object
-    set(AUDIO_OBJ ${CMAKE_CURRENT_BINARY_DIR}/audio.o)
     add_custom_command(
-        OUTPUT ${AUDIO_OBJ}
-        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
-        --rename-section .data=.audio_data,alloc,load,readonly,contents
-        ${AUDIO_RAW} ${AUDIO_OBJ}
-        DEPENDS ${AUDIO_RAW}
-        COMMENT "Embedding audio.raw into audio.o"
+        OUTPUT ${AUDIO_PONG_PADDLE_RAW}
+        COMMAND ffmpeg -y -i ${AUDIO_PONG_PADDLE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_PADDLE_RAW}
+        DEPENDS ${AUDIO_PONG_PADDLE_SRC}
+        COMMENT "Converting paddle.ogg to raw PCM"
     )
-    add_custom_target(audio_object DEPENDS ${AUDIO_OBJ})
+    add_custom_command(
+        OUTPUT ${AUDIO_PONG_SCORE_RAW}
+        COMMAND ffmpeg -y -i ${AUDIO_PONG_SCORE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_SCORE_RAW}
+        DEPENDS ${AUDIO_PONG_SCORE_SRC}
+        COMMENT "Converting score.ogg to raw PCM"
+    )
+
+    # Embed raw audio data into linkable objects
+    set(RICK_OBJ ${CMAKE_CURRENT_BINARY_DIR}/rick.o)
+    add_custom_command(
+        OUTPUT ${RICK_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
+            --rename-section .data=.sound_rick,alloc,load,readonly,contents
+            ${AUDIO_RICK_RAW} ${RICK_OBJ}
+        DEPENDS ${AUDIO_RICK_RAW}
+        COMMENT "Embedding rick.raw"
+    )
+    add_custom_target(rick_obj DEPENDS ${RICK_OBJ})
+
+    set(WALL_OBJ ${CMAKE_CURRENT_BINARY_DIR}/wall.o)
+    add_custom_command(
+        OUTPUT ${WALL_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
+            --rename-section .data=.sound_wall,alloc,load,readonly,contents
+            ${AUDIO_PONG_WALL_RAW} ${WALL_OBJ}
+        DEPENDS ${AUDIO_PONG_WALL_RAW}
+        COMMENT "Embedding wall.raw"
+    )
+    add_custom_target(wall_obj DEPENDS ${WALL_OBJ})
+
+    set(PADDLE_OBJ ${CMAKE_CURRENT_BINARY_DIR}/paddle.o)
+    add_custom_command(
+        OUTPUT ${PADDLE_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
+            --rename-section .data=.sound_paddle,alloc,load,readonly,contents
+            ${AUDIO_PONG_PADDLE_RAW} ${PADDLE_OBJ}
+        DEPENDS ${AUDIO_PONG_PADDLE_RAW}
+        COMMENT "Embedding paddle.raw"
+    )
+    add_custom_target(paddle_obj DEPENDS ${PADDLE_OBJ})
+
+    set(SCORE_OBJ ${CMAKE_CURRENT_BINARY_DIR}/score.o)
+    add_custom_command(
+        OUTPUT ${SCORE_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
+            --rename-section .data=.sound_score,alloc,load,readonly,contents
+            ${AUDIO_PONG_SCORE_RAW} ${SCORE_OBJ}
+        DEPENDS ${AUDIO_PONG_SCORE_RAW}
+        COMMENT "Embedding score.raw"
+    )
+    add_custom_target(score_obj DEPENDS ${SCORE_OBJ})
 
     set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/${ARCHDIR}/linker.ld)
     set(USE_CRTBEGIN OFF)
@@ -162,8 +201,8 @@ add_dependencies(horizon.kernel install-kernel-headers install-libc-headers k)
 
 # Link embedded audio data (x86_64 only)
 if(ARCH STREQUAL "x86_64")
-    add_dependencies(horizon.kernel audio_object)
-    target_link_libraries(horizon.kernel ${AUDIO_OBJ})
+    add_dependencies(horizon.kernel rick_obj wall_obj paddle_obj score_obj)
+    target_link_libraries(horizon.kernel ${RICK_OBJ} ${WALL_OBJ} ${PADDLE_OBJ} ${SCORE_OBJ})
 endif()
 
 # Set compile options

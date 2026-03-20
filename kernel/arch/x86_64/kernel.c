@@ -96,14 +96,6 @@ static volatile LIMINE_REQUESTS_START_MARKER;
 __attribute__((used, section(".limine_requests_end")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
-/*
-   int check_msr() {
-   uint32_t eax, ebx, ecx, edx;
-   asm volatile ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
-   return (edx & (1 << 5)) != 0;
-   }
-   */
-
 extern uint64_t kernel_end;
 extern uint64_t placement_address;
 
@@ -112,8 +104,6 @@ uint64_t hhdm_offset;
 
 #include <apic/rsdp.h>
 virt_addr_t rsdp_addr;
-
-// acpi_init() moved to arch/x86_64/uapic/uacpi_init.c
 
 void kernel_main(void) {
     // Early initialization logging
