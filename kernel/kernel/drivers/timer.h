@@ -7,7 +7,7 @@
 #define timeout(ms, condition) ({                         \
     uint32_t _start = timer_ticks();                      \
     while (!(condition) &&                                \
-           (timer_ticks() - _start) < (uint32_t)(ms));   \
+           (timer_ticks() - _start) < (uint32_t)(ms));    \
     (condition);                                          \
 })
 

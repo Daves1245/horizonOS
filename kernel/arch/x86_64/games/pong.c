@@ -15,6 +15,9 @@
 
 #define BALL_MAX_SPEED 500
 
+#define NET_WIDTH 15
+#define NET_HEIGHT (screen_height / 20)
+
 /* events must happen at least 10 ms apart */
 #define EVENT_DEBOUNCE_TICKS 10
 
@@ -27,7 +30,6 @@ struct obj player1, player2, ball;
 
 int score_player1;
 int score_player2;
-
 
 virt_addr_t audio_pong_wall_start;
 virt_addr_t audio_pong_wall_end;
@@ -208,10 +210,44 @@ static void reset() {
     ball.vel_y = rand_range(-BALL_MAX_SPEED, BALL_MAX_SPEED);
 }
 
+#define FONT_SCALE 4
+
+void draw_score(int score, int x, int y) {
+    int digit = score % 10;
+    for (int row = 0; row < 7; row++) {
+        for (int col = 0; col < 5; col++) {
+            if (display[digit][row][col]) {
+                gfx_fill_rect(
+                    x + col * FONT_SCALE,
+                    y + row * FONT_SCALE,
+                    x + (col + 1) * FONT_SCALE,
+                    y + (row + 1) * FONT_SCALE,
+                    rgb(0xff, 0xff, 0xff));
+            }
+        }
+    }
+}
+
 void pong_draw() {
     gfx_clear_screen();
+
+    // player 1
     gfx_fill_rect(player1.x, player1.y, player1.x + player1.width, player1.y + player1.height, rgb(0xff, 0xff, 0xff));
+
+    // player 2
     gfx_fill_rect(player2.x, player2.y, player2.x + player2.width, player2.y + player2.height, rgb(0xff, 0xff, 0xff));
+
+    // player 3
     gfx_fill_rect(ball.x, ball.y, ball.x + ball.width, ball.y + ball.height, rgb(0xff, 0xff, 0xff));
+
+    // scores
+    draw_score(score_player1, screen_width / 4 - (5 * FONT_SCALE) / 2, 20);
+    draw_score(score_player2, 3 * screen_width / 4 - (5 * FONT_SCALE) / 2, 20);
+
+    // net (lines down the middle)
+    // draw 1, skip 2 to "draw" an invisible net / break
+    for (int i = 0; i < screen_height; i += 2 * NET_HEIGHT) {
+        gfx_fill_rect(screen_width / 2 - NET_WIDTH / 2, i, screen_width / 2 + NET_WIDTH / 2, i + NET_HEIGHT, rgb(0xff, 0xff, 0xff));
+    }
 }
 
