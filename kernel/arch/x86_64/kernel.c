@@ -268,12 +268,6 @@ void kernel_main(void) {
         hcf();
     } else {
         serial_write("[kernel.c]: [ OK ]: initialized AC97\n");
-        ac97_setup_bdl(
-            virt_to_phys((virt_addr_t)_binary_audio_start),
-            virt_to_phys((virt_addr_t)_binary_audio_end)
-        );
-        //ac97_start_playback();
-        serial_write("[kernel.c]: [ OK ]: AC97 playback started\n");
     }
 
     if (framebuffer_request.response == NULL ||

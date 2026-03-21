@@ -2,6 +2,7 @@
 #include <drivers/ac97.h>
 #include <drivers/ps2k.h>
 #include <drivers/graphics.h>
+#include <drivers/timer.h>
 
 #include <math.h>
 #include <rand.h>
@@ -10,9 +11,14 @@
 #define PADDLE_HEIGHT 100
 #define BALL_RADIUS 10
 /* speeds are in pixels per second; multiply by delta_ms then divide by 1000 */
-#define PLAYER_SPEED 800
+#define PLAYER_SPEED 1000
 
 #define BALL_MAX_SPEED 500
+
+/* events must happen at least 10 ms apart */
+#define EVENT_DEBOUNCE_TICKS 10
+
+uint32_t last_event = 0;
 
 static int screen_width, screen_height;
 static int last_player_scored;
@@ -21,6 +27,15 @@ struct obj player1, player2, ball;
 
 int score_player1;
 int score_player2;
+
+
+virt_addr_t audio_pong_wall_start;
+virt_addr_t audio_pong_wall_end;
+virt_addr_t audio_pong_paddle_start;
+virt_addr_t audio_pong_paddle_end;
+virt_addr_t audio_pong_score_start;
+virt_addr_t audio_pong_score_end;
+
 
 static void reset();
 
@@ -54,6 +69,13 @@ void pong_init(int width, int height) {
         0,
         0
     };
+
+    audio_pong_wall_start = virt_to_phys((virt_addr_t)&_audio_pong_wall_start);
+    audio_pong_wall_end = virt_to_phys((virt_addr_t)&_audio_pong_wall_end);
+    audio_pong_paddle_start = virt_to_phys((virt_addr_t)&_audio_pong_paddle_start);
+    audio_pong_paddle_end = virt_to_phys((virt_addr_t)&_audio_pong_paddle_end);
+    audio_pong_score_start = virt_to_phys((virt_addr_t)&_audio_pong_score_start);
+    audio_pong_score_end = virt_to_phys((virt_addr_t)&_audio_pong_score_end);
 }
 
 void pong_handle_input() {
@@ -86,34 +108,56 @@ static int rects_overlap(struct obj *a, struct obj *b) {
 }
 
 static void pong_on_player_hit(struct obj *paddle) {
-    /* set absolute x direction based on which side the paddle is on */
-    if (paddle->x < screen_width / 2) {
-        ball.vel_x = abs(ball.vel_x);
-    } else {
-        ball.vel_x = -abs(ball.vel_x);
-    }
+    // debounce events
+    uint32_t now = timer_ticks();
+    if (now - last_event >= EVENT_DEBOUNCE_TICKS) {
+        last_event = now;
 
-    /* transfer some paddle momentum to ball */
-    ball.vel_y += paddle->vel_y / 2;
+        /* set absolute x direction based on which side the paddle is on */
+        if (paddle->x < screen_width / 2) {
+            ball.vel_x = abs(ball.vel_x);
+        } else {
+            ball.vel_x = -abs(ball.vel_x);
+        }
+
+        /* transfer some paddle momentum to ball */
+        ball.vel_y += paddle->vel_y / 2;
+
+        ac97_setup_bdl(audio_pong_paddle_start, audio_pong_paddle_end);
+        ac97_start_playback();
+    }
 }
 
 static void pong_on_wall_hit() {
-    if (ball.y <= 0) {
-        ball.vel_y = abs(ball.vel_y);
-    } else if (ball.y + ball.height >= screen_height) {
-        ball.vel_y = -abs(ball.vel_y);
+    uint32_t now = timer_ticks();
+    if (now - last_event >= EVENT_DEBOUNCE_TICKS) {
+        last_event = now;
+
+        if (ball.y <= 0) {
+            ball.vel_y = abs(ball.vel_y);
+        } else if (ball.y + ball.height >= screen_height) {
+            ball.vel_y = -abs(ball.vel_y);
+        }
+
+        ac97_setup_bdl(audio_pong_wall_start, audio_pong_wall_end);
+        ac97_start_playback();
     }
 }
 
 void pong_on_score(int player) {
-    (void) player;
+    uint32_t now = timer_ticks();
+    if (now - last_event >= EVENT_DEBOUNCE_TICKS) {
+        last_event = now;
 
-    // play score sound
+        // play score sound
+        ac97_setup_bdl(audio_pong_score_start, audio_pong_score_end);
+        ac97_start_playback();
 
-    // halt while sound plays
-
-    // add score and reset ball
-    reset();
+        // add score and reset ball
+        if (player == 1) score_player1++;
+        if (player == 2) score_player2++;
+        reset();
+    }
 }
 
 void pong_update(int delta) {
