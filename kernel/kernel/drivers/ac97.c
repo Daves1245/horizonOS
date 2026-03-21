@@ -132,6 +132,19 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
         hcf();
     }
 
+    // reset the PCM out channel so we can safely reprogram it.
+    // writing RR (bit 1) resets CIV/LVI/SR and halts DMA.
+    outb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER,
+        AC97_CONTROL_REGISTER_RESET_REGISTERS);
+
+    // wait for DMA controller halted (DCH) bit
+    while (!(inw(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_STATUS_REGISTER)
+             & AC97_STATUS_REGISTER_DMA_CONTROLLER_HALTED))
+        ;
+
+    // clear any pending status bits (W1C)
+    outw(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_STATUS_REGISTER, 0x1E);
+
     // fill the ring buffer with audio data
     int i;
     for (i = 0; i < NUM_BDL_ENTRIES && audio_start < audio_end; i++) {
