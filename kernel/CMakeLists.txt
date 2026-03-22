@@ -77,6 +77,9 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/acpi/acpi_bus.c
         ${ARCHDIR}/drivers/ps2k.c
         ${ARCHDIR}/drivers/graphics.c
+        ${ARCHDIR}/drivers/font.c
+        ${ARCHDIR}/drivers/console.c
+        kernel/fonts/fontlibrary.c
         ${ARCHDIR}/panic.c
         ${ARCHDIR}/games/pong.c
         ${UACPI_SOURCES}

@@ -453,3 +453,10 @@ everything else holds))
 
 we should lift the framebuffer argument to avoid passing it to every function. we can also
 make global several variables from this in a `graphics_init()` function.
+
+# bitmap fonts
+we can use fontbm as a cross-platform truefont-to-.fnt converter. bmfont2c.py lets us convert
+a bitmap png to source code, so it should be straightforward to link these together to port
+any font into the kernel.
+
+fontmb -> .fnt (xml format) -> bmfont2c.py (updated to python3) -> fontlibrary.{c,h}

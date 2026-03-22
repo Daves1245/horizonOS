@@ -19,6 +19,7 @@
 #include <halt.h>
 #include <drivers/timer.h>
 #include <drivers/graphics.h>
+#include <drivers/console.h>
 
 #include <drivers/ac97.h>
 #include <mm.h>
@@ -287,19 +288,16 @@ void kernel_main(void) {
     }
 
     graphics_init(framebuffer);
-    pong_init(framebuffer->width, framebuffer->height);
+    console_init(framebuffer);
 
-    pong_start();
-    int last = (int)timer_ticks();
-    for (;;) {
-        int now = (int)timer_ticks();
-        int delta = now - last;
-        last = now;
-        pong_handle_input();
-        pong_update(delta);
-        pong_draw();
-        gfx_render();
-    }
+    /* test the framebuffer console */
+    console_clear();
+    console_puts("\nHello, world!\n");
+    console_puts("abcdefghijklmnopqrstuvwxyz0123456789\n");
+    gfx_render();
+
+    for (;;)
+        asm volatile("hlt");
 
     halt();
 }
