@@ -50,3 +50,6 @@ kernel/horizon.kernel*
 
 # audio
 audio/*
+
+# Mac
+.DS_Store
