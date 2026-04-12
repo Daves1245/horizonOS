@@ -460,3 +460,12 @@ a bitmap png to source code, so it should be straightforward to link these toget
 any font into the kernel.
 
 fontmb -> .fnt (xml format) -> bmfont2c.py (updated to python3) -> fontlibrary.{c,h}
+
+# Scheduling
+
+Looks like setting up the TSS is unavoidable. The TSS keeps track of lots of useful data for us during
+a context or task switch. Necessary whenever going from ring3 to ring0. Each processor needs its own
+TSS.
+
+exceptions: error states on the cpu that are detected. interrupts: something happened somewhere
+and the processor needs to know.

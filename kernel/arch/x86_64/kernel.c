@@ -26,11 +26,12 @@
 
 #include <games/pong.h>
 
+extern void ps2k_register(void);
 extern void halt_without_apic();
 extern void hcf(void);
 
 /* global so that drivers may route IRQ through ioapic (virtual address) */
-void *ioapic_addr;
+volatile phys_addr_t *ioapic_addr;
 uint8_t local_apic_id;
 
 // Set the base revision to 3, this is recommended as this is the latest
@@ -246,14 +247,12 @@ void kernel_main(void) {
     uint32_t timer_gsi = 2; // madt override
     uint16_t timer_flags = 0x0; // madt itself
     serial_write("configuring timer\n");
-    configure_ioapic_irq_with_flags(ioapic_addr, timer_gsi, 32, local_apic_id, timer_flags);
+    configure_ioapic_irq_with_flags(timer_gsi, 32, local_apic_id, timer_flags);
     serial_write("timer interrupt configured via IOAPIC\n");
     serial_write("timer initialization\n");
     init_timer();
 
-    // register ACPI device drivers, then enumerate the bus
-    // to discover and initialize devices (e.g. PS/2 keyboard)
-    extern void ps2k_register(void);
+    /* register drivers */
     ps2k_register();
     acpi_bus_enumerate();
 
@@ -281,12 +280,7 @@ void kernel_main(void) {
     // Fetch first framebuffer
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    serial_write("framebuffers: ");
-    for (uint64_t i = 0; i < framebuffer_request.response->framebuffer_count; i++) {
-        serial_printf("%d: ", i);
-        gfx_print_framebuffer(framebuffer_request.response->framebuffers[i]);
-    }
-
+    /* render things to the screen */
     graphics_init(framebuffer);
     console_init(framebuffer);
 
