@@ -57,12 +57,12 @@ static inline void write_msr_low(uint32_t msr, uint32_t low) {
 // address register uses the bottom byte for register select
 void enable_api_hardware();
 void enable_apic_software();
-uint32_t ioapic_read(void *ioapic_base, uint32_t reg);
-void ioapic_write(void *ioapic_base, uint32_t reg, uint32_t value);
+uint32_t ioapic_read(uint32_t reg);
+void ioapic_write(uint32_t reg, uint32_t value);
 uint32_t get_ioapic_base();
 uint8_t get_local_apic_id();
-void configure_ioapic_irq(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_t dest_apic_id);
-void configure_ioapic_irq_with_flags(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_t dest_apic_id, uint16_t flags);
+void configure_ioapic_irq(uint8_t irq, uint8_t vector, uint8_t dest_apic_id);
+void configure_ioapic_irq_with_flags(uint8_t irq, uint8_t vector, uint8_t dest_apic_id, uint16_t flags);
 void disable_pic();
 
 // abstractino for architecture-independent implementation

@@ -11,7 +11,6 @@
 
 #define AC97_PCI_INTERRUPT_LINE 0x3C
 
-extern void *ioapic_addr;
 extern uint8_t local_apic_id;
 
 static void controller_reset();
@@ -60,7 +59,7 @@ int ac97_init() {
 
     register_interrupt_handler(vector, ac97_irq_handler);
 
-    configure_ioapic_irq_with_flags(ioapic_addr, irq, vector, local_apic_id,
+    configure_ioapic_irq_with_flags(irq, vector, local_apic_id,
         0x08); // level-triggered, active-high (matches MADT override flags=0xd for IRQ 11)
 
     // enable interrupts on the PCM out channel (IOC + FIFO error)

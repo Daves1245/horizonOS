@@ -231,7 +231,7 @@ static int ps2k_create_device(void) {
     init_ps2k_driver();
 
     log_info("[ps2k] configuring IOAPIC routing\n");
-    configure_ioapic_irq(ioapic_addr, ps2k_resources.irq, vector, local_apic_id);
+    configure_ioapic_irq(ps2k_resources.irq, vector, local_apic_id);
 
     log_success("[ps2k] device ready\n");
     return 0;
