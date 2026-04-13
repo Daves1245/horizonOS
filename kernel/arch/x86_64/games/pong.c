@@ -21,6 +21,9 @@
 /* events must happen at least 10 ms apart */
 #define EVENT_DEBOUNCE_TICKS 10
 
+/* ~60 fps frame budget */
+#define PONG_FRAME_MS 16
+
 uint32_t last_event = 0;
 
 static int screen_width, screen_height;
@@ -191,9 +194,37 @@ void pong_update(int delta) {
     }
 }
 
+/* reset ball + paddle state for a new round; scores untouched. */
+void pong_start_round() {
+    reset();
+}
+
 void pong_start() {
     score_player1 = score_player2 = 0;
-    reset();
+    last_player_scored = 0;
+    pong_start_round();
+
+    enum gfx_target prev_target = gfx_get_target();
+    gfx_set_target(GFX_TARGET_BACKBUFFER);
+
+    uint32_t last = timer_ticks();
+    while (score_player1 < PONG_WIN_SCORE && score_player2 < PONG_WIN_SCORE) {
+        uint32_t frame_start = timer_ticks();
+        int delta = (int)(frame_start - last);
+        last = frame_start;
+
+        pong_handle_input();
+        pong_update(delta);
+        pong_draw();
+        gfx_render();
+
+        /* pace to ~60 fps so delta is coarse enough for integer
+         * velocity math (vel * delta / 1000) to actually advance. */
+        while (timer_ticks() - frame_start < PONG_FRAME_MS)
+            asm volatile("hlt");
+    }
+
+    gfx_set_target(prev_target);
 }
 
 static void reset() {
@@ -237,7 +268,7 @@ void pong_draw() {
     // player 2
     gfx_fill_rect(player2.x, player2.y, player2.x + player2.width, player2.y + player2.height, rgb(0xff, 0xff, 0xff));
 
-    // player 3
+    // ball
     gfx_fill_rect(ball.x, ball.y, ball.x + ball.width, ball.y + ball.height, rgb(0xff, 0xff, 0xff));
 
     // scores

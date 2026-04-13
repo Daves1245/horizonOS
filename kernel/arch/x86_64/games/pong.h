@@ -21,8 +21,11 @@ extern virt_addr_t _audio_pong_paddle_end;
 extern virt_addr_t _audio_pong_score_start;
 extern virt_addr_t _audio_pong_score_end;
 
+#define PONG_WIN_SCORE 9
+
 void pong_init(int width, int height);
 void pong_start();
+void pong_start_round();
 void pong_handle_input();
 void pong_update(int delta);
 void pong_draw();

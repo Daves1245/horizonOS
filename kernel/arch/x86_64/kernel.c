@@ -188,6 +188,7 @@ void kernel_main(void) {
     graphics_init(framebuffer);
     console_init(framebuffer);
     console_clear();
+    pong_init(framebuffer->width, framebuffer->height);
 
     init_descriptor_tables();
 

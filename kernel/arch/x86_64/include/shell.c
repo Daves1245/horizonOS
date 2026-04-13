@@ -5,6 +5,8 @@
 #include <drivers/timer.h>
 #include <log.h>
 
+#include <games/pong.h>
+
 static char input_buffer[SHELL_BUFFER_SIZE];
 static int shell_listener_id;
 
@@ -48,6 +50,8 @@ static void parse_and_dispatch(char *line) {
         cmd_echo(args);
     } else if (strcmp(line, "uptime") == 0) {
         cmd_uptime();
+    } else if (strcmp(line, "pong") == 0) {
+        pong_start();
     } else {
         console_puts("unknown command: ");
         console_puts(line);
