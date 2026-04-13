@@ -2,13 +2,14 @@
 #include "keyboard.h"
 #include <string.h>
 #include <drivers/serial.h>
+#include <drivers/timer.h>
 #include <log.h>
 
 static char input_buffer[SHELL_BUFFER_SIZE];
 static int shell_listener_id;
 
 static void cmd_help(void) {
-    console_puts("commands: help, clear, echo\n");
+    console_puts("commands: help, clear, echo, uptime\n");
 }
 
 static void cmd_clear(void) {
@@ -18,6 +19,10 @@ static void cmd_clear(void) {
 static void cmd_echo(const char *args) {
     console_puts(args);
     console_putchar('\n');
+}
+
+static void cmd_uptime() {
+    console_printf("uptime: ms since boot: %d\n", timer_ticks());
 }
 
 /*
@@ -41,11 +46,16 @@ static void parse_and_dispatch(char *line) {
         cmd_clear();
     } else if (strcmp(line, "echo") == 0) {
         cmd_echo(args);
+    } else if (strcmp(line, "uptime") == 0) {
+        cmd_uptime();
     } else {
         console_puts("unknown command: ");
         console_puts(line);
         console_putchar('\n');
     }
+
+    // TODO pong, sysinfo, lspci, snake, doom, peek / poke / hexdump, uptime, uname, color test
+    // change theme to something from maybe coloors or some other pallate-selector site.
 }
 
 void shell_init(void) {
