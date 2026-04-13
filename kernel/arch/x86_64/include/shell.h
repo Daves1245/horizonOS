@@ -6,9 +6,7 @@
 
 #define BUFFER_SIZE 80
 
-char input_buffer[BUFFER_SIZE];
-
 void shell_init();
-void run();
+void shell_run();
 
 #endif

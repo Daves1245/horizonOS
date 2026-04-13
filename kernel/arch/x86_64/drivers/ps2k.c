@@ -12,11 +12,15 @@
 #include <drivers/io.h>
 #include <drivers/serial.h>
 #include <apic/apic.h>
+#include <keyboard.h>
 
 #define PS2K_PNP_ID "PNP0303"
 
 extern void *ioapic_addr;
 extern uint8_t local_apic_id;
+
+struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
+struct keyboard_queue_state keyboard_queue_state[KEYBOARD_QUEUE_LEVELS];
 
 static const char *const ps2k_pnp_ids[] = {
     PS2K_PNP_ID,

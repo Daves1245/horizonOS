@@ -11,9 +11,10 @@
  * this allows 
  */
 
-#include <stddef.h>
+#include <stdint.h>
 
 #define RING_BUFFER_SIZE 100
+#define KEYBOARD_QUEUE_LEVELS 10
 
 struct key_event_t {
 		int8_t type;
@@ -22,16 +23,20 @@ struct key_event_t {
 		int8_t timestamp;
 };
 
-extern struct key_event_t key_event_queue[RING_BUFFER_SIZE];
-extern int key_queue_head_idx;
-extern int key_queue_tail_idx;
+extern struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
+
+struct keyboard_queue_state {
+	volatile int head;
+	volatile int tail;
+	int used;
+};
 
 /* non-blocking */
-struct key_event keyboard_read();
+struct key_event_t keyboard_read(int level);
 /* blocking */
-struct key_event keyboard_block_read();
+struct key_event_t keyboard_block_read(int level);
 /* some task that wants to track keyboard input */
 int add_keyboard_listener();
-void remove_keybord_listener();
+void remove_keybord_listener(int level);
 
 #endif

@@ -83,6 +83,8 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/panic.c
         ${ARCHDIR}/include/log.c
         ${ARCHDIR}/games/pong.c
+        ${ARCHDIR}/include/shell.c
+        ${ARCHDIR}/include/keyboard.c
         ${UACPI_SOURCES}
     )
 
