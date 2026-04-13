@@ -50,3 +50,13 @@ kernel/horizon.kernel*
 
 # audio
 audio/*
+**/*.mp3
+
+# Mac
+**/*.DS_Store
+
+# Font related
+**/*.fnt
+**/*.png
+**/*.otf
+fonts/fontbm

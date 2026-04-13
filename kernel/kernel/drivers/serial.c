@@ -82,10 +82,7 @@ static void serial_write_int(int64_t val) {
     serial_write_uint((uint64_t) val, 10);
 }
 
-void serial_printf(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-
+void serial_vprintf(const char *fmt, va_list args) {
     for (const char *p = fmt; *p; p++) {
         if (*p != '%') {
             serial_putchar(*p);
@@ -140,7 +137,12 @@ void serial_printf(const char *fmt, ...) {
                 break;
         }
     }
+}
 
+void serial_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    serial_vprintf(fmt, args);
     va_end(args);
 }
 

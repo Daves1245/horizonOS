@@ -1,33 +1,5 @@
 # Pong
 
-# Filesystem
-
-## filesystem stub
-- file wrapper around phys memory addresses
-```
-struct file {
-  phys_addr_t start;
-  phys_addr_t end;
-  uint16_t len; // bytes
-  char *filename;
-};
-```
-
 ## Sound API
 - play PCM embedded data pointed to by file wrapper
 ac97.c: `void play(struct file pcm_data);`
-
-## Graphics
-- draw_rectangle(a, b, c, d);
-- clear_screen();
-- implement the double pointer method
-`render()` - swap buffers
-
-## Keyboard API
-
-- poll for key status (pressed, not pressed)
-- pseudo mask certain key events from driver (similar to on key event listener in (js?))
-
-`int is_key_pressed(int scan_code /* or some enum to map this */);`
-
-`void addListener(int maskFilter, ())`

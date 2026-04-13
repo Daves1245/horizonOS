@@ -77,3 +77,6 @@ uint32_t rand_range(uint32_t min, uint32_t max) {
   if (min >= max) return min;
   return min + randu() % (max - min);
 }
+
+/* mark stack as non-executable */
+__attribute__((section(".note.GNU-stack"))) static void *__gnu_stack_note __attribute__((used)) = 0;

@@ -4,8 +4,11 @@
 #include <stdio.h>
 #include <kernel/tty.h>
 #include <kernel/logger.h>
+#include <mm.h>
 
 uintptr_t lapic_virt_base = APIC_BASE;
+
+extern volatile phys_addr_t *ioapic_addr;
 
 void apic_set_base(uintptr_t virt) {
     lapic_virt_base = virt;
@@ -46,17 +49,15 @@ void enable_apic_software() {
 
 // use of volatile is necessary to ensure optimizations don't optimize away memory
 // accesses or reorder operations
-uint32_t ioapic_read(void *ioapic_base, uint32_t reg) {
-    uint32_t volatile *ioapic = (uint32_t volatile *) ioapic_base;
-    ioapic[0] = (reg & 0xff);
-    return ioapic[4];
+uint32_t ioapic_read(uint32_t reg) {
+    ioapic_addr[0] = (reg & 0xff);
+    return ioapic_addr[4];
 }
 
 // same thing about volatile
-void ioapic_write(void *ioapic_base, uint32_t reg, uint32_t value) {
-    uint32_t volatile *ioapic = (uint32_t volatile *) ioapic_base;
-    ioapic[0] = (reg & 0xff);
-    ioapic[4] = value;
+void ioapic_write(uint32_t reg, uint32_t value) {
+    ioapic_addr[0] = (reg & 0xff);
+    ioapic_addr[4] = value;
 }
 
 // grab the base address of the ioapic
@@ -82,7 +83,7 @@ uint8_t get_local_apic_id() {
 }
 
 // configure IOAPIC pin to route to specific vector with flags
-void configure_ioapic_irq_with_flags(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_t dest_apic_id, uint16_t flags) {
+void configure_ioapic_irq_with_flags(uint8_t irq, uint8_t vector, uint8_t dest_apic_id, uint16_t flags) {
     // IOAPIC redirection table entry is 64 bits (2 registers)
     uint32_t low_reg = 0x10 + (irq * 2);     // low 32 bits register
     uint32_t high_reg = 0x10 + (irq * 2) + 1; // high 32 bits register
@@ -115,16 +116,16 @@ void configure_ioapic_irq_with_flags(void *ioapic_base, uint8_t irq, uint8_t vec
 
     log_debug("configuring IOAPIC: IRQ %d -> vector %d (dest=%d, flags=0x%x)\n", irq, vector, dest_apic_id, flags);
 
-    ioapic_write(ioapic_base, high_reg, high_val);
-    ioapic_write(ioapic_base, low_reg, low_val);
+    ioapic_write(high_reg, high_val);
+    ioapic_write(low_reg, low_val);
 
     log_success("IOAPIC IRQ configured: %d\n", irq);
 }
 
 // configure IOAPIC pin to route to specific vector (legacy wrapper)
-void configure_ioapic_irq(void *ioapic_base, uint8_t irq, uint8_t vector, uint8_t dest_apic_id) {
+void configure_ioapic_irq(uint8_t irq, uint8_t vector, uint8_t dest_apic_id) {
     // default flags: active high, edge triggered
-    configure_ioapic_irq_with_flags(ioapic_base, irq, vector, dest_apic_id, 0);
+    configure_ioapic_irq_with_flags(irq, vector, dest_apic_id, 0);
 }
 
 // Send End of Interrupt (EOI) to Local APIC

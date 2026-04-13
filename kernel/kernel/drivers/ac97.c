@@ -11,7 +11,6 @@
 
 #define AC97_PCI_INTERRUPT_LINE 0x3C
 
-extern void *ioapic_addr;
 extern uint8_t local_apic_id;
 
 static void controller_reset();
@@ -60,7 +59,7 @@ int ac97_init() {
 
     register_interrupt_handler(vector, ac97_irq_handler);
 
-    configure_ioapic_irq_with_flags(ioapic_addr, irq, vector, local_apic_id,
+    configure_ioapic_irq_with_flags(irq, vector, local_apic_id,
         0x08); // level-triggered, active-high (matches MADT override flags=0xd for IRQ 11)
 
     // enable interrupts on the PCM out channel (IOC + FIFO error)
@@ -131,6 +130,19 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
         serial_write("[ERROR]: ac97.c: audio data not in 32-bit addressable memory\n");
         hcf();
     }
+
+    // reset the PCM out channel so we can safely reprogram it.
+    // writing RR (bit 1) resets CIV/LVI/SR and halts DMA.
+    outb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER,
+        AC97_CONTROL_REGISTER_RESET_REGISTERS);
+
+    // wait for DMA controller halted (DCH) bit
+    while (!(inw(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_STATUS_REGISTER)
+             & AC97_STATUS_REGISTER_DMA_CONTROLLER_HALTED))
+        ;
+
+    // clear any pending status bits (W1C)
+    outw(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_STATUS_REGISTER, 0x1E);
 
     // fill the ring buffer with audio data
     int i;
