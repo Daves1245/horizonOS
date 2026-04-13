@@ -144,11 +144,7 @@ static void console_write_int(int64_t val) {
     console_write_uint((uint64_t) val, 10);
 }
 
-// copy of serial_printf
-void console_printf(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-
+void console_vprintf(const char *fmt, va_list args) {
     for (const char *p = fmt; *p; p++) {
         if (*p != '%') {
             console_putchar(*p);
@@ -203,7 +199,13 @@ void console_printf(const char *fmt, ...) {
                 break;
         }
     }
+}
 
+// copy of serial_printf
+void console_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    console_vprintf(fmt, args);
     va_end(args);
 }
 

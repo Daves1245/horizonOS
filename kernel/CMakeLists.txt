@@ -16,7 +16,7 @@ set(KERNEL_INCLUDE_DIRS
 )
 
 # Link flags and libraries
-set(KERNEL_LINK_FLAGS -no-pie)
+set(KERNEL_LINK_FLAGS -no-pie -z noexecstack)
 set(KERNEL_LIBS -nostdlib -lk -lgcc)
 
 # Architecture-specific configuration
@@ -81,6 +81,7 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/drivers/console.c
         kernel/fonts/fontlibrary.c
         ${ARCHDIR}/panic.c
+        ${ARCHDIR}/include/log.c
         ${ARCHDIR}/games/pong.c
         ${UACPI_SOURCES}
     )

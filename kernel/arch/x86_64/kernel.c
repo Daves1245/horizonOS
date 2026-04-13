@@ -2,10 +2,12 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include <limine.h>
 
+#include <limine.h>
 #include <kernel/tty.h>
 #include <common.h>
+#include <mm.h>
+#include <apic/rsdp.h>
 #include <drivers/serial.h>
 #include <uacpi/types.h>
 #include <uacpi/uacpi_init.h>
@@ -22,9 +24,10 @@
 #include <drivers/console.h>
 
 #include <drivers/ac97.h>
-#include <mm.h>
-
 #include <games/pong.h>
+
+#include <log.h>
+#include <shell.h>
 
 extern void ps2k_register(void);
 extern void halt_without_apic();
@@ -104,7 +107,6 @@ extern uint64_t placement_address;
 // mm.h requires this for virt->phys translation
 uint64_t hhdm_offset;
 
-#include <apic/rsdp.h>
 virt_addr_t rsdp_addr;
 
 void kernel_main(void) {
@@ -174,54 +176,66 @@ void kernel_main(void) {
     log_info("bump allocator base: phys=0x%x%x virt=0x%x%x\n",
             (uint32_t)(bump_phys >> 32), (uint32_t)bump_phys,
             (uint32_t)(placement_address >> 32), (uint32_t)placement_address);
+
+    /* bring up the framebuffer console early so printk is visible from here on */
+    if (framebuffer_request.response == NULL ||
+            framebuffer_request.response->framebuffer_count < 1) {
+        serial_write("[kernel.c]: did not receive a framebuffer from limine. exiting\n");
+        hcf();
+    }
+    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+    graphics_init(framebuffer);
+    console_init(framebuffer);
+    console_clear();
+
     init_descriptor_tables();
 
     halt_without_apic();
-    serial_write("APIC supported\n");
+    printk(KERN_OK, "APIC supported\n");
 
-    serial_write("checking rsdp response\n");
+    printk(KERN_INFO, "checking rsdp response\n");
     if (rsdp_request.response == NULL) {
-        serial_write("error getting rsdp address\n");
+        printk(KERN_FATAL, "error getting rsdp address\n");
         halt();
     }
 
     uint64_t rsdp_phys = (uint64_t)rsdp_request.response->address;
 
-    log_info("RSDP phys: 0x%x\n", (uint32_t)rsdp_phys);
-    log_info("HHDM offset: 0x%x%x\n", (uint32_t)(hhdm_offset >> 32), (uint32_t)hhdm_offset);
+    printk(KERN_INFO, "RSDP phys: 0x%x\n", (uint32_t)rsdp_phys);
+    printk(KERN_INFO, "HHDM offset: 0x%x%x\n", (uint32_t)(hhdm_offset >> 32), (uint32_t)hhdm_offset);
 
     // Test HHDM access - try reading from physical address 0x1000 via HHDM
-    serial_write("Testing HHDM access at offset+0x1000...\n");
+    printk(KERN_DEBUG, "Testing HHDM access at offset+0x1000...\n");
     volatile uint8_t *test_addr = (uint8_t *)(hhdm_offset + 0x1000);
     uint8_t test_val = *test_addr;  // Should not crash if HHDM works
-    log_info("HHDM test read successful, value: 0x%x\n", test_val);
+    printk(KERN_OK, "HHDM test read successful, value: 0x%x\n", test_val);
 
     rsdp_addr = rsdp_phys + hhdm_offset;
-    log_info("RSDP virt: 0x%x%x\n", (uint32_t)(rsdp_addr >> 32), (uint32_t)rsdp_addr);
-    serial_write("rsdp response OK\n");
+    printk(KERN_INFO, "RSDP virt: 0x%x%x\n", (uint32_t)(rsdp_addr >> 32), (uint32_t)rsdp_addr);
+    printk(KERN_OK, "rsdp response OK\n");
 
     // Map RSDP page (base revision 3 doesn't map ACPI/reserved memory)
-    serial_write("Mapping RSDP page...\n");
+    printk(KERN_INFO, "Mapping RSDP page...\n");
     map_physical_range(rsdp_phys, 4096, 1, 1);  // Map 4KB, kernel, writable
-    serial_write("RSDP page mapped\n");
+    printk(KERN_OK, "RSDP page mapped\n");
 
     int acpi_result = acpi_init();
-    log_info("acpi_init returned: %d\n", acpi_result);
+    printk(KERN_INFO, "acpi_init returned: %d\n", acpi_result);
 
-    serial_write("initializing apic\n");
+    printk(KERN_INFO, "initializing apic\n");
     initialize_apic();
-    serial_write("apic initialized\n");
+    printk(KERN_OK, "apic initialized\n");
 
-    serial_write("disabling pic\n");
+    printk(KERN_INFO, "disabling pic\n");
     disable_pic();
-    serial_write("pic disabled\n");
+    printk(KERN_OK, "pic disabled\n");
 
     // get physical addresses from MADT
     uint32_t lapic_phys = get_lapic_address();
     uint32_t ioapic_phys = get_ioapic_address();
 
     if (ioapic_phys == 0) {
-        serial_write("ioapic not found\n");
+        printk(KERN_FATAL, "ioapic not found\n");
         halt();
     }
 
@@ -246,10 +260,10 @@ void kernel_main(void) {
     // according to MADT: IRQ 0 is overriden to GSI 2
     uint32_t timer_gsi = 2; // madt override
     uint16_t timer_flags = 0x0; // madt itself
-    serial_write("configuring timer\n");
+    printk(KERN_INFO, "configuring timer\n");
     configure_ioapic_irq_with_flags(timer_gsi, 32, local_apic_id, timer_flags);
-    serial_write("timer interrupt configured via IOAPIC\n");
-    serial_write("timer initialization\n");
+    printk(KERN_OK, "timer interrupt configured via IOAPIC\n");
+    printk(KERN_INFO, "timer initialization\n");
     init_timer();
 
     /* register drivers */
@@ -257,38 +271,33 @@ void kernel_main(void) {
     acpi_bus_enumerate();
 
     asm volatile("sti");
-    serial_write("interrupts re-enabled\n");
+    printk(KERN_OK, "interrupts re-enabled\n");
 
-    serial_write("[kernel.c]: [INFO]: sleep test:");
+    printk(KERN_INFO, "sleep test:\n");
     sleep(1);
-    serial_write("[kernel.c]: [INFO]: OK");
+    printk(KERN_OK, "sleep test done\n");
 
     if (ac97_init()) {
-        serial_write("[ERROR]: kernel.c: could not initialize ac97 driver\n");
+        printk(KERN_ERROR, "could not initialize ac97 driver\n");
         hcf();
     } else {
-        serial_write("[kernel.c]: [ OK ]: initialized AC97\n");
+        printk(KERN_OK, "initialized AC97\n");
     }
 
-    if (framebuffer_request.response == NULL ||
-            framebuffer_request.response->framebuffer_count < 1) {
-        //printf("No limine framebuffer available\n");
-        serial_write("[kernel.c]: did not receive a framebuffer from limine. exiting\n");
-        hcf();
-    }
-
-    // Fetch first framebuffer
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-
-    /* render things to the screen */
-    graphics_init(framebuffer);
-    console_init(framebuffer);
-
-    /* test the framebuffer console */
-    console_clear();
     console_puts("\nHello, world!\n");
     console_puts("abcdefghijklmnopqrstuvwxyz0123456789\n");
-    gfx_render();
+
+    printk(KERN_DEBUG, "hello, world!\n");
+    printk(KERN_OK, "hello, world!\n");
+    printk(KERN_INFO, "hello, world!\n");
+    printk(KERN_WARN, "hello, world!\n");
+    printk(KERN_ERROR, "hello, world!\n");
+    printk(KERN_FATAL, "goodbye, world!\n");
+
+    shell_init();
+    printk(KERN_OK, "shell initialized\n");
+
+    shell_run();
 
     for (;;)
         asm volatile("hlt");
