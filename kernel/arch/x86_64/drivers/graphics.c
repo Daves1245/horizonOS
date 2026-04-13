@@ -9,6 +9,15 @@ uint32_t *screen;
 uint32_t screen_size;
 struct limine_framebuffer *fb;
 
+static enum gfx_target target = GFX_TARGET_BACKBUFFER;
+
+void gfx_set_target(enum gfx_target t) { target = t; }
+enum gfx_target gfx_get_target(void) { return target; }
+
+static inline uint32_t *draw_buffer(void) {
+    return target == GFX_TARGET_FRAMEBUFFER ? screen : backbuffer;
+}
+
 void graphics_init(struct limine_framebuffer *framebuffer) {
     fb = framebuffer;
     screen = fb->address;
@@ -29,7 +38,7 @@ void gfx_put_pixel(uint64_t x, uint64_t y, uint32_t val) {
     if (x >= fb->width || y >= fb->height) {
         return;
     }
-    backbuffer[y * (fb->pitch / 4) + x] = val;
+    draw_buffer()[y * (fb->pitch / 4) + x] = val;
 }
 
 /* optimized 32-bit-wide copy using rep movsd for disabled SSE */
@@ -42,7 +51,9 @@ static inline void fast_copy32(uint32_t *dst, const uint32_t *src, uint32_t coun
     );
 }
 
-void gfx_render() {
+void gfx_render(void) {
+    /* only meaningful when staging through the backbuffer */
+    if (target != GFX_TARGET_BACKBUFFER) return;
     fast_copy32(screen, backbuffer, screen_size / 4);
 }
 
@@ -53,21 +64,20 @@ void gfx_fill_rect(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint32_t val)
     uint64_t x1 = c < fb->width  ? c : fb->width - 1;
     uint64_t y1 = d < fb->height ? d : fb->height - 1;
     uint32_t stride = fb->pitch / 4;
+    uint32_t *buf = draw_buffer();
 
     for (uint64_t y = y0; y <= y1; y++) {
-        uint32_t *row = &backbuffer[y * stride];
+        uint32_t *row = &buf[y * stride];
         for (uint64_t x = x0; x <= x1; x++) {
             row[x] = val;
         }
     }
 }
 
-// same trick as fast copy - fill in 4 bytes
-// at a time
-void gfx_clear_screen() {
+void gfx_clear_screen(void) {
     uint32_t count = screen_size / 4;
     uint32_t val = 0;
-    uint32_t *dst = backbuffer;
+    uint32_t *dst = draw_buffer();
     asm volatile (
         "rep stosl"
         : "+D"(dst), "+c"(count)

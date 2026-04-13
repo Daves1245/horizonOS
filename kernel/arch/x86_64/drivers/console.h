@@ -12,6 +12,7 @@
 
 void console_init(struct limine_framebuffer *fb);
 void console_putchar(char c);
+void console_backspace(void);
 void console_puts(const char *s);
 void console_vprintf(const char *fmt, va_list args);
 void console_printf(const char *fmt, ...);

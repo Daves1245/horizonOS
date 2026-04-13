@@ -21,16 +21,21 @@ static uint32_t screen_w;
 static uint32_t screen_h;
 
 /*
- * backbuffer is the internal buffer that is used for drawing with
- * the graphics API. once the image is ready to be drawn, it is rendered
- * by copying the backbuffer into the limine framebuffer
- * pointer + pitch — needed for scrolling
+ * the console draws directly to the framebuffer via the gfx_fb_* API.
+ * graphics.c's backbuffer is reserved for tearing-sensitive scenes
+ * (e.g. pong); per-char text output doesn't need it and a full blit
+ * per keystroke would be wasteful. scrolling still touches `screen`
+ * directly for the bulk memmove.
  */
-extern uint32_t *backbuffer;
+extern uint32_t *screen;
 extern uint32_t screen_size;
 extern struct limine_framebuffer *fb;
 
 void console_init(struct limine_framebuffer *framebuffer) {
+    /* text output skips the backbuffer: per-char full-screen blits
+     * would dominate CPU and tearing is invisible for text. */
+    gfx_set_target(GFX_TARGET_FRAMEBUFFER);
+
     console_font = &FontStyle_MonaspaceArgonLight;
     // light gray
     fg_color = rgb(0xCC, 0xCC, 0xCC);
@@ -52,21 +57,18 @@ void console_init(struct limine_framebuffer *framebuffer) {
 }
 
 void scroll_up(void) {
-    // pixels per row
     uint32_t stride = fb->pitch / 4;
     uint32_t row_pixels = cell_h * stride;
 
-    /* shift every row up by one cell_h */
-    uint32_t *dst = backbuffer;
-    uint32_t *src = backbuffer + row_pixels;
+    uint32_t *dst = screen;
+    uint32_t *src = screen + row_pixels;
     uint32_t copy_count = stride * (screen_h - cell_h);
 
     for (uint32_t i = 0; i < copy_count; i++) {
         dst[i] = src[i];
     }
 
-    /* clear last row */
-    uint32_t *last = backbuffer + stride * (screen_h - cell_h);
+    uint32_t *last = screen + stride * (screen_h - cell_h);
     for (uint32_t i = 0; i < row_pixels; i++) {
         last[i] = bg_color;
     }
@@ -104,13 +106,23 @@ void console_putchar(char c) {
     int px = cursor_col * cell_w;
     int py = cursor_row * cell_h;
 
-    /* clear cell background */
     gfx_fill_rect(px, py, px + cell_w - 1, py + cell_h - 1, bg_color);
-
-    /* draw glyph */
     font_draw_char(console_font, c, px, py, fg_color);
 
     cursor_col++;
+}
+
+void console_backspace(void) {
+    if (cursor_col == 0) {
+        if (cursor_row == 0) return;
+        cursor_row--;
+        cursor_col = max_cols - 1;
+    } else {
+        cursor_col--;
+    }
+    int px = cursor_col * cell_w;
+    int py = cursor_row * cell_h;
+    gfx_fill_rect(px, py, px + cell_w - 1, py + cell_h - 1, bg_color);
 }
 
 void console_puts(const char *s) {

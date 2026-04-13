@@ -1,6 +1,7 @@
 #include "keyboard.h"
 #include <string.h>
 #include <drivers/console.h>
+#include <drivers/serial.h>
 #include <kernel/panic.h>
 
 extern struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
@@ -61,7 +62,7 @@ int keyboard_poll(int level, struct key_event_t *out) {
  */
 struct key_event_t keyboard_block_read(int level) {
     struct key_event_t out;
-    while (!keyboard_poll(level, &out));
+    while (!keyboard_poll(level, &out)) asm volatile("hlt");
     return out;
 }
 
@@ -92,8 +93,37 @@ int register_keyboard_listener() {
 }
 
 /*
- *
+ * readline: echo characters as they arrive, stop on newline.
+ * backspace rubs out one char from both the buffer and the console.
+ * caller provides the storage — no allocation here.
  */
+int readline(int level, char *buf, int len) {
+    int pos = 0;
+    if (len <= 0) return 0;
+
+    for (;;) {
+        struct key_event_t ev = keyboard_block_read(level);
+        if (ev.type != KEY_EVENT_DOWN) continue;
+
+        char c = (char) ev.value;
+        if (c == '\n') {
+            console_putchar('\n');
+            buf[pos] = '\0';
+            return pos;
+        } else if (c == '\b') {
+            if (pos > 0) {
+                pos--;
+                console_backspace();
+            }
+        } else if (c >= ' ' && c < 127) {
+            if (pos < len - 1) {
+                buf[pos++] = c;
+                console_putchar(c);
+            }
+        }
+    }
+}
+
 void remove_keyboard_listener(int level) {
     // ids are associated with a level, id <-> level
     // reset head, tail, and used flag

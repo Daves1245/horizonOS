@@ -32,7 +32,6 @@ void printk(enum log_level level, const char *fmt, ...) {
         case KERN_OK:
             tag = "[ OK ]:";
             console_set_fg(OK_FG);
-            break;
             console_set_fg(WARN_FG);
             break;
         case KERN_ERROR:
@@ -61,5 +60,4 @@ void printk(enum log_level level, const char *fmt, ...) {
 
     console_set_fg(INFO_FG);
     console_set_bg(rgb(0x00, 0x00, 0x00));
-    gfx_render();
 }

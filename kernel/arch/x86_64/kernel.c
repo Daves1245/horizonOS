@@ -26,6 +26,7 @@
 #include <drivers/ac97.h>
 #include <games/pong.h>
 
+#include <keyboard.h>
 #include <log.h>
 #include <shell.h>
 
@@ -34,7 +35,7 @@ extern void halt_without_apic();
 extern void hcf(void);
 
 /* global so that drivers may route IRQ through ioapic (virtual address) */
-volatile phys_addr_t *ioapic_addr;
+volatile uint32_t *ioapic_addr;
 uint8_t local_apic_id;
 
 // Set the base revision to 3, this is recommended as this is the latest
@@ -293,6 +294,12 @@ void kernel_main(void) {
     printk(KERN_WARN, "hello, world!\n");
     printk(KERN_ERROR, "hello, world!\n");
     printk(KERN_FATAL, "goodbye, world!\n");
+
+    extern struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
+    extern struct keyboard_queue_state keyboard_queue_state[KEYBOARD_QUEUE_LEVELS];
+
+    printk(KERN_DEBUG, "keyboard queue ringbuffer: %p\n", (volatile virt_addr_t) &keyboard_multilevel_queue);
+    printk(KERN_DEBUG, "keyboard queue state: %p\n", (volatile virt_addr_t) &keyboard_queue_state);
 
     shell_init();
     printk(KERN_OK, "shell initialized\n");

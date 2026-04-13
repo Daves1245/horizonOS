@@ -8,7 +8,7 @@
 
 uintptr_t lapic_virt_base = APIC_BASE;
 
-extern volatile phys_addr_t *ioapic_addr;
+extern volatile uint32_t *ioapic_addr;
 
 void apic_set_base(uintptr_t virt) {
     lapic_virt_base = virt;

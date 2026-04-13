@@ -16,7 +16,7 @@
 
 #define PS2K_PNP_ID "PNP0303"
 
-extern void *ioapic_addr;
+extern volatile uint32_t *ioapic_addr;
 extern uint8_t local_apic_id;
 
 struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
@@ -100,6 +100,19 @@ static void ps2k_irq_handler(struct interrupt_context *regs) {
                 : scancode_to_ascii[index];
             if (c != 0) {
                 serial_putchar(c);
+                /* relying on PS/2 hardware typematic for hold-to-repeat;
+                 * each repeat arrives here as a fresh make-scan IRQ. */
+                struct key_event_t ev = {
+                    .type = KEY_EVENT_DOWN,
+                    .scan_code = (int8_t) index,
+                    .value = (int8_t) c,
+                    .timestamp = 0,
+                };
+                for (int lvl = 0; lvl < KEYBOARD_QUEUE_LEVELS; lvl++) {
+                    if (keyboard_queue_state[lvl].used) {
+                        keyboard_push(lvl, ev);
+                    }
+                }
             }
         }
     }
