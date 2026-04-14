@@ -1,10 +1,23 @@
+/**
+ * @file ps2k.h
+ * @brief TODO: one-line summary of the ps2k driver interface.
+ *
+ * TODO: longer description — role of ps2k, its relationship to
+ * keyboard.h, and how it fits into the ACPI-driver model.
+ */
 #ifndef PS2K_H
 #define PS2K_H
 
 #include <stdint.h>
 
-// key code values are scancode indices into scancode_to_ascii[]
-// extended keys (e0-prefixed) use scancode | 0x80
+/**
+ * @brief Logical key identifiers exposed to consumers of ps2k.
+ *
+ * TODO: describe the encoding — values are scan code set 1 indices for
+ * normal keys, with extended (E0-prefixed) keys remapped to
+ * `index | 0x80`. Mention that these are the indices written into
+ * ::key_event_t::scan_code and the ones ::is_key_pressed accepts.
+ */
 enum KeyCode {
     KEY_ESCAPE       = 0x01,
     KEY_1            = 0x02,
@@ -90,7 +103,25 @@ enum KeyCode {
     KEY_PAGE_DOWN    = 0xD1,
 };
 
+/**
+ * @brief TODO: one-line summary.
+ *
+ * TODO: describe what registration does (registers the driver with the
+ * ACPI bus so it gets probed when a PNP0303 device is enumerated), and
+ * when/where it should be called during boot.
+ */
 void ps2k_register(void);
+
+/**
+ * @brief TODO: one-line summary.
+ *
+ * TODO: describe the snapshot semantics — reflects current make/break
+ * state tracked by the IRQ handler, not a queue read. Note any caveats
+ * (e.g. modifier keys, extended-key encoding).
+ *
+ * @param code TODO
+ * @return TODO (non-zero if held, 0 otherwise).
+ */
 int is_key_pressed(enum KeyCode code);
 
 #endif

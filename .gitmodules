@@ -1,3 +1,6 @@
 [submodule "uacpi"]
 	path = uacpi
 	url = https://github.com/UltraOS/uACPI.git
+[submodule "docs/themes/lotusdocs"]
+	path = docs/themes/lotusdocs
+	url = https://github.com/colinwilson/lotusdocs

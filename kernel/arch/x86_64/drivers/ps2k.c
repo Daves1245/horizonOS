@@ -1,3 +1,12 @@
+/**
+ * @file ps2k.c
+ * @brief TODO: driver for PS/2 keyboard hardare
+ *
+ * TODO: describe the driver's responsibilities — ACPI enumeration via
+ * PNP0303, controller bring-up, IRQ handling, scancode translation,
+ * and pushing ::key_event_t records into the shared multi-level queue
+ * declared in keyboard.h.
+ */
 #include "ps2k.h"
 #include <x86_64/acpi/acpi_bus.h>
 #include <stddef.h>
@@ -13,26 +22,38 @@
 #include <drivers/serial.h>
 #include <apic/apic.h>
 #include <keyboard.h>
+#include <drivers/timer.h>
 
+/** @brief TODO: ACPI PNP ID matched by this driver. */
 #define PS2K_PNP_ID "PNP0303"
 
 extern volatile uint32_t *ioapic_addr;
 extern uint8_t local_apic_id;
 
+/** @brief TODO: storage for the multi-listener event queues declared in keyboard.h. */
 struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
+/** @brief TODO: head/tail state for each level of ::keyboard_multilevel_queue. */
 struct keyboard_queue_state keyboard_queue_state[KEYBOARD_QUEUE_LEVELS];
 
+/** @brief TODO: null-terminated list of PNP IDs handled by this driver. */
 static const char *const ps2k_pnp_ids[] = {
     PS2K_PNP_ID,
     NULL,
 };
 
+/**
+ * @brief TODO: resources parsed from the ACPI `_CRS` for this device.
+ *
+ * TODO: note that the fields are populated by ::ps2k_handle_resource
+ * during probe before any hardware access.
+ */
 static struct ps2k_resources_t {
-    uint8_t irq;
-    uint16_t port_data;
-    uint16_t port_cmd;
+    uint8_t irq;       /**< TODO: GSI to route to an IDT vector. */
+    uint16_t port_data; /**< TODO: I/O port for data reads/writes. */
+    uint16_t port_cmd;  /**< TODO: I/O port for status/command. */
 } ps2k_resources;
 
+/** @brief TODO: scan code set 1 → ASCII, unshifted (US QWERTY). */
 static char scancode_to_ascii[] = {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
     '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
@@ -40,6 +61,7 @@ static char scancode_to_ascii[] = {
     '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 3, '*', 4, ' '
 };
 
+/** @brief TODO: scan code set 1 → ASCII, shifted (US QWERTY). */
 static char scancode_to_ascii_uppercase[] = {
     0,  27, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
     '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
@@ -47,8 +69,12 @@ static char scancode_to_ascii_uppercase[] = {
     '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 3, '*', 4, ' '
 };
 
+/** @brief TODO: make/break state bitmap indexed by ::KeyCode value. */
 int key_pressed[256] = {0};
 
+/**
+ * @copydoc is_key_pressed
+ */
 int is_key_pressed(enum KeyCode code) {
     return key_pressed[code];
 }
@@ -106,7 +132,7 @@ static void ps2k_irq_handler(struct interrupt_context *regs) {
                     .type = KEY_EVENT_DOWN,
                     .scan_code = (int8_t) index,
                     .value = (int8_t) c,
-                    .timestamp = 0,
+                    .timestamp = timer_ticks(),
                 };
                 for (int lvl = 0; lvl < KEYBOARD_QUEUE_LEVELS; lvl++) {
                     if (keyboard_queue_state[lvl].used) {
