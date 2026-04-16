@@ -1,3 +1,4 @@
+/* here be dragons; make sure nobody loves you before proceeding. */
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
