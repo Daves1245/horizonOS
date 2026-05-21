@@ -138,7 +138,7 @@ void hush_run() {
 
 enum HUSH_STATE hush_execute_command() {
     if (hush_state.argc < 0) {
-        log_warning("[hush]: invalid argc: %d\n", hush_state.argc);
+        log_warn("[hush]: invalid argc: %d\n", hush_state.argc);
         return INVALID_COMMAND;
     }
 

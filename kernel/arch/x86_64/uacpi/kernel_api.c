@@ -100,7 +100,7 @@ void uacpi_kernel_log(uacpi_log_level level, const uacpi_char *msg) {
             log_info("[uACPI] %s", msg);
             break;
         case UACPI_LOG_WARN:
-            log_warning("[uACPI] %s", msg);
+            log_warn("[uACPI] %s", msg);
             break;
         case UACPI_LOG_ERROR:
             log_error("[uACPI] %s", msg);
@@ -369,7 +369,7 @@ uacpi_u64 uacpi_kernel_get_nanoseconds_since_boot(void) {
         // for fallback, we assume 2ghz (common for qemu)
         if (tsc_frequency == 0) {
             tsc_frequency = 2000000000ULL;  // 2 ghz
-            log_warning("[uacpi timing]: tsc frequency unknown, assuming 2 GHz");
+            log_warn("[uacpi timing]: tsc frequency unknown, assuming 2 GHz");
         } else {
             log_info("[uacpi timing]: tsc frequency: %llu hz", tsc_frequency);
         }
@@ -628,7 +628,7 @@ uacpi_status uacpi_kernel_wait_for_work_completion(void) {
  */
 uacpi_status uacpi_kernel_handle_firmware_request(uacpi_firmware_request *req) {
     (void) req;
-    log_warning("Firmware request not implemented");
+    log_warn("Firmware request not implemented");
     return UACPI_STATUS_OK;
 }
 

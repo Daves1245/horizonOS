@@ -19,7 +19,7 @@ void log_demo();
 
 #define log_info(fmt, ...)		logf(LOG_INFO, (fmt), ##__VA_ARGS__)
 #define log_success(fmt, ...)	logf(LOG_SUCCESS, (fmt), ##__VA_ARGS__)
-#define log_warning(fmt, ...)	logf(LOG_WARNING, (fmt), ##__VA_ARGS__)
+#define log_warn(fmt, ...)	logf(LOG_WARNING, (fmt), ##__VA_ARGS__)
 #define log_error(fmt, ...)	logf(LOG_ERROR, (fmt), ##__VA_ARGS__)
 #define log_debug(fmt, ...)	logf(LOG_DEBUG, (fmt), ##__VA_ARGS__)
 

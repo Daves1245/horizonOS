@@ -28,9 +28,9 @@ fi
 echo "Running $ARCH (ISO: $ISO_FILE)"
 
 if [ "$USE_CDROM" = "1" ]; then
-    # i386: Direct kernel boot with ISO as CD-ROM
+    # i386: boot from ISO via GRUB (do not use -kernel, it bypasses GRUB and loses VBE)
     if [ "$1" = "debug" ]; then
-        $QEMU_BIN -cdrom $ISO_FILE -kernel $KERNEL_PATH \
+        $QEMU_BIN -cdrom $ISO_FILE \
             -vga std \
             -monitor stdio \
             -d int,cpu_reset,guest_errors \
@@ -38,12 +38,12 @@ if [ "$USE_CDROM" = "1" ]; then
             -no-shutdown \
             -serial file:serial.log
     elif [ "$1" = "serial" ]; then
-        $QEMU_BIN -cdrom $ISO_FILE -kernel $KERNEL_PATH \
+        $QEMU_BIN -cdrom $ISO_FILE \
             -nographic \
             -serial mon:stdio \
             -no-shutdown
     else
-        $QEMU_BIN -cdrom $ISO_FILE -kernel $KERNEL_PATH \
+        $QEMU_BIN -cdrom $ISO_FILE \
             -vga std \
             -serial stdio
     fi

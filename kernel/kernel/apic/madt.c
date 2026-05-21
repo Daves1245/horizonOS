@@ -104,7 +104,7 @@ void parse_madt(void *madt_addr) {
                 break;
             }
             default:
-                log_warning("[madt::parse_madt]: unknown MADT entry type: %d\n", entry_header->entry_type);
+                log_warn("[madt::parse_madt]: unknown MADT entry type: %d\n", entry_header->entry_type);
                 break;
         }
 

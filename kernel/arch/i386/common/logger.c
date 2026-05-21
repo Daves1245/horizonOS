@@ -57,7 +57,7 @@ void log_demo() {
     printf("This is informational text\n");
     log_success("[SUCCESS] ");
     printf("Operation completed successfully\n");
-    log_warning("[WARNING] ");
+    log_warn("[WARNING] ");
     printf("This is a warning message\n");
     log_error("[ERROR] ");
     printf("This is an error message\n");

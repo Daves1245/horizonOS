@@ -17,6 +17,7 @@
 #include <drivers/timer.h>
 #include <jury/i386/test_paging.h>
 #include <jury/i386/test_vm.h>
+#include "multiboot_info.h"
 
 // declare kernel_end from linker script
 extern uint32_t kernel_end;
@@ -33,6 +34,30 @@ void kernel_main(uint32_t multiboot_info_p) {
     log_debug("serial port initialized for debugging\n");
 
     log_demo();
+
+    struct multiboot_info *mb_info = (struct multiboot_info *) multiboot_info_p;
+
+    log_info("[multiboot]: info pointer: 0x%x\n", multiboot_info_p);
+    log_info("[multiboot]: flags: 0x%x\n", mb_info->flags);
+
+    if (mb_info->flags & MB_FLAG_MMAP)
+        log_success("[multiboot]: memory map present (mmap_addr=0x%x len=%d)\n",
+            mb_info->mmap_addr, mb_info->mmap_length);
+    else
+        log_warn("[multiboot]: no memory map\n");
+
+    if (mb_info->flags & MB_FLAG_FRAMEBUFFER) {
+        log_success("[multiboot]: framebuffer info present\n");
+        log_info("[multiboot]: type=%d addr=0x%x pitch=%d %dx%d bpp=%d\n",
+            mb_info->framebuffer_type,
+            (uint32_t) mb_info->framebuffer_addr,
+            mb_info->framebuffer_pitch,
+            mb_info->framebuffer_width,
+            mb_info->framebuffer_height,
+            mb_info->framebuffer_bpp);
+    } else {
+        log_warn("[multiboot]: no framebuffer info — vbe request likely ignored by grub\n");
+    }
 
     // we'll use this to test paging some amount after the end of the kernel
     placement_address = (virt_addr_t) &kernel_end;

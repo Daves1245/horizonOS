@@ -56,7 +56,7 @@ void log_demo() {
     printf("=== Color Log Demo ===\n");
     log_info(" status\n");
     log_success(" tests passed\n");
-    log_warning(" unexpected value\n");
+    log_warn(" unexpected value\n");
     log_error(" test failed\n");
     log_debug(" debug information\n");
     printf("\n");
