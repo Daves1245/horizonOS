@@ -1,5 +1,5 @@
 #include <i386/drivers/shell/builtins/maze.h>
-#include <i386/drivers/timer.h>
+#include <drivers/timer.h>
 #include <kernel/tty.h>
 #include <kernel/rand.h>
 #include <stdio.h>

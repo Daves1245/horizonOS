@@ -11,7 +11,7 @@ AC97="-device AC97,audiodev=snd0"
 # Detect which architecture to use (default to i386 if both exist)
 if [ -f build/i386/kernel/horizon.kernel ]; then
     ARCH="i386"
-    ISO_FILE="horizon.iso"
+    ISO_FILE="build/i386/horizon.iso"
     KERNEL_PATH="build/i386/kernel/horizon.kernel"
     QEMU_BIN="qemu-system-i386"
     USE_CDROM=1

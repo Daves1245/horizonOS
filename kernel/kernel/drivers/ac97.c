@@ -3,7 +3,7 @@
 #include <drivers/pci.h>
 #include <drivers/timer.h>
 #include <drivers/serial.h>
-#include <x86_64/interrupts/isr.h>
+#include <interrupts/isr.h>
 #include <apic/apic.h>
 #include <halt.h>
 #include <kheap.h>

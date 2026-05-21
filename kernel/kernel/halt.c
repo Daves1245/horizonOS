@@ -13,7 +13,7 @@ void system_halt() {
     asm volatile("hlt");
 }
 
-void halt_catch_fire() {
+void hcf() {
     asm volatile("cli");
     while (1) {
         asm volatile("hlt");

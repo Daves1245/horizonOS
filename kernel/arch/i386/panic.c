@@ -56,17 +56,16 @@ struct regs {
 
 static void snapshot_regs(struct regs *r) {
 	__asm__ volatile (
-		"movl %%eax, %0\n"
-		"movl %%ebx, %1\n"
-		"movl %%ecx, %2\n"
-		"movl %%edx, %3\n"
-		"movl %%esi, %4\n"
-		"movl %%edi, %5\n"
-		"movl %%ebp, %6\n"
-		"movl %%esp, %7\n"
-		: "=m"(r->eax), "=m"(r->ebx), "=m"(r->ecx), "=m"(r->edx),
-		  "=m"(r->esi), "=m"(r->edi), "=m"(r->ebp), "=m"(r->esp)
+		"movl %%eax, 0(%0)\n"
+		"movl %%ebx, 4(%0)\n"
+		"movl %%ecx, 8(%0)\n"
+		"movl %%edx, 12(%0)\n"
+		"movl %%esi, 16(%0)\n"
+		"movl %%edi, 20(%0)\n"
+		"movl %%ebp, 24(%0)\n"
+		"movl %%esp, 28(%0)\n"
 		:
+		: "r"(r)
 		: "memory"
 	);
 

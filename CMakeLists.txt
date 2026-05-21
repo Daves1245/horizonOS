@@ -137,6 +137,10 @@ add_custom_target(install-all
 )
 
 if(ARCH STREQUAL "i386")
+    find_program(GRUB_MKRESCUE NAMES i686-elf-grub-mkrescue grub-mkrescue)
+    if(NOT GRUB_MKRESCUE)
+        message(FATAL_ERROR "grub-mkrescue not found. Install grub: sudo apt install grub-pc-bin (on linux). For mac, try: brew install i686-elf-grub (mac)")
+    endif()
     add_custom_target(iso
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_BINARY_DIR}/isodir
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/isodir/boot/grub
@@ -146,7 +150,7 @@ if(ARCH STREQUAL "i386")
         COMMAND ${CMAKE_COMMAND}
             -DGRUB_CFG_PATH=${CMAKE_BINARY_DIR}/isodir/boot/grub/grub.cfg
             -P ${CMAKE_SOURCE_DIR}/cmake/create_grub_cfg.cmake
-        COMMAND grub-mkrescue -o ${CMAKE_BINARY_DIR}/horizon.iso ${CMAKE_BINARY_DIR}/isodir
+        COMMAND ${GRUB_MKRESCUE} -o ${CMAKE_BINARY_DIR}/horizon.iso ${CMAKE_BINARY_DIR}/isodir
         DEPENDS install-all
         COMMENT "creating bootable i386 iso"
     )

@@ -287,12 +287,15 @@ add_custom_command(TARGET horizon.kernel POST_BUILD
     COMMENT "Generating kernel disassembly, symbols, and ELF info"
 )
 
-# For i386, verify multiboot compliance
+# For i386, verify multiboot compliance (skipped if grub-file is not installed)
 if(ARCH STREQUAL "i386")
-    add_custom_command(TARGET horizon.kernel POST_BUILD
-        COMMAND grub-file --is-x86-multiboot $<TARGET_FILE:horizon.kernel>
-        COMMENT "Verifying multiboot compliance"
-    )
+    find_program(GRUB_FILE grub-file)
+    if(GRUB_FILE)
+        add_custom_command(TARGET horizon.kernel POST_BUILD
+            COMMAND ${GRUB_FILE} --is-x86-multiboot $<TARGET_FILE:horizon.kernel>
+            COMMENT "Verifying multiboot compliance"
+        )
+    endif()
 endif()
 
 # Install kernel

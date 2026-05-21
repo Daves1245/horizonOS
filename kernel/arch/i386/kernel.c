@@ -14,7 +14,7 @@
 #include <apic/rsdp.h>
 #include "drivers/keyboard/keyboard.h"
 #include <drivers/serial.h>
-#include "drivers/timer.h"
+#include <drivers/timer.h>
 #include <jury/i386/test_paging.h>
 #include <jury/i386/test_vm.h>
 
@@ -24,7 +24,10 @@ extern uint32_t kernel_end;
 // from kheap.c
 extern uint32_t placement_address;
 
-void kernel_main(void) {
+uint32_t ioapic_addr;
+uint8_t local_apic_id;
+
+void kernel_main(uint32_t multiboot_info_p) {
     // debug output w/ qemu
     init_serial();
     log_debug("serial port initialized for debugging\n");
@@ -58,7 +61,7 @@ void kernel_main(void) {
 #ifdef DEBUG
     log_debug("Configuring Keyboard Interrupt\n");
 #endif
-    uint32_t ioapic_addr = get_ioapic_address();
+    ioapic_addr = get_ioapic_address();
     if (ioapic_addr == 0) {
         log_error("[kernel]: ERROR: No IOAPIC found in MADT\n");
         halt();
@@ -73,7 +76,7 @@ void kernel_main(void) {
         log_info("[kernel]: Keyboard GSI: %d, Flags: 0x%x\n", kbd_gsi, kbd_flags);
 
         // get Local APIC ID for this processor
-        uint8_t local_apic_id = get_local_apic_id();
+        local_apic_id = get_local_apic_id();
         log_info("[kernel]: Local APIC ID: %d\n", local_apic_id);
 
         // configure timer interrupt (IRQ 0 -> vector 32)
@@ -81,12 +84,12 @@ void kernel_main(void) {
         uint32_t timer_gsi = 2;  // from MADT IRQ override
         uint16_t timer_flags = 0x0;  // from MADT itself
         log_info("[kernel]: configuring timer (GSI %d -> vector 32)\n", timer_gsi);
-        configure_ioapic_irq_with_flags((void *) ioapic_addr, timer_gsi, 32, local_apic_id, timer_flags);
+        configure_ioapic_irq_with_flags(timer_gsi, 32, local_apic_id, timer_flags);
         log_info("[kernel]: timer interrupt configured via IOAPIC\n");
 
         // Configure IOAPIC redirection entry for keyboard with proper flags
         // IRQ 1 (keyboard) -> vector 33, with polarity/trigger from MADT
-        configure_ioapic_irq_with_flags((void *) ioapic_addr, kbd_gsi, 33, local_apic_id, kbd_flags);
+        configure_ioapic_irq_with_flags(kbd_gsi, 33, local_apic_id, kbd_flags);
         log_info("[kernel]: keyboard interrupt configured via IOAPIC\n");
     }
 
