@@ -1,7 +1,6 @@
-#include "console.h"
-#include "font.h"
-#include "graphics.h"
-
+#include <drivers/console.h>
+#include <drivers/font.h>
+#include <drivers/graphics.h>
 #include <stdarg.h>
 
 static const fontStyle_t *console_font;
@@ -12,42 +11,27 @@ static int cursor_col;
 static int cursor_row;
 static int max_cols;
 static int max_rows;
-/* character cell width  (pixels) */
 static int cell_w;
-/* character cell height (pixels) */
 static int cell_h;
 
 static uint32_t screen_w;
 static uint32_t screen_h;
 
-/*
- * the console draws directly to the framebuffer via the gfx_fb_* API.
- * graphics.c's backbuffer is reserved for tearing-sensitive scenes
- * (e.g. pong); per-char text output doesn't need it and a full blit
- * per keystroke would be wasteful. scrolling still touches `screen`
- * directly for the bulk memmove.
- */
-extern uint32_t *screen;
-extern uint32_t screen_size;
-extern struct limine_framebuffer *fb;
+void console_init(void) {
+    const gfx_framebuffer_t *gfx = gfx_get_fb();
 
-void console_init(struct limine_framebuffer *framebuffer) {
-    /* text output skips the backbuffer: per-char full-screen blits
-     * would dominate CPU and tearing is invisible for text. */
+    /* text output skips the backbuffer — per-char full-screen blits are wasteful */
     gfx_set_target(GFX_TARGET_FRAMEBUFFER);
 
     console_font = &FontStyle_MonaspaceArgonLight;
-    // light gray
     fg_color = rgb(0xCC, 0xCC, 0xCC);
-    // black
     bg_color = rgb(0x00, 0x00, 0x00);
 
-    /* cell size from font metrics */
     cell_w = console_font->FixedWidth ? console_font->FixedWidth : console_font->GlyphWidth[0];
     cell_h = console_font->GlyphHeight;
 
-    screen_w = framebuffer->width;
-    screen_h = framebuffer->height;
+    screen_w = gfx->width;
+    screen_h = gfx->height;
 
     max_cols = screen_w / cell_w;
     max_rows = screen_h / cell_h;
@@ -56,14 +40,15 @@ void console_init(struct limine_framebuffer *framebuffer) {
     cursor_row = 0;
 }
 
-void scroll_up(void) {
-    uint32_t stride = fb->pitch / 4;
+static void scroll_up(void) {
+    const gfx_framebuffer_t *gfx = gfx_get_fb();
+    uint32_t stride = gfx->pitch / 4;
     uint32_t row_pixels = cell_h * stride;
+    uint32_t *screen = gfx->address;
 
     uint32_t *dst = screen;
     uint32_t *src = screen + row_pixels;
     uint32_t copy_count = stride * (screen_h - cell_h);
-
     for (uint32_t i = 0; i < copy_count; i++) {
         dst[i] = src[i];
     }
@@ -90,10 +75,10 @@ void console_putchar(char c) {
         newline();
         return;
     case '\t':
-        // not lat two bits - like a page align
         cursor_col = (cursor_col + 4) & ~3;
-        if (cursor_col >= max_cols)
+        if (cursor_col >= max_cols) {
             newline();
+        }
         return;
     default:
         break;
@@ -108,13 +93,14 @@ void console_putchar(char c) {
 
     gfx_fill_rect(px, py, px + cell_w - 1, py + cell_h - 1, bg_color);
     font_draw_char(console_font, c, px, py, fg_color);
-
     cursor_col++;
 }
 
 void console_backspace(void) {
     if (cursor_col == 0) {
-        if (cursor_row == 0) return;
+        if (cursor_row == 0) {
+            return;
+        }
         cursor_row--;
         cursor_col = max_cols - 1;
     } else {
@@ -126,12 +112,13 @@ void console_backspace(void) {
 }
 
 void console_puts(const char *s) {
-    while (*s)
+    while (*s) {
         console_putchar(*s++);
+    }
 }
 
-// basically a copy of serial_printf
 static void console_write_uint(uint64_t val, int base) {
+    // upper bound on digits required to display uint value
     char buf[21];
     int i = 0;
     if (val == 0) {
@@ -184,7 +171,7 @@ void console_vprintf(const char *fmt, va_list args) {
                 }
                 break;
             case 'd':
-                console_write_int((int64_t)va_arg(args, int));
+                console_write_int((int64_t) va_arg(args, int));
                 break;
             case 'u':
                 console_write_uint((uint64_t) va_arg(args, unsigned int), 10);
@@ -200,7 +187,7 @@ void console_vprintf(const char *fmt, va_list args) {
                 console_puts(va_arg(args, const char *));
                 break;
             case 'c':
-                console_putchar((char)va_arg(args, unsigned int));
+                console_putchar((char) va_arg(args, unsigned int));
                 break;
             case '%':
                 console_putchar('%');
@@ -213,7 +200,6 @@ void console_vprintf(const char *fmt, va_list args) {
     }
 }
 
-// copy of serial_printf
 void console_printf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -224,7 +210,6 @@ void console_printf(const char *fmt, ...) {
 void console_set_fg(uint32_t color) {
     fg_color = color;
 }
-
 void console_set_bg(uint32_t color) {
     bg_color = color;
 }

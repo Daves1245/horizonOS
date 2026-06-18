@@ -3,14 +3,13 @@
 
 #include <stdarg.h>
 #include <stdint.h>
-#include <limine.h>
 
 /*
- * framebuffer text console — renders anti-aliased bitmap-font text
- * onto the Limine framebuffer via the graphics backbuffer.
+ * framebuffer text console — renders bitmap-font text onto the framebuffer.
+ * call after gfx_init().
  */
 
-void console_init(struct limine_framebuffer *fb);
+void console_init(void);
 void console_putchar(char c);
 void console_backspace(void);
 void console_puts(const char *s);
