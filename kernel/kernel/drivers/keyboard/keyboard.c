@@ -7,7 +7,10 @@
 #include <kernel/tty.h>
 #include <drivers/io.h>
 #ifdef __i386__
-#include <i386/drivers/shell/hush.h>
+#include <string.h>
+#include <drivers/console.h>
+#include <kernel/panic.h>
+#include <drivers/timer.h>
 #endif
 
 #define KEYBOARD_DATA_PORT 0x60
@@ -108,6 +111,14 @@ enum SCANCODE {
     SPACE = ' '
 };
 
+#ifdef __i386__
+static uint8_t key_state[256];
+static int extended_prefix = 0;
+
+int is_key_pressed(uint8_t scan_code) {
+    return key_state[scan_code];
+}
+
 static char scancode_to_ascii[] = {
     0,  ESCAPE, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, ZERO, HYPHEN, EQUALS, BACKSPACE,
     TAB, q, w, e, r, t, y, u, i, o, p, OPEN_BRACKET, CLOSE_BRACKET, ENTER,
@@ -123,6 +134,7 @@ static char scancode_to_ascii_uppercase[] = {
 };
 
 static int shift_pressed = 0;
+#endif /* __i386__ */
 
 // Wait for keyboard controller input buffer to be empty
 static void wait_for_kbd_input() {
@@ -267,40 +279,54 @@ static void init_ps2_controller() {
 }
 
 void keyboard_interrupt_handler(struct interrupt_context *regs) {
-    (void)regs;  // Unused but required by handler signature
+    (void)regs;
+#ifdef __i386__
     uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
-
-    // left / right shift pressed
-    if (scancode == 0x2A || scancode == 0x36) {
-        shift_pressed = 1;
+    if (scancode == 0xE0) {
+        extended_prefix = 1;
+        apic_send_eoi();
+        return;
     }
-    // left / right shift released
-    else if (scancode == 0xAA || scancode == 0xB6) {
-        shift_pressed = 0;
-    }
-    // ignore key releases (high bit set)
-    else if (!(scancode & 0x80)) {
-        // convert to ASCII and print
-        if (scancode < sizeof(scancode_to_ascii)) {
-            char c;
-            if (shift_pressed) {
-                c = scancode_to_ascii_uppercase[scancode];
-            } else {
-                c = scancode_to_ascii[scancode];
-            }
 
-            if (c != 0) {
-                printf("%c", c);
-#ifdef __i386__
-                hush_handle_keypress(c);
-#endif
+    int was_extended = extended_prefix;
+    extended_prefix = 0;
+
+    uint8_t base = scancode & 0x7F;
+    int is_release = (scancode & 0x80) != 0;
+
+    /* index extended keys into the upper half of key_state (base | 0x80) */
+    uint8_t key_idx = was_extended ? (base | 0x80) : base;
+    key_state[key_idx] = !is_release;
+
+    /* track shift state for ascii translation */
+    if (!was_extended) {
+        if (base == 0x2A || base == 0x36)
+            shift_pressed = !is_release;
+    }
+
+    /* queue key-down events for readline (non-extended only — no ascii for arrows) */
+    if (!is_release && !was_extended && base < sizeof(scancode_to_ascii)) {
+        char c = shift_pressed
+            ? scancode_to_ascii_uppercase[base]
+            : scancode_to_ascii[base];
+
+        if (c != 0) {
+            struct key_event_t ev = {
+                .type      = KEY_EVENT_DOWN,
+                .scan_code = (int8_t) base,
+                .value     = (int8_t) c,
+                .timestamp = (int8_t) timer_ticks(),
+            };
+            for (int lvl = 0; lvl < KEYBOARD_QUEUE_LEVELS; lvl++) {
+                if (keyboard_queue_state[lvl].used)
+                    keyboard_push(lvl, ev);
             }
         }
     }
 
-    // send apic EOI (End of Interrupt) - architecture-independent
     apic_send_eoi();
+#endif
 }
 
 void setup_keyboard_irq() {
@@ -313,11 +339,85 @@ void init_keyboard() {
     log_info("[keyboard]: initializing PS/2 keyboard driver\n");
 #endif
 
-    // initialize PS/2 controller hardware
     init_ps2_controller();
-
-    // register interrupt handler
     setup_keyboard_irq();
 
     log_success("[keyboard]: keyboard driver ready\n");
 }
+
+#ifdef __i386__
+
+struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
+struct keyboard_queue_state keyboard_queue_state[KEYBOARD_QUEUE_LEVELS];
+
+void keyboard_push(int level, struct key_event_t entry) {
+    struct key_event_t *queue = keyboard_multilevel_queue[level];
+    int head = keyboard_queue_state[level].head;
+    int next = (head + 1) % RING_BUFFER_SIZE;
+
+    if (next == keyboard_queue_state[level].tail)
+        keyboard_queue_state[level].tail =
+            (keyboard_queue_state[level].tail + 1) % RING_BUFFER_SIZE;
+
+    memcpy(&queue[head], &entry, sizeof(struct key_event_t));
+    keyboard_queue_state[level].head = next;
+}
+
+int keyboard_poll(int level, struct key_event_t *out) {
+    int head = keyboard_queue_state[level].head;
+    int tail = keyboard_queue_state[level].tail;
+    if (tail == head) return 0;
+    *out = keyboard_multilevel_queue[level][tail];
+    keyboard_queue_state[level].tail = (tail + 1) % RING_BUFFER_SIZE;
+    return 1;
+}
+
+struct key_event_t keyboard_block_read(int level) {
+    struct key_event_t out;
+    while (!keyboard_poll(level, &out)) asm volatile("hlt");
+    return out;
+}
+
+int register_keyboard_listener(void) {
+    for (int level = 0; level < KEYBOARD_QUEUE_LEVELS; level++) {
+        if (!keyboard_queue_state[level].used) {
+            keyboard_queue_state[level].used = 1;
+            return level;
+        }
+    }
+    panic("keyboard multiqueue full");
+    return -1;
+}
+
+void remove_keyboard_listener(int level) {
+    memset(&keyboard_queue_state[level], 0, sizeof(struct keyboard_queue_state));
+}
+
+int readline(int level, char *buf, int len) {
+    int pos = 0;
+    if (len <= 0) return 0;
+
+    for (;;) {
+        struct key_event_t ev = keyboard_block_read(level);
+        if (ev.type != KEY_EVENT_DOWN) continue;
+
+        char c = (char) ev.value;
+        if (c == '\n') {
+            console_putchar('\n');
+            buf[pos] = '\0';
+            return pos;
+        } else if (c == '\b') {
+            if (pos > 0) {
+                pos--;
+                console_backspace();
+            }
+        } else if (c >= ' ' && c < 127) {
+            if (pos < len - 1) {
+                buf[pos++] = c;
+                console_putchar(c);
+            }
+        }
+    }
+}
+
+#endif /* __i386__ */
