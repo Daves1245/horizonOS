@@ -34,6 +34,7 @@
 extern void ps2k_register(void);
 extern void halt_without_apic();
 extern void hcf(void);
+extern void graphics_init(struct limine_framebuffer *fb);
 
 /* global so that drivers may route IRQ through ioapic (virtual address) */
 volatile uint32_t *ioapic_addr;
@@ -187,7 +188,7 @@ void kernel_main(void) {
     }
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
     graphics_init(framebuffer);
-    console_init(framebuffer);
+    console_init();
     console_clear();
     pong_init(framebuffer->width, framebuffer->height);
 
