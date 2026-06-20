@@ -13,6 +13,8 @@ enum log_type {
 	LOG_DEBUG,
 };
 
+void logger_init_console(void);
+
 void log(enum log_type, const char *str);
 void logf(enum log_type type, const char *format, ...);
 void log_demo();
