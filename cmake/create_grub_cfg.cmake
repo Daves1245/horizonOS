@@ -1,4 +1,10 @@
 # Script to create grub.cfg for i386 ISO
-file(WRITE "${GRUB_CFG_PATH}" "menuentry \"horizon\" {\n")
+file(WRITE  "${GRUB_CFG_PATH}" "insmod vbe\n")
+file(APPEND "${GRUB_CFG_PATH}" "insmod vga\n")
+file(APPEND "${GRUB_CFG_PATH}" "insmod all_video\n")
+file(APPEND "${GRUB_CFG_PATH}" "set gfxmode=1024x768x32\n")
+file(APPEND "${GRUB_CFG_PATH}" "set gfxpayload=keep\n")
+file(APPEND "${GRUB_CFG_PATH}" "menuentry \"horizon\" {\n")
 file(APPEND "${GRUB_CFG_PATH}" "\tmultiboot /boot/horizon.kernel\n")
+file(APPEND "${GRUB_CFG_PATH}" "\tboot\n")
 file(APPEND "${GRUB_CFG_PATH}" "}\n")

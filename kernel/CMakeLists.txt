@@ -29,7 +29,7 @@ if(ARCH STREQUAL "i386")
         ${ARCHDIR}/boot/crti.S
         ${ARCHDIR}/boot/boot.S
         ${ARCHDIR}/drivers/tty.c
-        kernel/common/logger.c
+        ${ARCHDIR}/common/logger.c
         ${ARCHDIR}/gdt/descriptor_tables.c
         ${ARCHDIR}/gdt/gdt.S
         ${ARCHDIR}/interrupts/interrupt.asm
@@ -42,11 +42,72 @@ if(ARCH STREQUAL "i386")
         ../libc/string/string.c
         ${ARCHDIR}/drivers/shell/hush.c
         ${ARCHDIR}/drivers/shell/builtins/maze.c
+        ${ARCHDIR}/drivers/graphics.c
         ${ARCHDIR}/panic.c
         kernel/jury/i386/test_paging.c
         kernel/jury/i386/test_vm.c
         ${ARCHDIR}/boot/crtn.S
     )
+
+    # convert audio to 16-bit 48kHz stereo raw PCM for AC97
+    set(AUDIO_PONG_WALL_SRC ${CMAKE_SOURCE_DIR}/audio/wall.ogg)
+    set(AUDIO_PONG_WALL_RAW ${CMAKE_CURRENT_BINARY_DIR}/wall.raw)
+    set(AUDIO_PONG_PADDLE_SRC ${CMAKE_SOURCE_DIR}/audio/paddle.ogg)
+    set(AUDIO_PONG_PADDLE_RAW ${CMAKE_CURRENT_BINARY_DIR}/paddle.raw)
+    set(AUDIO_PONG_SCORE_SRC ${CMAKE_SOURCE_DIR}/audio/score.ogg)
+    set(AUDIO_PONG_SCORE_RAW ${CMAKE_CURRENT_BINARY_DIR}/score.raw)
+
+    add_custom_command(
+        OUTPUT ${AUDIO_PONG_WALL_RAW}
+        COMMAND ffmpeg -y -i ${AUDIO_PONG_WALL_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_WALL_RAW}
+        DEPENDS ${AUDIO_PONG_WALL_SRC}
+        COMMENT "Converting wall.ogg to raw PCM"
+    )
+    add_custom_command(
+        OUTPUT ${AUDIO_PONG_PADDLE_RAW}
+        COMMAND ffmpeg -y -i ${AUDIO_PONG_PADDLE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_PADDLE_RAW}
+        DEPENDS ${AUDIO_PONG_PADDLE_SRC}
+        COMMENT "Converting paddle.ogg to raw PCM"
+    )
+    add_custom_command(
+        OUTPUT ${AUDIO_PONG_SCORE_RAW}
+        COMMAND ffmpeg -y -i ${AUDIO_PONG_SCORE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_SCORE_RAW}
+        DEPENDS ${AUDIO_PONG_SCORE_SRC}
+        COMMENT "Converting score.ogg to raw PCM"
+    )
+
+    set(I386_WALL_OBJ ${CMAKE_CURRENT_BINARY_DIR}/wall.o)
+    add_custom_command(
+        OUTPUT ${I386_WALL_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf32-i386 -B i386
+            --rename-section .data=.sound_wall,alloc,load,readonly,contents
+            ${AUDIO_PONG_WALL_RAW} ${I386_WALL_OBJ}
+        DEPENDS ${AUDIO_PONG_WALL_RAW}
+        COMMENT "Embedding wall.raw (i386)"
+    )
+    add_custom_target(i386_wall_obj DEPENDS ${I386_WALL_OBJ})
+
+    set(I386_PADDLE_OBJ ${CMAKE_CURRENT_BINARY_DIR}/paddle.o)
+    add_custom_command(
+        OUTPUT ${I386_PADDLE_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf32-i386 -B i386
+            --rename-section .data=.sound_paddle,alloc,load,readonly,contents
+            ${AUDIO_PONG_PADDLE_RAW} ${I386_PADDLE_OBJ}
+        DEPENDS ${AUDIO_PONG_PADDLE_RAW}
+        COMMENT "Embedding paddle.raw (i386)"
+    )
+    add_custom_target(i386_paddle_obj DEPENDS ${I386_PADDLE_OBJ})
+
+    set(I386_SCORE_OBJ ${CMAKE_CURRENT_BINARY_DIR}/score.o)
+    add_custom_command(
+        OUTPUT ${I386_SCORE_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf32-i386 -B i386
+            --rename-section .data=.sound_score,alloc,load,readonly,contents
+            ${AUDIO_PONG_SCORE_RAW} ${I386_SCORE_OBJ}
+        DEPENDS ${AUDIO_PONG_SCORE_RAW}
+        COMMENT "Embedding score.raw (i386)"
+    )
+    add_custom_target(i386_score_obj DEPENDS ${I386_SCORE_OBJ})
 
     set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/${ARCHDIR}/linker.ld)
     set(USE_CRTBEGIN ON)
@@ -77,12 +138,8 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/acpi/acpi_bus.c
         ${ARCHDIR}/drivers/ps2k.c
         ${ARCHDIR}/drivers/graphics.c
-        ${ARCHDIR}/drivers/font.c
-        ${ARCHDIR}/drivers/console.c
-        kernel/fonts/fontlibrary.c
         ${ARCHDIR}/panic.c
         ${ARCHDIR}/include/log.c
-        ${ARCHDIR}/games/pong.c
         ${ARCHDIR}/include/shell.c
         ${ARCHDIR}/include/keyboard.c
         ${UACPI_SOURCES}
@@ -186,11 +243,16 @@ set(KERNEL_COMMON_SOURCES
     kernel/drivers/keyboard/keyboard.c
     kernel/drivers/ac97.c
     kernel/drivers/pci.c
+    kernel/drivers/graphics.c
+    kernel/drivers/font.c
+    kernel/drivers/console.c
+    kernel/fonts/fontlibrary.c
     kernel/apic/rsdp.c
     kernel/apic/apic.c
     kernel/apic/madt.c
     kernel/halt.c
     kernel/mm.c
+    kernel/games/pong.c
 )
 
 # All kernel sources
@@ -205,10 +267,13 @@ add_executable(horizon.kernel ${KERNEL_SOURCES})
 # Ensure headers and libk are ready before building kernel
 add_dependencies(horizon.kernel install-kernel-headers install-libc-headers k)
 
-# Link embedded audio data (x86_64 only)
+# Link embedded audio data
 if(ARCH STREQUAL "x86_64")
     add_dependencies(horizon.kernel rick_obj wall_obj paddle_obj score_obj)
     target_link_libraries(horizon.kernel ${RICK_OBJ} ${WALL_OBJ} ${PADDLE_OBJ} ${SCORE_OBJ})
+elseif(ARCH STREQUAL "i386")
+    add_dependencies(horizon.kernel i386_wall_obj i386_paddle_obj i386_score_obj)
+    target_link_libraries(horizon.kernel ${I386_WALL_OBJ} ${I386_PADDLE_OBJ} ${I386_SCORE_OBJ})
 endif()
 
 # Set compile options
