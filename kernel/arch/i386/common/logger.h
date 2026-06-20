@@ -1,8 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <stdint.h>
-#include <stdio.h>
 #include <stdarg.h>
 
 enum log_type {
@@ -13,6 +11,8 @@ enum log_type {
 	LOG_DEBUG,
 };
 
+void logger_init_console(void);
+
 void log(enum log_type, const char *str);
 void logf(enum log_type type, const char *format, ...);
 void log_demo();
@@ -22,7 +22,5 @@ void log_demo();
 #define log_warn(fmt, ...)	logf(LOG_WARNING, (fmt), ##__VA_ARGS__)
 #define log_error(fmt, ...)	logf(LOG_ERROR, (fmt), ##__VA_ARGS__)
 #define log_debug(fmt, ...)	logf(LOG_DEBUG, (fmt), ##__VA_ARGS__)
-
-void print_colored(const char* str, uint8_t fg, uint8_t bg);
 
 #endif

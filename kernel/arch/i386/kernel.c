@@ -18,6 +18,10 @@
 #include <jury/i386/test_paging.h>
 #include <jury/i386/test_vm.h>
 #include "multiboot_info.h"
+#include <drivers/graphics.h>
+#include <drivers/console.h>
+#include <drivers/ac97.h>
+#include <games/pong.h>
 
 // declare kernel_end from linker script
 extern uint32_t kernel_end;
@@ -68,6 +72,19 @@ void kernel_main(uint32_t multiboot_info_p) {
 
     init_paging();
     log_success("paging enabled\n");
+
+    extern void graphics_init(struct multiboot_info *mbi);
+    graphics_init(mb_info);
+    if (gfx_get_fb()->address) {
+        console_init();
+        logger_init_console();
+        console_clear();
+        console_puts("Horizon OS - i386\n");
+        console_printf("framebuffer: %ux%u bpp=%u pitch=%u\n",
+            gfx_get_fb()->width, gfx_get_fb()->height,
+            gfx_get_fb()->bpp,   gfx_get_fb()->pitch);
+        pong_init(gfx_get_fb()->width, gfx_get_fb()->height);
+    }
 
 #ifdef DEBUG
     log_debug("[kernel]: check_msr (apic base msr): %d", check_msr());
@@ -124,15 +141,23 @@ void kernel_main(uint32_t multiboot_info_p) {
     log_info("keyboard initialization\n");
     init_keyboard();
 
+#ifdef DEBUG
     // tests
     test_paging();
     test_vm();
+#endif
 
     // everything is now setup and we are ready to enable interrupts again
     asm volatile("sti");
     log_success("[kernel]: interrupts re-enabled\n");
 
     log_success("[kernel]: system ready\n");
+
+    if (ac97_init()) {
+        log_warn("[kernel]: ac97 not available\n");
+    } else {
+        log_success("[kernel]: ac97 initialized\n");
+    }
 
     log_info("try typing :)\n");
 
