@@ -4,6 +4,7 @@
 #include <drivers/serial.h>
 #include <drivers/timer.h>
 #include <log.h>
+#include <kernel/types.h>
 
 #include <games/pong.h>
 
@@ -11,7 +12,7 @@ static char input_buffer[SHELL_BUFFER_SIZE];
 static int shell_listener_id;
 
 static void cmd_help(void) {
-    console_puts("commands: help, clear, echo, uptime\n");
+    console_puts("commands: help, clear, echo, uptime, peek, pong\n");
 }
 
 static void cmd_clear(void) {
@@ -25,6 +26,69 @@ static void cmd_echo(const char *args) {
 
 static void cmd_uptime() {
     console_printf("uptime: ms since boot: %d\n", timer_ticks());
+}
+
+static virt_addr_t parse_hex(const char *s, const char **endp) {
+
+    // skip the 0x hex specifier
+    if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+        s += 2;
+    }
+    virt_addr_t val = 0;
+    // per-char parsing. handle digits and letters appropriately
+    while (*s) {
+        uint8_t nibble;
+        if (*s >= '0' && *s <= '9') {
+            nibble = *s - '0';
+        } else if (*s >= 'a' && *s <= 'f') {
+            nibble = *s - 'a' + 10;
+        } else if (*s >= 'A' && *s <= 'F') {
+            nibble = *s - 'A' + 10;
+        } else {
+            break;
+        }
+        val = (val << 4) | nibble;
+        s++;
+    }
+    if (endp) {
+        *endp = s;
+    }
+    return val;
+}
+
+static void cmd_peek(const char *args) {
+    if (!args || args[0] == '\0') {
+        console_puts("usage: peek <addr> [len]\n");
+        return;
+    }
+
+    const char *end;
+    virt_addr_t addr = parse_hex(args, &end);
+
+    virt_addr_t len = 64;
+    while (*end == ' ') end++;
+    if (*end != '\0')
+        len = parse_hex(end, NULL);
+    if (len == 0 || len > 512) len = 64;
+
+    volatile uint8_t *mem = (volatile uint8_t *)addr;
+    for (virt_addr_t i = 0; i < len; i += 16) {
+        virt_addr_t row = addr + i;
+        console_printf("%08x%08x  ", (uint32_t)(row >> 32), (uint32_t)row);
+
+        for (virt_addr_t j = 0; j < 16; j++) {
+            if (i + j < len) console_printf("%02x ", mem[i + j]);
+            else             console_puts("   ");
+            if (j == 7)      console_putchar(' ');
+        }
+
+        console_puts(" |");
+        for (virt_addr_t j = 0; j < 16 && i + j < len; j++) {
+            uint8_t c = mem[i + j];
+            console_putchar(c >= 0x20 && c < 0x7f ? c : '.');
+        }
+        console_puts("|\n");
+    }
 }
 
 /*
@@ -52,13 +116,15 @@ static void parse_and_dispatch(char *line) {
         cmd_uptime();
     } else if (strcmp(line, "pong") == 0) {
         pong_start();
+    } else if (strcmp(line, "peek") == 0) {
+        cmd_peek(args);
     } else {
         console_puts("unknown command: ");
         console_puts(line);
         console_putchar('\n');
     }
 
-    // TODO pong, sysinfo, lspci, snake, doom, peek / poke / hexdump, uptime, uname, color test
+    // TODO sysinfo, lspci, snake, doom, poke, hexdump, uname, color test
     // change theme to something from maybe coloors or some other pallate-selector site.
 }
 
