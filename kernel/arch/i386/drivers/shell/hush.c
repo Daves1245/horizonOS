@@ -4,39 +4,40 @@
 #include <kernel/tty.h>
 #include <kernel/logger.h>
 #include <string.h>
+#include <drivers/console.h>
+#include <drivers/keyboard/keyboard.h>
 
 #include <jury/i386/test_paging.h>
 #include <jury/i386/test_vm.h>
 #include <i386/drivers/shell/builtins/maze.h>
-
-static size_t min(size_t a, size_t b) {
-    return (a < b) ? a : b;
-}
+#include <games/pong.h>
 
 struct hush_state hush_state;
+
+static int parse_command_buffer(void);
 
 static struct hush_command *hush_registry[MAX_COMMANDS];
 static int num_commands = 0;
 
 void cmd_help(int argc, char **argv) {
-    printf("available commands:\n");
+    (void)argc; (void)argv;
+    console_puts("available commands:\n");
     for (int i = 0; i < num_commands; i++) {
-        printf("  %s - %s\n", hush_registry[i]->name, hush_registry[i]->description);
+        console_printf("  %s - %s\n", hush_registry[i]->name, hush_registry[i]->description);
     }
 }
 
 void cmd_echo(int argc, char **argv) {
     for (int i = 0; i < argc; i++) {
-        printf("%s", argv[i]);
-        if (i < argc - 1) printf(" ");
+        console_puts(argv[i]);
+        if (i < argc - 1) console_putchar(' ');
     }
-    printf("\n");
+    console_putchar('\n');
 }
 
 void cmd_clear(int argc, char **argv) {
-    terminal_scrolln(25);
-    hush_state.cursor_position = 0;
-    terminal_set_cursor(0, 0);
+    (void)argc; (void)argv;
+    console_clear();
 }
 
 void paging_test(int argc, char **argv) {
@@ -59,6 +60,11 @@ void cmd_solve(int argc, char **argv) {
     solve_maze();
 }
 
+void cmd_pong(int argc, char **argv) {
+    (void)argc; (void)argv;
+    pong_start();
+}
+
 static struct hush_command builtin_help = {"help", "show available commands", cmd_help};
 static struct hush_command builtin_echo = {"echo", "echo", cmd_echo};
 static struct hush_command builtin_clear = {"clear", "clear the screen", cmd_clear};
@@ -67,6 +73,7 @@ static struct hush_command builtin_vm_test = {"test-vm", "run the vm tests", vm_
 static struct hush_command builtin_maze = {"maze", "generate maze", cmd_maze};
 static struct hush_command builtin_display = {"display", "display the current maze", cmd_display};
 static struct hush_command builtin_solve = {"solve", "solve the current maze", cmd_solve};
+static struct hush_command builtin_pong = {"pong", "play pong", cmd_pong};
 
 void hush_register_command(struct hush_command *cmd) {
     if (num_commands < MAX_COMMANDS) {
@@ -92,30 +99,12 @@ struct hush_command const *hush_lookup_registry(const char *name) {
             return hush_registry[i];
         }
     }
-    printf("[hush]: no match found\n");
+    console_puts("[hush]: no match found\n");
     return NULL;
 }
 
 void hush_init() {
-#ifdef DEBUG
-    printf("[DEBUG] Debug mode enabled in hush\n");
-#endif
-    // zero out the registry
-    for (int i = 0; i < MAX_COMMAND_LEN; i++) {
-        hush_state.command_buffer[i] = 0;
-    }
-    for (int i = 0; i < COMMAND_NAME_LEN; i++) {
-        hush_state.name[i] = 0;
-    }
-    for (int i = 0; i < MAX_ARGS; i++) {
-        for (int j = 0; j < ARG_LEN; j++) {
-            hush_state.args[i][j] = 0;
-        }
-    }
-
-    hush_state.command_len = 0;
-    hush_state.cursor_position = 0;
-    hush_state.argc = 0;
+    memset(&hush_state, 0, sizeof(hush_state));
     hush_state.running = 1;
 
     hush_register_command(&builtin_help);
@@ -126,14 +115,29 @@ void hush_init() {
     hush_register_command(&builtin_maze);
     hush_register_command(&builtin_display);
     hush_register_command(&builtin_solve);
+    hush_register_command(&builtin_pong);
 
-    printf("Horizon Utility Shell (hush)\n");
-    printf("try 'help' for available commands\n");
-    printf(PROMPT);
+    console_puts("Horizon Utility Shell (hush)\n");
+    console_puts("try 'help' for available commands\n");
+
+    int level = register_keyboard_listener();
+    char buf[MAX_COMMAND_LEN];
+
+    while (hush_state.running) {
+        console_puts(PROMPT);
+        int len = readline(level, buf, sizeof(buf));
+        if (len > 0) {
+            int copy_len = len < MAX_COMMAND_LEN - 1 ? len : MAX_COMMAND_LEN - 1;
+            memcpy(hush_state.command_buffer, buf, copy_len);
+            hush_state.command_buffer[copy_len] = '\0';
+            hush_state.command_len = copy_len;
+            parse_command_buffer();
+            hush_execute_command();
+        }
+    }
 }
 
 void hush_run() {
-    // TODO not currently needed, implement later if this changes
 }
 
 enum HUSH_STATE hush_execute_command() {
@@ -156,7 +160,7 @@ enum HUSH_STATE hush_execute_command() {
     return OK;
 }
 
-int parse_command_buffer() {
+static int parse_command_buffer() {
 #ifdef DEBUG
     printf("[DEBUG] Command buffer: '%s' (len=%zu)\n", hush_state.command_buffer, hush_state.command_len);
     halt();
@@ -206,24 +210,3 @@ int parse_command_buffer() {
     return 0;
 }
 
-void hush_handle_keypress(char key) {
-    if (key == '\n') {
-        printf("\n");
-        if (hush_state.command_len > 0) {
-            hush_state.command_buffer[hush_state.command_len] = '\0';
-            parse_command_buffer();
-            hush_execute_command();
-        }
-        hush_state.command_len = 0;
-        hush_state.cursor_position = 0;
-        printf(PROMPT);
-    } else if (key == '\b') {
-        if (hush_state.command_len > 0) {
-            hush_state.command_len--;
-            hush_state.cursor_position--;
-        }
-    } else if (isprintable(key) && hush_state.command_len < MAX_COMMAND_LEN - 1) {
-        hush_state.command_buffer[hush_state.command_len++] = key;
-        hush_state.cursor_position++;
-    }
-}

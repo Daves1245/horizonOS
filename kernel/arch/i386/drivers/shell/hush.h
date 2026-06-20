@@ -57,7 +57,6 @@ struct hush_command {
 
 void hush_init();
 void hush_run();
-void hush_handle_keypress(char key);
 struct hush_command const * hush_lookup_registry(const char *command);
 int hush_parse_entry();
 enum HUSH_STATE hush_execute_command();
