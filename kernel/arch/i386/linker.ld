@@ -25,6 +25,28 @@ SECTIONS
 		*(.rodata)
 	}
 
+	/* Embedded audio data (from objcopy binary) */
+	.sound_wall BLOCK(4K) : ALIGN(4K)
+	{
+		_audio_pong_wall_start = .;
+		KEEP(*(.sound_wall))
+		_audio_pong_wall_end = .;
+	}
+
+	.sound_paddle BLOCK(4K) : ALIGN(4K)
+	{
+		_audio_pong_paddle_start = .;
+		KEEP(*(.sound_paddle))
+		_audio_pong_paddle_end = .;
+	}
+
+	.sound_score BLOCK(4K) : ALIGN(4K)
+	{
+		_audio_pong_score_start = .;
+		KEEP(*(.sound_score))
+		_audio_pong_score_end = .;
+	}
+
 	/* Read-write data (initialized) */
 	.data BLOCK(4K) : ALIGN(4K)
 	{
