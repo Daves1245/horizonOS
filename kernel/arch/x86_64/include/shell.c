@@ -67,9 +67,12 @@ static void cmd_peek(const char *args) {
 
     virt_addr_t len = 64;
     while (*end == ' ') end++;
-    if (*end != '\0')
+    if (*end != '\0') {
         len = parse_hex(end, NULL);
-    if (len == 0 || len > 512) len = 64;
+    }
+    if (len == 0 || len > 512) {
+        len = 64;
+    }
 
     volatile uint8_t *mem = (volatile uint8_t *)addr;
     for (virt_addr_t i = 0; i < len; i += 16) {
@@ -77,9 +80,14 @@ static void cmd_peek(const char *args) {
         console_printf("%08x%08x  ", (uint32_t)(row >> 32), (uint32_t)row);
 
         for (virt_addr_t j = 0; j < 16; j++) {
-            if (i + j < len) console_printf("%02x ", mem[i + j]);
-            else             console_puts("   ");
-            if (j == 7)      console_putchar(' ');
+            if (i + j < len) {
+                console_printf("%02x ", mem[i + j]);
+            } else {
+                console_puts("   ");
+            }
+            if (j == 7) {
+                console_putchar(' ');
+            }
         }
 
         console_puts(" |");
