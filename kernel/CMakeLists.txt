@@ -42,6 +42,7 @@ if(ARCH STREQUAL "i386")
         ../libc/string/string.c
         ${ARCHDIR}/drivers/shell/hush.c
         ${ARCHDIR}/drivers/shell/builtins/maze.c
+        ${ARCHDIR}/drivers/shell/builtins/peek.c
         ${ARCHDIR}/drivers/graphics.c
         ${ARCHDIR}/panic.c
         kernel/jury/i386/test_paging.c

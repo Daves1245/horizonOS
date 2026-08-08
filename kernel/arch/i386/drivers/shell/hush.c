@@ -12,6 +12,8 @@
 #include <i386/drivers/shell/builtins/maze.h>
 #include <games/pong.h>
 
+extern void cmd_peek(int argc, char **argv);
+
 struct hush_state hush_state;
 
 static int parse_command_buffer(void);
@@ -30,7 +32,9 @@ void cmd_help(int argc, char **argv) {
 void cmd_echo(int argc, char **argv) {
     for (int i = 0; i < argc; i++) {
         console_puts(argv[i]);
-        if (i < argc - 1) console_putchar(' ');
+        if (i < argc - 1) {
+            console_putchar(' ');
+        }
     }
     console_putchar('\n');
 }
@@ -70,10 +74,12 @@ static struct hush_command builtin_echo = {"echo", "echo", cmd_echo};
 static struct hush_command builtin_clear = {"clear", "clear the screen", cmd_clear};
 static struct hush_command builtin_paging_test = {"test-paging", "run the paging tests", paging_test};
 static struct hush_command builtin_vm_test = {"test-vm", "run the vm tests", vm_test};
-static struct hush_command builtin_maze = {"maze", "generate maze", cmd_maze};
+// TODO update to use console & graphics
+// static struct hush_command builtin_maze = {"maze", "generate maze", cmd_maze};
 static struct hush_command builtin_display = {"display", "display the current maze", cmd_display};
 static struct hush_command builtin_solve = {"solve", "solve the current maze", cmd_solve};
 static struct hush_command builtin_pong = {"pong", "play pong", cmd_pong};
+static struct hush_command builtin_peek = {"peek", "hexdump memory: peek <addr> [len]", cmd_peek};
 
 void hush_register_command(struct hush_command *cmd) {
     if (num_commands < MAX_COMMANDS) {
@@ -88,7 +94,7 @@ struct hush_command const *hush_lookup_registry(const char *name) {
     for (int i = 0; i < num_commands; i++) {
         size_t name_len = strnlen(name, COMMAND_NAME_LEN);
 #ifdef DEBUG
-        printf("[DEBUG] Comparing with registry[%d]: '%s' (len=%zu vs %zu)\n", 
+        printf("[DEBUG] Comparing with registry[%d]: '%s' (len=%zu vs %zu)\n",
                i, hush_registry[i]->name, name_len, strnlen(hush_registry[i]->name, COMMAND_NAME_LEN));
 #endif
         if (strncmp(hush_registry[i]->name, name, name_len) == 0 &&
@@ -112,10 +118,11 @@ void hush_init() {
     hush_register_command(&builtin_clear);
     hush_register_command(&builtin_paging_test);
     hush_register_command(&builtin_vm_test);
-    hush_register_command(&builtin_maze);
+    // hush_register_command(&builtin_maze);
     hush_register_command(&builtin_display);
     hush_register_command(&builtin_solve);
     hush_register_command(&builtin_pong);
+    hush_register_command(&builtin_peek);
 
     console_puts("Horizon Utility Shell (hush)\n");
     console_puts("try 'help' for available commands\n");
@@ -193,9 +200,12 @@ static int parse_command_buffer() {
     while (*it && (it < end)) {
         while (*it && iswhitespace(*it) && (it < end)) it++;
 
-        if (!*it) break;
-
-        if (argc >= MAX_ARGS) break;
+        if (!*it) {
+            break;
+        }
+        if (argc >= MAX_ARGS) {
+            break;
+        }
         char *dest = hush_state.args[argc];
         int arg_len = 0;
         while (*it && !iswhitespace(*it) && (it < end) && arg_len < ARG_LEN - 1) {
