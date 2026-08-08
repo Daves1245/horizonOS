@@ -43,15 +43,15 @@
 typedef uint64_t page_entry_t;
 
 // Page table structures (512 entries each, 4KB total)
-typedef struct {
+struct page_table_t {
     page_entry_t entries[512];
-} __attribute__((aligned(4096))) page_table_t;
+} __attribute__((aligned(4096)));
 
 // For clarity in code
-typedef page_table_t pml4_t;    // Page Map Level 4
-typedef page_table_t pdpt_t;    // Page Directory Pointer Table
-typedef page_table_t pd_t;      // Page Directory
-typedef page_table_t pt_t;      // Page Table
+typedef struct page_table_t pml4_t;    // Page Map Level 4
+typedef struct page_table_t pdpt_t;    // Page Directory Pointer Table
+typedef struct page_table_t pd_t;      // Page Directory
+typedef struct page_table_t pt_t;      // Page Table
 
 // Extract indices from virtual address
 #define PML4_INDEX(vaddr)  (((vaddr) >> 39) & 0x1FF)
