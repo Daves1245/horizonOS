@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 #include <x86_64/memory/paging.h>
+#include <mm.h>
+
+#define NUM_PROCESSES 10
+#define NUM_CPUS 2
 
 // TODO(userspace)
 // track TSS and load new SS and ESP on context switch for switching
@@ -32,14 +36,33 @@ struct context {
   // ffu, mmx, see registers etc. (not currently used)
 };
 
+enum process_state {
+  READY,
+  RUNNING,
+  SLEEPING,
+  ZOMBIE
+};
+
+struct cpu {
+  int cpuid;
+  int intena;
+  int noff;
+};
+
+struct cpu cpus[NUM_CPUS];
+
 struct process {
   uint8_t pid;
   char name[32];
 
   struct process *parent;
 
+  virt_addr_t kstack;
+  enum process_state state;
   struct page_table_t pagetable;
   struct context context;
 };
+
+struct process processes[NUM_PROCESSES];
 
 #endif
