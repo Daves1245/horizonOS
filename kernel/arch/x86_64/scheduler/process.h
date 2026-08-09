@@ -14,6 +14,7 @@
 
 struct context {
   uint16_t eip;
+  uint16_t rsi;
   /* general registers */
 
   uint16_t rbp;
@@ -64,5 +65,9 @@ struct process {
 };
 
 struct process processes[NUM_PROCESSES];
+
+struct process *fork(struct process *p);
+
+void sched();
 
 #endif

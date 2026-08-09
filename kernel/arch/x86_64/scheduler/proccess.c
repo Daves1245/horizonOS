@@ -72,6 +72,51 @@ void disable_interrupts() {
 void swtch(struct cpu *cpu, struct context *ctx) {
     // push registers onto stack, reset rsp, and pop
     // new registers
+
+    disable_interrupts();
+
+    asm volatile("push eip;");
+
+    asm volatile("push rbp;");
+    asm volatile("push rbx;");
+    asm volatile("push r12;");
+    asm volatile("push r13;");
+    asm volatile("push r14;");
+    asm volatile("push r15;");
+
+    asm volatile("push cs");
+    asm volatile("push ss");
+    asm volatile("push ds");
+    asm volatile("push es");
+    asm volatile("push fs");
+    asm volatile("push gs");
+
+    asm volatile("push cr3");
+
+    asm volatile("mov rdi, rsp");
+    asm volatile("mov rsp, %0" :: "a"(ctx->rsi));
+
+    // address space
+    asm volatile("mov cr3, rax");
+
+    asm volatile("pop gs");
+    asm volatile("pop fs");
+    asm volatile("pop es");
+    asm volatile("pop ds");
+    asm volatile("pop ss");
+    asm volatile("pop cs");
+
+
+    asm volatile("pop r15;");
+    asm volatile("pop r14;");
+    asm volatile("pop r13;");
+    asm volatile("pop r12;");
+    asm volatile("pop rbx;");
+    asm volatile("pop rpb;");
+
+    asm volatile("pop eip;");
+
+    enable_interrupts();
 }
 
 void scheduler() {
