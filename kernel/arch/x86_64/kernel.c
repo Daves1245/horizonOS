@@ -27,6 +27,9 @@
 #include <drivers/ac97.h>
 #include <games/pong.h>
 
+#include <x86_64/scheduler/process.h>
+#include <x86_64/scheduler/scheduler.h>
+
 #include <keyboard.h>
 #include <log.h>
 #include <shell.h>
@@ -304,11 +307,58 @@ void kernel_main(void) {
     printk(KERN_DEBUG, "keyboard queue ringbuffer: %p\n", (volatile virt_addr_t) &keyboard_multilevel_queue);
     printk(KERN_DEBUG, "keyboard queue state: %p\n", (volatile virt_addr_t) &keyboard_queue_state);
 
+    /*
     shell_init();
     printk(KERN_OK, "shell initialized\n");
 
     shell_run();
+    */
 
+    __init();
+
+    printk(KERN_INFO, "scheduler test: ");
+    printk(KERN_DEBUG, "\nmyproc(): %p\n", (virt_addr_t) myproc());
+    int parent = myproc()->pid;
+    int child = fork("child");
+    scheduler();
+
+    if (parent < 0) {
+        panic("invalid pid for init process\n");
+    }
+    if (child < 0) {
+        panic("invalid pid for child process\n");
+    }
+
+    printk(KERN_INFO, "parent pid: %d\n", parent);
+    printk(KERN_INFO, "child pid: %d\n", child);
+
+    int pid;
+    for (int i = 0; i < 10; i++) {
+        // init has pid 0
+        pid = myproc()->pid;
+        if (pid == parent) {
+            printk(KERN_INFO, "A");
+        } else if (pid == child) {
+            printk(KERN_INFO, "B");
+        } else {
+            printk(KERN_ERROR, "???");
+        }
+        yield();
+    }
+
+    for (int i = 0; i < 10; i++) {
+        pid = myproc()->pid;
+        if (pid == parent) {
+            printk(KERN_RAW, "A");
+        } else if (pid == child) {
+            printk(KERN_RAW, "B");
+        } else {
+            printk(KERN_ERROR, "???");
+        }
+        yield();
+    }
+
+    printk(KERN_INFO, "DONE");
     for (;;)
         asm volatile("hlt");
 
