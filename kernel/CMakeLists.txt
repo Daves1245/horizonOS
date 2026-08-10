@@ -143,6 +143,9 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/include/log.c
         ${ARCHDIR}/include/shell.c
         ${ARCHDIR}/include/keyboard.c
+        ${ARCHDIR}/scheduler/process.c
+        ${ARCHDIR}/scheduler/scheduler.c
+        ${ARCHDIR}/scheduler/swtch.S
         ${UACPI_SOURCES}
     )
 
