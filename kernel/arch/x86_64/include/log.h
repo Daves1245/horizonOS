@@ -13,6 +13,7 @@
 
 // consecutive log levels
 enum log_level {
+		KERN_RAW, // TODO ideally this would be a separate function i think
 		KERN_DEBUG,
 		KERN_INFO,
 		KERN_OK,

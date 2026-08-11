@@ -21,6 +21,10 @@ void printk(enum log_level level, const char *fmt, ...) {
 
     const char *tag;
     switch (level) {
+        case KERN_RAW:
+            tag = "";
+            console_set_fg(INFO_FG);
+            break;
         case KERN_DEBUG:
             tag = "[DBUG]:";
             console_set_fg(DEBUG_FG);
@@ -32,16 +36,18 @@ void printk(enum log_level level, const char *fmt, ...) {
         case KERN_OK:
             tag = "[ OK ]:";
             console_set_fg(OK_FG);
-            console_set_fg(WARN_FG);
             break;
         case KERN_ERROR:
             tag = "[ERROR]:";
             console_set_fg(ERROR_FG);
             break;
+        case KERN_WARN:
+            tag = "[WARN]:";
+            console_set_fg(WARN_FG);
         case KERN_FATAL:
             tag = "[FATAL]:";
-            console_set_bg(FATAL_BG);
             console_set_fg(FATAL_FG);
+            console_set_bg(FATAL_BG);
             break;
     }
     console_puts(tag);
