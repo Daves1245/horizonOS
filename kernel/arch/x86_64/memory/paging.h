@@ -21,6 +21,8 @@
  * bits 11-0:  offset within 4KB page
  */
 
+#define PAGE_SIZE           4096UL       // bytes per 4KB page
+
 // Page table entry flags (same across all 4 levels)
 #define PAGE_PRESENT        (1UL << 0)   // Page is in physical memory
 #define PAGE_WRITE          (1UL << 1)   // Page is writable
@@ -29,7 +31,10 @@
 #define PAGE_CACHE_DISABLE  (1UL << 4)   // Disable caching
 #define PAGE_ACCESSED       (1UL << 5)   // Set by CPU when accessed
 #define PAGE_DIRTY          (1UL << 6)   // Set by CPU when written (PT only)
-#define PAGE_SIZE           (1UL << 7)   // 2MB/1GB page (PD/PDPT only)
+#define PAGE_PS             (1UL << 7)   // 2MB/1GB page (PD/PDPT only). the PS
+                                         // bit, named PAGE_SIZE until it got
+                                         // multiplied into KSTACK_SIZE by
+                                         // mistake. i386 calls it PDE_PAGE_SIZE.
 #define PAGE_GLOBAL         (1UL << 8)   // Global page (not flushed on CR3 load)
 #define PAGE_NX             (1UL << 63)  // No-execute bit
 
