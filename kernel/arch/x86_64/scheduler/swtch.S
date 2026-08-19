@@ -1,4 +1,5 @@
-# swtch(uint64_t old_rsp, uint64_t new_rsp, uint64_t new_cr3)
+# swtch(virt_addr_t *old->rsp, virt_addr_t new->rsp, virt_addr_t new->cr3)
+# arguments in asm are rdi, rsi, rdx, ...
 .global swtch
 swtch:
     # save old stack
@@ -9,14 +10,10 @@ swtch:
     push %r14
     push %r15
 
-    mov %cr3, %rax
-    push %rax
-
     mov %rsp, (%rdi)
     mov %rsi, %rsp # load new stack
+    mov %rdx, %cr3
 
-    pop %rax
-    mov %rax, %cr3
     # TODO(multicore) insert TLB flush here
 
     pop %r15
