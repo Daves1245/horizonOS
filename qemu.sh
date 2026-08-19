@@ -18,14 +18,14 @@ if [ -f build/i386/kernel/horizon.kernel ]; then
 elif [ -f build/x86_64/horizon.iso ]; then
     ARCH="x86_64"
     ISO_FILE="build/x86_64/horizon.iso"
-    QEMU_BIN="qemu-system-x86_64"
+    QEMU_BIN="qemu-system-x86_64 -cpu qemu64,+la57"
     USE_CDROM=0
 else
     echo "No ISO found. Build with 'make i386' or 'make x86_64' first."
     exit 1
 fi
 
-echo "Running $ARCH (ISO: $ISO_FILE)"
+echo "Running $ARCH (ISO: $ISO_FILE) +la57"
 
 if [ "$USE_CDROM" = "1" ]; then
     # i386: boot from ISO via GRUB (do not use -kernel, it bypasses GRUB and loses VBE)
@@ -58,6 +58,20 @@ else
             -d int,guest_errors,cpu_reset \
             -D qemu.log \
             -no-shutdown \
+            -monitor stdio \
+            -serial file:serial.log
+    elif [ "$1" = "gdb" ]; then
+        # -s = gdbstub on tcp::1234, -S = freeze CPU at reset so gdb can attach
+        # before Limine runs. Attach with:
+        #   x86_64-elf-gdb build/x86_64/kernel/horizon.kernel
+        $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
+            -vga std \
+            -machine pc,smm=off \
+            -no-reboot \
+            $AUDIODEV $AC97 \
+            -no-shutdown \
+            -s -S \
+            -monitor stdio \
             -serial file:serial.log
     else
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
