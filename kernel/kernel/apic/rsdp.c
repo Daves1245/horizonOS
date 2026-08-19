@@ -143,7 +143,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
         uint64_t xsdt_phys = xsdp->xsdt_addr;
 
         // Map XSDT page
-        map_physical_range(xsdt_phys, 4096, 1, 1);
+        map_physical_range(xsdt_phys, 4096, 1, 1, read_cr3());
         struct xsdt_t *xsdt = (struct xsdt_t *) (xsdt_phys + hhdm_offset);
 #else
         // check if XSDT address is reasonable (< 4GB for 32-bit system)
@@ -168,7 +168,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
                       i, (uint32_t)(table_phys >> 32), (uint32_t)table_phys);
 
             // Map the table page before accessing it
-            map_physical_range(table_phys, 4096, 1, 1);
+            map_physical_range(table_phys, 4096, 1, 1, read_cr3());
 
             uint64_t table_virt = table_phys + hhdm_offset;
             struct apic_header *table = (struct apic_header *) table_virt;
@@ -204,7 +204,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
         uint32_t rsdt_phys = rsdp->rsdt_addr;
 
         // Map the RSDT page before accessing it
-        map_physical_range(rsdt_phys, 4096, 1, 1);
+        map_physical_range(rsdt_phys, 4096, 1, 1, read_cr3());
         struct rsdt_t *rsdt = (struct rsdt_t *) (rsdt_phys + hhdm_offset);
 #else
         // safety check for RSDT address
@@ -232,7 +232,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
             log_debug("[rsdp::find_madt]: Checking table %d at phys address: 0x%x\n", i, table_phys);
 
             // Map the table page before accessing it
-            map_physical_range(table_phys, 4096, 1, 1);
+            map_physical_range(table_phys, 4096, 1, 1, read_cr3());
 
             uint64_t table_virt = table_phys + hhdm_offset;
             struct apic_header *table = (struct apic_header *) table_virt;

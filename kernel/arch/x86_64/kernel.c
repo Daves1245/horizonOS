@@ -222,11 +222,10 @@ void kernel_main(void) {
     printk(KERN_OK, "rsdp response OK\n");
 
     uint64_t cr3 = read_cr3();
-    uint64_t cr4 = read_cr4();
 
     // Map RSDP page (base revision 3 doesn't map ACPI/reserved memory)
     printk(KERN_INFO, "Mapping RSDP page...\n");
-    map_physical_range(rsdp_phys, 4096, 1, 1, cr3, cr4);  // Map 4KB, kernel, writable
+    map_physical_range(rsdp_phys, 4096, 1, 1, cr3);  // Map 4KB, kernel, writable
     printk(KERN_OK, "RSDP page mapped\n");
 
     int acpi_result = acpi_init();
@@ -250,7 +249,7 @@ void kernel_main(void) {
     }
 
     // map MMIO regions and set virtual (HHDM) base addresses
-    map_physical_range(lapic_phys, 4096, 1, 1, cr3, cr4);
+    map_physical_range(lapic_phys, 4096, 1, 1, cr3);
     uintptr_t lapic_virt = hhdm_offset + lapic_phys;
     apic_set_base(lapic_virt);
     enable_api_hardware();
@@ -258,7 +257,7 @@ void kernel_main(void) {
     log_info("local APIC: phys=0x%x virt=0x%x%x\n",
             lapic_phys, (uint32_t)(lapic_virt >> 32), (uint32_t)lapic_virt);
 
-    map_physical_range(ioapic_phys, 4096, 1, 1, cr3, cr4);
+    map_physical_range(ioapic_phys, 4096, 1, 1, cr3);
     ioapic_addr = (void *)(hhdm_offset + ioapic_phys);
     log_info("I/O APIC: phys=0x%x virt=0x%x%x\n",
             ioapic_phys, (uint32_t)((uintptr_t) ioapic_addr >> 32), (uint32_t)(uintptr_t) ioapic_addr);

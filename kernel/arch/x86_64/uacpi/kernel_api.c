@@ -61,7 +61,7 @@ uacpi_status uacpi_kernel_get_rsdp(uacpi_phys_addr *out_rsdp_address) {
  */
 void *uacpi_kernel_map(uacpi_phys_addr addr, uacpi_size len) {
     // map_physical_range() will handle alignment internally, so just use as is
-    map_physical_range(addr, len, 1, 1);
+    map_physical_range(addr, len, 1, 1, read_cr3());
 
     // we have the physical range, with Limine we're mapped
     // into HHDM so just add the offset to get the virtual address
