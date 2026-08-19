@@ -55,7 +55,8 @@ static void init_stack(struct process *p, void (*entry)(void)) {
     if (!stack) {
         panic("init_stack: could not allocate stack for process");
     }
-    p->kstack = stack;
+    p->addrspace.stack_base = stack;
+    p->addrspace.stack_end = stack + KSTACK_SIZE;
 
     // one past the highest addressable word in this region
     virt_addr_t *stack_p = (virt_addr_t *) (stack + KSTACK_SIZE);
@@ -148,7 +149,8 @@ void __init() {
     // TODO unmap guard page on kstack. for now, we overcompensate
     // with a largened stack to avoid overflows. see notes
     // at process.h
-    init->kstack = stack;
+    init->addrspace.stack_base = stack;
+    init->addrspace.stack_end = stack + KSTACK_SIZE;
     // RUNNING, not READY: init is the process executing right now, and
     // it has no saved frame yet (context.rsp is still 0 until the first
     // swtch() *out* of it fills it in). marking it READY would let
@@ -158,14 +160,13 @@ void __init() {
     // TODO(memory): the current paging setup reads the
     // current cr3 value, instead of filling it in with
     // something provided.
-    init->pagetable = (struct page_table_t) {0};
     init->context = (struct context) {0};
     init->context.cr3 = read_cr3();
 
     cpus[0].task = init;
 }
 
-struct process *aprocess() {
+struct process *alloc_process() {
     struct process *ret = (struct process *) kmalloc(sizeof(*ret));
     if (!ret) {
         panic("aprocess: unable to allocate memory for process\n");
@@ -176,7 +177,6 @@ struct process *aprocess() {
     // TODO again, the current paging setup reads the
     // current cr3 value. this way, all processes have
     // identical address space
-    ret->pagetable = (struct page_table_t) {0};
 
     init_stack(ret, forkret);
     return ret;
@@ -184,7 +184,7 @@ struct process *aprocess() {
 
 int fork(const char *name) {
     struct process *parent = myproc();
-    struct process *child = aprocess();
+    struct process *child = alloc_process();
 
     memcpy(child->name, name, strlen(name));
     child->parent = parent;

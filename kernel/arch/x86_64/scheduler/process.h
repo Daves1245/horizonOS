@@ -121,13 +121,25 @@ extern struct cpu cpus[NUM_CPUS];
 
 extern uint8_t __glbl_pid;
 
+struct addrspace {
+  phys_addr_t p4d_base; // pass to cr3
+  p4d_t *p4d;
+  // TODO(cleanup) ideally, we'd like to add a guard page
+  // at the end of the stack. we currently do that, but we don't
+  // have logic within the page fault handler to detect this.
+  // for now, we can just have two pointers, and compare if
+  // our accesses ever exceed the end of the stack. this
+  // adds on an unnecessary, expensive operation for now!
+  virt_addr_t stack_base;
+  virt_addr_t stack_end;
+};
+
 struct process {
   uint8_t pid;
   char name[32];
 
   struct process *parent;
-
-  virt_addr_t kstack;
+  struct addrspace addrspace;
   enum process_state state;
   struct p4d_t *pagetable;
   struct context context;
