@@ -9,30 +9,6 @@
 // Limine provides the HHDM which we need to access physical memory
 extern struct limine_hhdm_request hhdm_request;
 
-// Get virtual address from physical address using HHDM
-static inline void* phys_to_virt(uint64_t phys) {
-    return (void*)(phys + hhdm_request.response->offset);
-}
-
-// Get physical address from virtual address using HHDM
-static inline uint64_t virt_to_phys(void* virt) {
-    uint64_t addr = (uint64_t)virt;
-    uint64_t hhdm_offset = hhdm_request.response->offset;
-
-    // If address is in HHDM range, subtract offset
-    if (addr >= hhdm_offset) {
-        return addr - hhdm_offset;
-    }
-
-    // If address is in kernel range (0xffffffff80000000+), convert to physical
-    if (addr >= 0xffffffff80000000UL) {
-        return addr - 0xffffffff80000000UL;
-    }
-
-    // Otherwise return as-is (shouldn't happen)
-    return addr;
-}
-
 void init_paging(void) {
     // Limine already set up paging for us, nothing to do here
     // We're using base revision 3, so we'll manually map what we need
@@ -49,36 +25,34 @@ void init_paging(void) {
  * @param create If 1, create intermediate tables if they don't exist
  * @return Pointer to the page table entry, or NULL if not found and create=0
  */
-pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3, uint64_t cr4) {
-    (void)cr4;
-
+pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3) {
     phys_addr_t pml4_phys = PAGE_GET_ADDR(cr3);
     p4d_t *pml4 = (p4d_t *) phys_to_virt(pml4_phys);
 
     uint64_t pml4_idx = PML4_INDEX(vaddr);
     p4e_t *pml4e = &pml4->entries[pml4_idx];
 
-    pdpt_t *pdpt;
+    pud_t *pud;
     if (!(p4e_val(*pml4e) & PAGE_PRESENT)) {
         if (!create) {
             return NULL;
         }
 
-        pdpt = (pdpt_t *) kmalloc_a(sizeof(pdpt_t));
-        memset(pdpt, 0, sizeof(pdpt_t));
+        pud = (pud_t *) kmalloc_a(sizeof(pud_t));
+        memset(pud, 0, sizeof(pud_t));
 
-        phys_addr_t pdpt_phys = virt_to_phys(pdpt);
-        *p4e_ptr(pml4e) = pdpt_phys | PAGE_PRESENT | PAGE_WRITE;
+        phys_addr_t pud_phys = virt_to_phys((virt_addr_t) pud);
+        *p4e_ptr(pml4e) = pud_phys | PAGE_PRESENT | PAGE_WRITE;
     } else {
-        phys_addr_t pdpt_phys = PAGE_GET_ADDR(p4e_val(*pml4e));
-        pdpt = (pdpt_t *) phys_to_virt(pdpt_phys);
+        phys_addr_t pud_phys = PAGE_GET_ADDR(p4e_val(*pml4e));
+        pud = (pud_t *) phys_to_virt(pud_phys);
     }
 
-    uint64_t pdpt_idx = PDPT_INDEX(vaddr);
-    pte_t *pdpte = &pdpt->entries[pdpt_idx];
+    uint64_t pud_idx = PDPT_INDEX(vaddr);
+    pue_t *pue = &pud->entries[pud_idx];
 
     pd_t *pd;
-    if (!(pte_val(*pdpte) & PAGE_PRESENT)) {
+    if (!(pue_val(*pue) & PAGE_PRESENT)) {
         if (!create) {
             return NULL;
         }
@@ -86,10 +60,10 @@ pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3, uint64_t cr4)
         pd = (pd_t *) kmalloc_a(sizeof(pd_t));
         memset(pd, 0, sizeof(pd_t));
 
-        uint64_t pd_phys = virt_to_phys(pd);
-        *pte_ptr(pdpte) = pd_phys | PAGE_PRESENT | PAGE_WRITE;
+        phys_addr_t pd_phys = virt_to_phys((virt_addr_t) pd);
+        *pue_ptr(pue) = pd_phys | PAGE_PRESENT | PAGE_WRITE;
     } else {
-        uint64_t pd_phys = PAGE_GET_ADDR(pte_val(*pdpte));
+        phys_addr_t pd_phys = PAGE_GET_ADDR(pue_val(*pue));
         pd = (pd_t *) phys_to_virt(pd_phys);
     }
 
@@ -105,10 +79,10 @@ pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3, uint64_t cr4)
         pt = (pt_t *) kmalloc_a(sizeof(pt_t));
         memset(pt, 0, sizeof(pt_t));
 
-        uint64_t pt_phys = virt_to_phys(pt);
+        phys_addr_t pt_phys = virt_to_phys((virt_addr_t) pt);
         *pde_ptr(pde) = pt_phys | PAGE_PRESENT | PAGE_WRITE;
     } else {
-        uint64_t pt_phys = PAGE_GET_ADDR(pde_val(*pde));
+        phys_addr_t pt_phys = PAGE_GET_ADDR(pde_val(*pde));
         pt = (pt_t *) phys_to_virt(pt_phys);
     }
 
@@ -124,12 +98,12 @@ pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3, uint64_t cr4)
  * @param iskernel 1 for kernel pages, 0 for user pages
  * @param writeable 1 for writable pages, 0 for read-only
  */
-void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint64_t cr3, uint64_t cr4) {
+void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint64_t cr3) {
     // Align addresses to page boundaries
     vaddr &= ~0xFFFUL;
     paddr &= ~0xFFFUL;
 
-    pte_t *pte = get_page_entry(vaddr, 1, cr3, cr4);
+    pte_t *pte = get_page_entry(vaddr, 1, cr3);
     if (!pte) {
         log_error("[paging]: Failed to get page entry for vaddr 0x%x%x\n",
                 (uint32_t)(vaddr >> 32), (uint32_t)vaddr);
@@ -160,7 +134,7 @@ void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint6
  * @param iskernel 1 for kernel pages, 0 for user pages
  * @param writeable 1 for writable pages, 0 for read-only
  */
-void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3, uint64_t cr4) {
+void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3) {
     // Align to page boundaries
     uint64_t start = phys_addr & ~0xFFFUL;
     uint64_t end = (phys_addr + size + 0xFFF) & ~0xFFFUL;
@@ -176,12 +150,12 @@ void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int wri
         uint64_t virt = phys + hhdm_offset;
 
         // Check if already mapped
-        pte_t *pte = get_page_entry(virt, 0, read_cr3(), read_cr4());
+        pte_t *pte = get_page_entry(virt, 0, read_cr3());
         if (pte && (pte_val(*pte) & PAGE_PRESENT)) {
             // Already mapped, skip
             continue;
         }
 
-        map_page(virt, phys, iskernel, writeable, cr3, cr4);
+        map_page(virt, phys, iskernel, writeable, cr3);
     }
 }

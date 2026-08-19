@@ -15,5 +15,6 @@ typedef uint32_t phys_addr_t;
 #endif
 
 phys_addr_t virt_to_phys(virt_addr_t addr);
+virt_addr_t phys_to_virt(phys_addr_t addr);
 
 #endif

@@ -1,6 +1,7 @@
 #ifndef PAGING_H
 #define PAGING_H
 
+#include "mm.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -64,6 +65,14 @@ The processor allows software to modify CR4.LA57 only outside of IA-32e mode. In
 IA-32e mode, an attempt to modify CR4.LA57 using the MOV CR instruction causes a
 general-protection exception (#GP).
 */
+
+// Virtual Memory Regions
+struct vm_region {
+    virt_addr_t start;
+    virt_addr_t end;
+};
+
+/* Paging */
 
 typedef uint64_t page_entry_t;
 typedef uint64_t page_dir_entry_t;
@@ -154,11 +163,6 @@ static inline page_global_dir_entry_t *pge_ptr(pge_t *pge) {
     return &pge->pge;
 }
 
-// For clarity in code
-// typedef struct page_table_t pml4_t;    // Page Map Level 4
-typedef struct page_table_t pdpt_t;    // Page Directory Pointer Table
-typedef struct page_table_t pt_t;      // Page Table
-
 // Extract indices from virtual address
 #define PML4_INDEX(vaddr)  (((vaddr) >> 39) & 0x1FF)
 #define PDPT_INDEX(vaddr)  (((vaddr) >> 30) & 0x1FF)
@@ -167,9 +171,9 @@ typedef struct page_table_t pt_t;      // Page Table
 
 // Function declarations
 void init_paging(void);
-void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3, uint64_t cr4);
-pte_t *get_page_entry(uint64_t vaddr, int create, uint64_t cr3, uint64_t cr4);
-void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint64_t cr3, uint64_t cr4);
+void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3);
+pte_t *get_page_entry(uint64_t vaddr, int create, uint64_t cr3);
+void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint64_t cr3);
 void unmap(void *addr, size_t len);
 
 // TLB management
