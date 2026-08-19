@@ -49,65 +49,71 @@ void init_paging(void) {
  * @param create If 1, create intermediate tables if they don't exist
  * @return Pointer to the page table entry, or NULL if not found and create=0
  */
-page_entry_t *get_page_entry(uint64_t vaddr, int create) {
-    uint64_t cr3 = read_cr3();
-    uint64_t pml4_phys = cr3 & PAGE_FRAME_MASK;
-    pml4_t *pml4 = (pml4_t*)phys_to_virt(pml4_phys);
+pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3, uint64_t cr4) {
+    (void)cr4;
+
+    phys_addr_t pml4_phys = PAGE_GET_ADDR(cr3);
+    p4d_t *pml4 = (p4d_t *) phys_to_virt(pml4_phys);
 
     uint64_t pml4_idx = PML4_INDEX(vaddr);
-    page_entry_t *pml4e = &pml4->entries[pml4_idx];
+    p4e_t *pml4e = &pml4->entries[pml4_idx];
 
     pdpt_t *pdpt;
-    if (!(*pml4e & PAGE_PRESENT)) {
-        if (!create) return NULL;
+    if (!(p4e_val(*pml4e) & PAGE_PRESENT)) {
+        if (!create) {
+            return NULL;
+        }
 
-        pdpt = (pdpt_t*)kmalloc_a(sizeof(pdpt_t));
+        pdpt = (pdpt_t *) kmalloc_a(sizeof(pdpt_t));
         memset(pdpt, 0, sizeof(pdpt_t));
 
-        uint64_t pdpt_phys = virt_to_phys(pdpt);
-        *pml4e = pdpt_phys | PAGE_PRESENT | PAGE_WRITE;
+        phys_addr_t pdpt_phys = virt_to_phys(pdpt);
+        *p4e_ptr(pml4e) = pdpt_phys | PAGE_PRESENT | PAGE_WRITE;
     } else {
-        uint64_t pdpt_phys = PAGE_GET_ADDR(*pml4e);
-        pdpt = (pdpt_t*)phys_to_virt(pdpt_phys);
+        phys_addr_t pdpt_phys = PAGE_GET_ADDR(p4e_val(*pml4e));
+        pdpt = (pdpt_t *) phys_to_virt(pdpt_phys);
     }
 
     uint64_t pdpt_idx = PDPT_INDEX(vaddr);
-    page_entry_t *pdpte = &pdpt->entries[pdpt_idx];
+    pte_t *pdpte = &pdpt->entries[pdpt_idx];
 
     pd_t *pd;
-    if (!(*pdpte & PAGE_PRESENT)) {
-        if (!create) return NULL;
+    if (!(pte_val(*pdpte) & PAGE_PRESENT)) {
+        if (!create) {
+            return NULL;
+        }
 
-        pd = (pd_t*)kmalloc_a(sizeof(pd_t));
+        pd = (pd_t *) kmalloc_a(sizeof(pd_t));
         memset(pd, 0, sizeof(pd_t));
 
         uint64_t pd_phys = virt_to_phys(pd);
-        *pdpte = pd_phys | PAGE_PRESENT | PAGE_WRITE;
+        *pte_ptr(pdpte) = pd_phys | PAGE_PRESENT | PAGE_WRITE;
     } else {
-        uint64_t pd_phys = PAGE_GET_ADDR(*pdpte);
-        pd = (pd_t*)phys_to_virt(pd_phys);
+        uint64_t pd_phys = PAGE_GET_ADDR(pte_val(*pdpte));
+        pd = (pd_t *) phys_to_virt(pd_phys);
     }
 
     uint64_t pd_idx = PD_INDEX(vaddr);
-    page_entry_t *pde = &pd->entries[pd_idx];
+    pde_t *pde = &pd->entries[pd_idx];
 
     pt_t *pt;
-    if (!(*pde & PAGE_PRESENT)) {
-        if (!create) return NULL;
+    if (!(pde_val(*pde) & PAGE_PRESENT)) {
+        if (!create) {
+            return NULL;
+        }
 
         pt = (pt_t *) kmalloc_a(sizeof(pt_t));
         memset(pt, 0, sizeof(pt_t));
 
         uint64_t pt_phys = virt_to_phys(pt);
-        *pde = pt_phys | PAGE_PRESENT | PAGE_WRITE;
+        *pde_ptr(pde) = pt_phys | PAGE_PRESENT | PAGE_WRITE;
     } else {
-        uint64_t pt_phys = PAGE_GET_ADDR(*pde);
-        pt = (pt_t*) phys_to_virt(pt_phys);
+        uint64_t pt_phys = PAGE_GET_ADDR(pde_val(*pde));
+        pt = (pt_t *) phys_to_virt(pt_phys);
     }
 
-    // Get PT entry
-    uint64_t pt_idx = PT_INDEX(vaddr);
-    return &pt->entries[pt_idx];
+    // return the page table entry
+    return &pt->entries[PT_INDEX(vaddr)];
 }
 
 /**
@@ -118,27 +124,27 @@ page_entry_t *get_page_entry(uint64_t vaddr, int create) {
  * @param iskernel 1 for kernel pages, 0 for user pages
  * @param writeable 1 for writable pages, 0 for read-only
  */
-void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable) {
+void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint64_t cr3, uint64_t cr4) {
     // Align addresses to page boundaries
     vaddr &= ~0xFFFUL;
     paddr &= ~0xFFFUL;
 
-    page_entry_t *pte = get_page_entry(vaddr, 1);
+    pte_t *pte = get_page_entry(vaddr, 1, cr3, cr4);
     if (!pte) {
         log_error("[paging]: Failed to get page entry for vaddr 0x%x%x\n",
-                  (uint32_t)(vaddr >> 32), (uint32_t)vaddr);
+                (uint32_t)(vaddr >> 32), (uint32_t)vaddr);
         return;
     }
 
     // Set up the page table entry
-    *pte = paddr | PAGE_PRESENT;
+    *pte_ptr(pte) = paddr | PAGE_PRESENT;
 
     if (writeable) {
-        *pte |= PAGE_WRITE;
+        *pte_ptr(pte) |= PAGE_WRITE;
     }
 
     if (!iskernel) {
-        *pte |= PAGE_USER;
+        *pte_ptr(pte) |= PAGE_USER;
     }
 
     // Flush TLB for this page
@@ -154,14 +160,14 @@ void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable) {
  * @param iskernel 1 for kernel pages, 0 for user pages
  * @param writeable 1 for writable pages, 0 for read-only
  */
-void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable) {
+void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3, uint64_t cr4) {
     // Align to page boundaries
     uint64_t start = phys_addr & ~0xFFFUL;
     uint64_t end = (phys_addr + size + 0xFFF) & ~0xFFFUL;
 
     log_debug("[paging]: mapping phys 0x%x%x - 0x%x%x\n",
-              (uint32_t)(start >> 32), (uint32_t)start,
-              (uint32_t)(end >> 32), (uint32_t)end);
+            (uint32_t)(start >> 32), (uint32_t)start,
+            (uint32_t)(end >> 32), (uint32_t)end);
 
     // Map using HHDM offset
     uint64_t hhdm_offset = hhdm_request.response->offset;
@@ -170,12 +176,12 @@ void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int wri
         uint64_t virt = phys + hhdm_offset;
 
         // Check if already mapped
-        page_entry_t *pte = get_page_entry(virt, 0);
-        if (pte && (*pte & PAGE_PRESENT)) {
+        pte_t *pte = get_page_entry(virt, 0, read_cr3(), read_cr4());
+        if (pte && (pte_val(*pte) & PAGE_PRESENT)) {
             // Already mapped, skip
             continue;
         }
 
-        map_page(virt, phys, iskernel, writeable);
+        map_page(virt, phys, iskernel, writeable, cr3, cr4);
     }
 }

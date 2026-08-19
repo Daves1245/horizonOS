@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// lwn.net find: https://lwn.net/Articles/106177/
+
 /*
  * x86-64 4-Level Paging Structure
  *
@@ -38,24 +40,123 @@
 #define PAGE_GLOBAL         (1UL << 8)   // Global page (not flushed on CR3 load)
 #define PAGE_NX             (1UL << 63)  // No-execute bit
 
-// Physical address mask for 4KB pages (bits 51-12)
+// the page frame number (PFN) is found in bits
+// 51-12, with the rest being zeroed from either flag
+// bits or being reserved. remember, pages are 4KiB aligned.
+// this is hex too, so those 3 zeros are actually twelve 0 bits.
 #define PAGE_FRAME_MASK     0x000FFFFFFFFFF000UL
 
 // Get physical address from page table entry
 #define PAGE_GET_ADDR(entry) ((entry) & PAGE_FRAME_MASK)
 
-// Page table entry type (all levels use same 64-bit format)
-typedef uint64_t page_entry_t;
+// TODO(5-level paging) check and enable the la57 bit
+// on cr4 (bit 12)
+// from the intel handbook:
+/*
+ Software can thus use the following algorithm to enter IA-32e mode with 5-level
+paging.
+1. Use the MOV CR instruction to set CR4.PAE and CR4.LA57.
+2. Use the WRMSR instruction to set IA32_EFER.LME.
+3. Use the MOV CR instruction to load CR3 with the address of a PML5 table (see
+Section 2.4).
+4. Use the MOV CR instruction to set CR0.PG.
+The processor allows software to modify CR4.LA57 only outside of IA-32e mode. In
+IA-32e mode, an attempt to modify CR4.LA57 using the MOV CR instruction causes a
+general-protection exception (#GP).
+*/
 
-// Page table structures (512 entries each, 4KB total)
-struct page_table_t {
-    page_entry_t entries[512];
-} __attribute__((aligned(4096)));
+typedef uint64_t page_entry_t;
+typedef uint64_t page_dir_entry_t;
+typedef uint64_t page_upper_entry_t;
+typedef uint64_t page_l4_dir_entry_t;
+typedef uint64_t page_global_dir_entry_t;
+
+/* Level 1 - Page table entry */
+typedef struct {
+    page_entry_t pte;
+} pte_t;
+
+static inline page_entry_t pte_val(pte_t pte) {
+    return pte.pte;
+}
+static inline page_entry_t *pte_ptr(pte_t *pte) {
+    return &pte->pte;
+}
+
+typedef struct page_table_t {
+    pte_t entries[512];
+} pt_t __attribute__((aligned(4096)));
+
+/* Level 2 - Page middle directory */
+typedef uint64_t page_directory_t;
+
+typedef struct {
+    page_dir_entry_t pde;
+} pde_t;
+
+static inline page_directory_t pde_val(pde_t pde) {
+    return pde.pde;
+}
+static inline page_directory_t *pde_ptr(pde_t *pde) {
+    return &pde->pde;
+}
+
+typedef struct {
+    pde_t entries[512];
+} pd_t __attribute__((aligned(4096)));
+
+/* Level 3 - Page upper directory */
+typedef struct {
+    page_upper_entry_t pue;
+} pue_t ;
+
+typedef struct {
+    pue_t entries[512];
+} pud_t __attribute((aligned(4096)));
+
+static inline page_upper_entry_t pue_val(pue_t pue) {
+    return pue.pue;
+}
+static inline page_upper_entry_t *pue_ptr(pue_t *pue) {
+    return &pue->pue;
+}
+
+/* Level 4 - Page 4 directory */
+
+typedef struct {
+    page_l4_dir_entry_t pml4e;
+} p4e_t;
+
+typedef struct {
+    p4e_t entries[512];
+} p4d_t __attribute((aligned(4096)));
+
+static inline page_l4_dir_entry_t p4e_val(p4e_t p4e) {
+    return p4e.pml4e;
+}
+static inline page_l4_dir_entry_t *p4e_ptr(p4e_t *p4e) {
+    return &p4e->pml4e;
+}
+
+/* Level 5 - Global page directory */
+typedef struct {
+    page_global_dir_entry_t pge;
+} pge_t;
+
+typedef struct {
+    pge_t entries[512];
+} pgd_t __attribute__((aligned(4096)));
+
+static inline page_global_dir_entry_t pge_val(pge_t pge) {
+    return pge.pge;
+}
+static inline page_global_dir_entry_t *pge_ptr(pge_t *pge) {
+    return &pge->pge;
+}
 
 // For clarity in code
-typedef struct page_table_t pml4_t;    // Page Map Level 4
+// typedef struct page_table_t pml4_t;    // Page Map Level 4
 typedef struct page_table_t pdpt_t;    // Page Directory Pointer Table
-typedef struct page_table_t pd_t;      // Page Directory
 typedef struct page_table_t pt_t;      // Page Table
 
 // Extract indices from virtual address
@@ -66,9 +167,9 @@ typedef struct page_table_t pt_t;      // Page Table
 
 // Function declarations
 void init_paging(void);
-void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable);
-page_entry_t *get_page_entry(uint64_t vaddr, int create);
-void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable);
+void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3, uint64_t cr4);
+pte_t *get_page_entry(uint64_t vaddr, int create, uint64_t cr3, uint64_t cr4);
+void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint64_t cr3, uint64_t cr4);
 void unmap(void *addr, size_t len);
 
 // TLB management
@@ -82,8 +183,23 @@ static inline uint64_t read_cr3(void) {
     return cr3;
 }
 
+static inline uint64_t read_cr4(void) {
+    uint64_t cr4;
+    asm volatile("mov %%cr4, %0" : "=r"(cr4));
+    return cr4;
+}
+
+// again - the memory clobber tells gcc to assume this
+// instruction touches arbitrary memory, forcing it to flush
+// all intermediate registers (in gcc, not the cpu). this avoids
+// not setting cr3/cr4 between instructions, possibly leading
+// to a fault or worse.
 static inline void write_cr3(uint64_t cr3) {
-    asm volatile("mov %0, %%cr3" : : "r"(cr3) : "memory");
+    asm volatile("mov %0, %%cr3" :: "r"(cr3) : "memory");
+}
+
+static inline void write_cr4(uint64_t cr4) {
+    asm volatile("mov %0, %%cr4" :: "r"(cr4) : "memory");
 }
 
 #endif
