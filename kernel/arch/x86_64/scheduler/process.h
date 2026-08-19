@@ -68,12 +68,14 @@
 // to a higher privilege level
 
 struct context {
-  uint64_t eip;
-  uint64_t rsi;
-  uint64_t rsp;
+  /* stack frame */
+  virt_addr_t rsp;
+  //virt_addr_t rbp; // not necessary
 
-  /* general registers */
-  uint64_t rbp;
+  int intena;
+  int noff;
+
+  /* general purpose registers (not callee-saved between functions) */
   uint64_t rbx;
   uint64_t r12;
   uint64_t r13;
@@ -88,7 +90,7 @@ struct context {
   uint64_t fs; // general/thread (TLS)
   uint64_t gs; // general/cpu
 
-  uint64_t cr3; // addrof top level page structure
+  uint64_t cr3; // pointer to top level page structure
 
   // ffu, mmx, see registers etc. (not currently used)
 };
@@ -127,7 +129,7 @@ struct process {
 
   virt_addr_t kstack;
   enum process_state state;
-  struct page_table_t pagetable;
+  struct p4d_t *pagetable;
   struct context context;
 };
 
@@ -140,7 +142,7 @@ int fork(const char *name);
 struct process *myproc();
 struct cpu *mycpu();
 
-void enable_interrupts();
-void disable_interrupts();
+uint64_t irq_save();
+void irq_restore(uint64_t flags);
 
 #endif
