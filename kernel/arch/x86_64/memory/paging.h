@@ -66,12 +66,6 @@ IA-32e mode, an attempt to modify CR4.LA57 using the MOV CR instruction causes a
 general-protection exception (#GP).
 */
 
-// Virtual Memory Regions
-struct vm_region {
-    virt_addr_t start;
-    virt_addr_t end;
-};
-
 /* Paging */
 
 typedef uint64_t page_entry_t;
@@ -131,7 +125,6 @@ static inline page_upper_entry_t *pue_ptr(pue_t *pue) {
 }
 
 /* Level 4 - Page 4 directory */
-
 typedef struct {
     page_l4_dir_entry_t pml4e;
 } p4e_t;
