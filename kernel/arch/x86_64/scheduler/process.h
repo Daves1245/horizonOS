@@ -132,6 +132,7 @@ struct addrspace {
   // adds on an unnecessary, expensive operation for now!
   virt_addr_t stack_base;
   virt_addr_t stack_end;
+  struct vm_region *vm_list;
 };
 
 struct process {
