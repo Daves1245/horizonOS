@@ -2,6 +2,7 @@
 #define MM_H
 
 #include <stdint.h>
+#include <dsa/list.h>
 
 /* Virtual Memory Regions */
 enum vm_type {
@@ -30,6 +31,8 @@ struct vm_region {
     enum vm_type type;
     virt_addr_t start;
     virt_addr_t end;
+
+    struct list_head node; // a process' vm_region linked list
 };
 
 phys_addr_t virt_to_phys(virt_addr_t addr);
