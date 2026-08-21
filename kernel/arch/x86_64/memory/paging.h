@@ -79,6 +79,9 @@ typedef struct {
     page_entry_t pte;
 } pte_t;
 
+// TODO(inlining): we might want to move these accessor functions
+// to macros to force inlining instead of relying on the compiler.
+// should be fine since we know all of these at compile time.
 static inline page_entry_t pte_val(pte_t pte) {
     return pte.pte;
 }
@@ -164,13 +167,13 @@ static inline page_global_dir_entry_t *pge_ptr(pge_t *pge) {
 
 // Function declarations
 void init_paging(void);
-void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3);
-pte_t *get_page_entry(uint64_t vaddr, int create, uint64_t cr3);
-void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint64_t cr3);
-void unmap(void *addr, size_t len);
+void map_physical_range(phys_addr_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3);
+pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3);
+void map_page(virt_addr_t vaddr, phys_addr_t phys_addr, int iskernel, int writeable, uint64_t cr3);
+void unmap(phys_addr_t phys_addr, size_t len);
 
 // TLB management
-static inline void invalidate_page(uint64_t vaddr) {
+static inline void invalidate_page(virt_addr_t vaddr) {
     asm volatile("invlpg (%0)" : : "r"(vaddr) : "memory");
 }
 

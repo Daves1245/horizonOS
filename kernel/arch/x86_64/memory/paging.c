@@ -26,6 +26,8 @@ void init_paging(void) {
  * @return Pointer to the page table entry, or NULL if not found and create=0
  */
 pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3) {
+
+    /* walk down the tree */
     phys_addr_t pml4_phys = PAGE_GET_ADDR(cr3);
     p4d_t *pml4 = (p4d_t *) phys_to_virt(pml4_phys);
 
@@ -98,20 +100,20 @@ pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3) {
  * @param iskernel 1 for kernel pages, 0 for user pages
  * @param writeable 1 for writable pages, 0 for read-only
  */
-void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint64_t cr3) {
+void map_page(virt_addr_t virt_addr, uint64_t phys_addr, int iskernel, int writeable, uint64_t cr3) {
     // Align addresses to page boundaries
-    vaddr &= ~0xFFFUL;
-    paddr &= ~0xFFFUL;
+    virt_addr &= ~0xFFFUL;
+    phys_addr &= ~0xFFFUL;
 
-    pte_t *pte = get_page_entry(vaddr, 1, cr3);
+    pte_t *pte = get_page_entry(virt_addr, 1, cr3);
     if (!pte) {
         log_error("[paging]: Failed to get page entry for vaddr 0x%x%x\n",
-                (uint32_t)(vaddr >> 32), (uint32_t)vaddr);
+                (uint32_t)(virt_addr >> 32), (uint32_t)virt_addr);
         return;
     }
 
     // Set up the page table entry
-    *pte_ptr(pte) = paddr | PAGE_PRESENT;
+    *pte_ptr(pte) = phys_addr | PAGE_PRESENT;
 
     if (writeable) {
         *pte_ptr(pte) |= PAGE_WRITE;
@@ -122,7 +124,7 @@ void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint6
     }
 
     // Flush TLB for this page
-    invalidate_page(vaddr);
+    invalidate_page(virt_addr);
 }
 
 /**
@@ -134,7 +136,7 @@ void map_page(uint64_t vaddr, uint64_t paddr, int iskernel, int writeable, uint6
  * @param iskernel 1 for kernel pages, 0 for user pages
  * @param writeable 1 for writable pages, 0 for read-only
  */
-void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3) {
+void map_physical_range(phys_addr_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3) {
     // Align to page boundaries
     uint64_t start = phys_addr & ~0xFFFUL;
     uint64_t end = (phys_addr + size + 0xFFF) & ~0xFFFUL;
@@ -147,7 +149,7 @@ void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int wri
     uint64_t hhdm_offset = hhdm_request.response->offset;
 
     for (uint64_t phys = start; phys < end; phys += 0x1000) {
-        uint64_t virt = phys + hhdm_offset;
+        uint64_t virt = phys_to_virt(phys_addr);
 
         // Check if already mapped
         pte_t *pte = get_page_entry(virt, 0, read_cr3());
@@ -158,4 +160,38 @@ void map_physical_range(uint64_t phys_addr, uint32_t size, int iskernel, int wri
 
         map_page(virt, phys, iskernel, writeable, cr3);
     }
+}
+
+/**
+ *
+ * Unmap a page rooted in cr3
+ *
+ * @return the physical frame that was unmapped, or 0 if it was dangling.
+ * Note that this function does not free the returned frame, that decision
+ * is left to the caller.
+ */
+phys_addr_t unmap_page(virt_addr_t addr, uint64_t cr3) {
+    // page align
+    addr &= ~0xFFFUL;
+
+    pte_t *pte = get_page_entry(addr, 0, cr3);
+    if (!pte || !(pte_val(*pte) & PAGE_PRESENT)) {
+        return 0;
+    }
+
+    phys_addr_t frame = PAGE_GET_ADDR(pte_val(*pte));
+
+    *pte_ptr(pte) = 0;
+
+    // only invalidate the TLB if we benefit from it, i.e. the owning
+    // cr3 is the same one as our currently running process.
+    if (cr3 == read_cr3()) {
+        invalidate_page(addr);
+    }
+
+    return frame;
+}
+
+void unmap_range(virt_addr_t addr, size_t size) {
+    
 }
