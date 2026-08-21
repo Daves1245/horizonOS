@@ -31,6 +31,30 @@ static void com1_hex64(uint64_t val) {
         com1_putc(h[(val >> i) & 0xF]);
 }
 
+void page_fault_handler(struct interrupt_context *regs) {
+    // find the VMA
+
+    // determine if illegal (segfault), and signal. for now,
+    // TODO
+    // we have no concept of userspace, and all kernel threads
+    // operate at the same level. we'll panic() for now, but
+    // eventually kill the running process() and return it to
+    // its parent
+
+
+    // TODO VMA tracking. each process has vm_region for stack,
+    // but can include more pages than just this. add permissions
+    // and status bits to cache page bits, and convert the
+    // stack into a list of regions, and use these to keep
+    // track of valid / allocated pages.
+
+
+    // TODO whenever we add shared memory, we'll have to add
+    // refcounts to frames. we'll check that here
+
+    // 
+}
+
 void isr_handler(struct interrupt_context *regs) {
     if (interrupt_handlers[regs->int_no] != 0) {
         interrupt_handlers[regs->int_no](regs);
