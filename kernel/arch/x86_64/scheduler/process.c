@@ -9,7 +9,8 @@
 
 struct cpu cpus[NUM_CPUS];
 uint8_t __glbl_pid;
-struct process processes[NUM_PROCESSES];
+
+struct process *processes;
 
 // TODO move to cpu.c later maybe for organization?
 static inline uint64_t read_rflags() {
@@ -55,6 +56,11 @@ static void init_stack(struct process *p, void (*entry)(void)) {
     if (!stack) {
         panic("init_stack: could not allocate stack for process");
     }
+
+    struct vm_region *vma_stack = (struct vm_region *) kmalloc(sizeof(*stack));
+
+    p->addrspace.vm_list
+
     p->addrspace.stack_base = stack;
     p->addrspace.stack_end = stack + KSTACK_SIZE;
 
@@ -131,14 +137,39 @@ struct cpu *mycpu() {
     return &cpus[0];
 }
 
-void __init() {
-    // init lives in the process table like everything else, so the
-    // scheduler can actually see it -- it used to be kmalloc'd and
-    // reachable only through cpus[0].task, which meant scheduler()
-    // (it only ever scans processes[]) could switch away from init
-    // but never back to it.
-    struct process *init = &processes[0];
+// read as the 'init' process, i.e. process 0
+void init_process() {
+    struct process *init = (struct process *) kmalloc(sizeof(*init));
+    if (!init) {
+        panic("could not allocate init process");
+    }
 
+    // TODO map all but the last page in the stack to serve
+    // as a guard page
+    virt_addr_t stack = kmalloc_a(KSTACK_SIZE);
+    if (!stack) {
+        panic("could not allocate stack for init process");
+    }
+
+    // addrspace is a linked list of virtual memory regions,
+    // each region representing an area of VM with its permissions,
+    // type (metadata), and base and end pointers
+    INIT_LIST_HEAD(&init->addrspace.vm_list);
+
+    struct vm_region *stack_region = (struct vm_region *) kmalloc(sizeof(*stack_region));
+    stack_region->flags = FL_VM_READ | FL_VM_WRITE; // not used, just here for the fun of the game
+    stack_region->type = STACK;
+    stack_region->start = stack;
+    stack_region->end = stack + KSTACK_SIZE;
+
+    list_add(&stack_region->node, &init->addrspace.vm_list);
+
+    init->state = READY;
+    init->pagetable = (struct p4d_t *) kmalloc_a(4096);
+    init->context = (struct context){0};
+}
+
+void __init() {
     init->pid = __glbl_pid++;
     memcpy(init->name, "init", strlen("init") + 1); // +1 for the NUL
     init->parent = NULL;

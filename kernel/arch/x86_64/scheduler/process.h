@@ -82,16 +82,6 @@ struct context {
   uint64_t r14;
   uint64_t r15;
 
-  /* segment registers */
-  uint64_t cs; // code
-  uint64_t ss; // stack
-  uint64_t ds; // data
-  uint64_t es; // extra
-  uint64_t fs; // general/thread (TLS)
-  uint64_t gs; // general/cpu
-
-  uint64_t cr3; // pointer to top level page structure
-
   // ffu, mmx, see registers etc. (not currently used)
 };
 
@@ -130,9 +120,8 @@ struct addrspace {
   // for now, we can just have two pointers, and compare if
   // our accesses ever exceed the end of the stack. this
   // adds on an unnecessary, expensive operation for now!
-  virt_addr_t stack_base;
-  virt_addr_t stack_end;
-  struct vm_region *vm_list;
+
+  struct list_head vm_list; // linked list of vm_region
 };
 
 struct process {
@@ -141,13 +130,15 @@ struct process {
 
   struct process *parent;
   struct addrspace addrspace;
+
+  // entry into multilevel feedback queue in scheduler
+  struct list_head sched;
+
   enum process_state state;
   struct p4d_t *pagetable;
   struct context context;
-};
 
-// XXX this is god-awful and needs to be changed ASAP
-extern struct process processes[NUM_PROCESSES];
+};
 
 void sched();
 int fork(const char *name);
