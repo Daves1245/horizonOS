@@ -469,3 +469,58 @@ TSS.
 
 exceptions: error states on the cpu that are detected. interrupts: something happened somewhere
 and the processor needs to know.
+
+# Scheduler debugging
+we hit a panic on boot, looks like a PF followed by GPF. possibly
+corrupted stack from `swtch()`, or null dereference.
+
+whoops, forgot to fill out myproc() instead of just returning NULL.
+yup, that's on me
+
+Semi-urgent fix needed:
+coc isn't resolving simple actions like importing an unambiguous function.
+
+aug 16:
+- yield() calls scheduler directly instead of willingly giving up
+control of the CPU. this doesn't work, since any process that
+finished with a yield() will return back into it, meaning it will
+continue executing within the scheduler() function, and never come
+back to before yield(). instead, yield should:
+- mark the process as READY
+- ensure interrupts are enabled
+- halt
+
+to do this requires hooking up the scheduler after a timer
+interrupt. so, beforehand, the timer interrupt ISR should jump
+back to `scheduler()`
+
+
+# Whoops all memory again
+err so we had to move back into paging and flesh out per-process
+address spaces so that we can properly fork processes without
+writing the world's *ugliest*, hackiest code. the problem we had
+previously was that we couldn't copy over process stacks because
+although we have virtualized memory, all processes share the same
+address space so we don't have the benefit of the same virtual
+address not colliding by pointing to two different physical
+locations.
+neways, i digress.
+
+there's this issue i keep running into about typing and naming
+things. i agree with the linux kernel's style guides in not
+hiding underlying types for most cases with typedefs. however,
+with primitive types i've run into the issue that these aren't
+always as descriptive as i'd like them to be for my variables -
+uint64_t works as a register value, a page index, flags, etc.
+and sometimes i would like these to be properly typed so i both
+a) understand the underlying structure of the object
+b) partition similarly typed objects into distinct fields that don't meddle with each other.
+for example, we can accidentally add two uint64_t's to each other
+that represent different objects and get a garbage nonsense value
+that will live to only cause problems and mayhem. the linux kernel
+guides specify to use opaque objects with specially-written
+accessor functions, so that we only ever interface with them
+through their accessors, making intermixing types difficult.
+
+looks like cr4 doesn't point to the 5th level of paging, so cr3
+still works for that.

@@ -3,3 +3,20 @@
 ## Sound API
 - play PCM embedded data pointed to by file wrapper
 ac97.c: `void play(struct file pcm_data);`
+
+# Panic
+- panic doesn't seem to print to the screen for some reason.
+
+# Scheduler
+- create a scheduler process
+- hook timer ISR to return execution to the scheduler process
+- rewrite yield() to not jump into scheduler, but halt until
+ready (this should be safe enough to work with now, but we'll
+want to hand off the rest of the time slice to another process
+for a robust solution.)
+- don't pass pagetable by value; refactor it to an addrspace struct
+
+# Memory
+- remove cr4 references from process-specific code.
+- communicate that cr3 is usually the *address bits*, since
+the register values holds more than just that.
