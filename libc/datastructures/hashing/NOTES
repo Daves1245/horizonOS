@@ -3,12 +3,12 @@ direct hashing:
 directly as the key
 
 disadvantage: unreasonable memory allocation when the universe of keys
-    is big. 
+    is big.
 advantage: quick, easy, O(1) worst case scenario INSERT/SEARCH/DELETE
     operations
 
 THE THING ABOUT SMALL NUMBERS OF KEYS
-When your table is holding unreasonably large amounts of memory for 
+When your table is holding unreasonably large amounts of memory for
 a few small keys that are actually going to be used, a lot of
 memory ends up going to waste. It is for this reason that we employ
 hash functions, h:U->{0,1,...,m - 1}, that map the universe of all
@@ -17,14 +17,14 @@ of the hash table T[0,1,...,m -1 ]. Note that since m - 1 is smaller
 than U, no bijection exists that maps U -> {0,1,...,m - 1]. Thus,
 there will be collisions in which two or more keys, k1, k2 map to the
 same value from the hash function:
-h(k1) = h(k2). We call these collisions and we are fortunate enough 
+h(k1) = h(k2). We call these collisions and we are fortunate enough
 that there exists many ways to deal with collisions.
 
 Ways to Deal With Collisions:
 1. Collision resolution by chaining.
 
 In chaining, we put all the elements that has to the same slot in a linked
-list. Pseudocode: 
+list. Pseudocode:
 
 Chained-Hash_Insert(T, x):
     insert x at the head of list T[h(keys[x])]
@@ -43,3 +43,4 @@ within the table
 - Simple uniform hashing is the assumption that the hash function
 distributes the keys across the table evenly and independently
 to where any other element has hashed to.
+

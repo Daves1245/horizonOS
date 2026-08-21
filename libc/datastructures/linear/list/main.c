@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "list.h"
+#include <dsa/list.h>
 #include "colors.h" // fun colors!
 
 /*
