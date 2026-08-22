@@ -138,8 +138,8 @@ void map_page(virt_addr_t virt_addr, uint64_t phys_addr, int iskernel, int write
  */
 void map_physical_range(phys_addr_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3) {
     // Align to page boundaries
-    uint64_t start = phys_addr & ~0xFFFUL;
-    uint64_t end = (phys_addr + size + 0xFFF) & ~0xFFFUL;
+    phys_addr_t start = phys_addr & ~0xFFFUL;
+    phys_addr_t end = (phys_addr + size + 0xFFF) & ~0xFFFUL;
 
     log_debug("[paging]: mapping phys 0x%x%x - 0x%x%x\n",
             (uint32_t)(start >> 32), (uint32_t)start,
@@ -148,11 +148,11 @@ void map_physical_range(phys_addr_t phys_addr, uint32_t size, int iskernel, int 
     // Map using HHDM offset
     uint64_t hhdm_offset = hhdm_request.response->offset;
 
-    for (uint64_t phys = start; phys < end; phys += 0x1000) {
-        uint64_t virt = phys_to_virt(phys_addr);
+    for (phys_addr_t phys = start; phys < end; phys += 0x1000) {
+        virt_addr_t virt = phys_to_virt(phys_addr);
 
         // Check if already mapped
-        pte_t *pte = get_page_entry(virt, 0, read_cr3());
+        pte_t *pte = get_page_entry(virt, 0, cr3);
         if (pte && (pte_val(*pte) & PAGE_PRESENT)) {
             // Already mapped, skip
             continue;
