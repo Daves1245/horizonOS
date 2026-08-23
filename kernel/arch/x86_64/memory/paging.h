@@ -170,7 +170,7 @@ void init_paging(void);
 void map_physical_range(phys_addr_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3);
 pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3);
 void map_page(virt_addr_t vaddr, phys_addr_t phys_addr, int iskernel, int writeable, uint64_t cr3);
-void unmap(phys_addr_t phys_addr, size_t len);
+phys_addr_t unmap_page(phys_addr_t phys_addr, uint64_t cr3);
 
 // TLB management
 static inline void invalidate_page(virt_addr_t vaddr) {

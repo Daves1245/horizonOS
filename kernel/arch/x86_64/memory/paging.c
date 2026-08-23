@@ -191,7 +191,3 @@ phys_addr_t unmap_page(virt_addr_t addr, uint64_t cr3) {
 
     return frame;
 }
-
-void unmap_range(virt_addr_t addr, size_t size) {
-    
-}
