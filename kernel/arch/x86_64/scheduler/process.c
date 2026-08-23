@@ -4,6 +4,7 @@
 #include <x86_64/scheduler/scheduler.h>
 #include <log.h>
 #include <kernel/panic.h>
+#include <drivers/serial.h>
 
 #include <halt.h>
 
@@ -71,6 +72,8 @@ static struct vm_region *init_stack(struct process *p, void (*entry)(void)) {
     // which means the frame has to be built with r15 at the lowest
     // address and the return address at the highest, and rsp has to
     // start at the bottom of the frame rather than the top.
+
+    // 16 bit aligned at the *call* site so not stack_p[0] here
     stack_p[-1] = (virt_addr_t) entry; // ret to here (highest)
     stack_p[-2] = 0; // rbp (0 terminates a frame-pointer walk)
     stack_p[-3] = 0; // rbx
@@ -79,8 +82,16 @@ static struct vm_region *init_stack(struct process *p, void (*entry)(void)) {
     stack_p[-6] = 0; // r14
     stack_p[-7] = 0; // r15 (lowest, popped first)
 
+    vma_stack->flags = FL_VM_READ | FL_VM_WRITE; // not used, just here for the fun of the game
+    vma_stack->type = STACK;
+
     vma_stack->start = stack;
     vma_stack->end = *stack_p;
+
+    p->context.rsp = (virt_addr_t) &stack_p[-7]; // r15
+
+    // guard page (stack grows down, so we have to guard the first page)
+    unmap_page(vma_stack->start, read_cr3());
 
     return vma_stack;
 }
@@ -126,48 +137,39 @@ struct cpu *mycpu() {
     return &cpus[0];
 }
 
+void init() {
+  serial_write("HELLAUR WORLD!");
+}
+
 // read as the 'init' process, i.e. process 0
 void init_process() {
-    struct process *init = (struct process *) kmalloc(sizeof(*init));
-    if (!init) {
+    struct process *init_p = (struct process *) kmalloc(sizeof(*init_p));
+    if (!init_p) {
         panic("could not allocate init process");
     }
 
-    // TODO map all but the last page in the stack to serve
-    // as a guard page
-    virt_addr_t stack = kmalloc_a(KSTACK_SIZE);
-    if (!stack) {
-        panic("could not allocate stack for init process");
-    }
-
-    init->pid = __glbl_pid++;
-    char init_name[] = {'i', 'n', 'i', 't', '\0'};
-    memcpy(init->name, init_name, strlen("init") + 1); // +1 NULL
+    init_p->pid = __glbl_pid++;
+    memcpy(init_p->name, "init", strlen("init") + 1); // +1 NULL
+    init_p->context = (struct context){0};
 
     // addrspace is a linked list of virtual memory regions,
     // each region representing an area of VM with its permissions,
     // type (metadata), and base and end pointers
-    INIT_LIST_HEAD(&init->addrspace.vm_list);
+    INIT_LIST_HEAD(&init_p->addrspace.vm_list);
 
-    struct vm_region *stack_region = (struct vm_region *) kmalloc(sizeof(*stack_region));
-    stack_region->flags = FL_VM_READ | FL_VM_WRITE; // not used, just here for the fun of the game
-    stack_region->type = STACK;
-    stack_region->start = stack;
-    stack_region->end = stack + KSTACK_SIZE;
+    struct vm_region *stack_region = init_stack(init_p, &init);
 
-    list_add(&stack_region->node, &init->addrspace.vm_list);
-
-    init->context = (struct context){0};
+    list_add(&stack_region->node, &init_p->addrspace.vm_list);
 
     p4d_t *bootstrap = (p4d_t *) phys_to_virt(PAGE_GET_ADDR(read_cr3()));
     p4d_t *p4d = (p4d_t *) kmalloc_a(sizeof(p4d_t));
     memcpy(p4d, bootstrap, sizeof(p4d_t));
-    init->cr3 = virt_to_phys((virt_addr_t) p4d);
+    init_p->cr3 = virt_to_phys((virt_addr_t) p4d);
 
     // bootstrap: previously running context is abandoned
-    init->state = RUNNING;
-    cpus[0].task = init;
-    ctx_switch(init);
+    init_p->state = RUNNING;
+    ctx_switch(init_p);
+    cpus[0].task = init_p;
 }
 
 struct process *alloc_process() {
