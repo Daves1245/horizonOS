@@ -316,7 +316,7 @@ void kernel_main(void) {
     shell_run();
     */
 
-    __init();
+    init_process();
 
     printk(KERN_INFO, "scheduler test: ");
     printk(KERN_DEBUG, "\nmyproc(): %p\n", (virt_addr_t) myproc());

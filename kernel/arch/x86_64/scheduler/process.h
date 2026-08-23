@@ -105,7 +105,7 @@ struct cpu {
   struct process *task;
 };
 
-void __init();
+void init_process();
 
 extern struct cpu cpus[NUM_CPUS];
 
@@ -135,7 +135,7 @@ struct process {
   struct list_head sched;
 
   enum process_state state;
-  struct p4d_t *pagetable;
+  p4d_t *pagetable;
   struct context context;
 
 };

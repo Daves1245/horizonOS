@@ -51,18 +51,13 @@ void irq_restore(uint64_t flags) {
 // process that has never run has no such frame lying around, so we
 // make one by hand. save the registers, followed by `entry`
 // as the fake return address for the final ret to land on.
-static void init_stack(struct process *p, void (*entry)(void)) {
+static struct vm_region *init_stack(struct process *p, void (*entry)(void)) {
     virt_addr_t stack = kmalloc_a(KSTACK_SIZE);
-    if (!stack) {
+    struct vm_region *vma_stack = (struct vm_region *) kmalloc(sizeof(*vma_stack));
+
+    if (!stack || !vma_stack) {
         panic("init_stack: could not allocate stack for process");
     }
-
-    struct vm_region *vma_stack = (struct vm_region *) kmalloc(sizeof(*stack));
-
-    p->addrspace.vm_list
-
-    p->addrspace.stack_base = stack;
-    p->addrspace.stack_end = stack + KSTACK_SIZE;
 
     // one past the highest addressable word in this region
     virt_addr_t *stack_p = (virt_addr_t *) (stack + KSTACK_SIZE);
@@ -84,16 +79,10 @@ static void init_stack(struct process *p, void (*entry)(void)) {
     stack_p[-6] = 0; // r14
     stack_p[-7] = 0; // r15 (lowest, popped first)
 
-    p->context = (struct context) {0};
-    p->context.rsp = (virt_addr_t) &stack_p[-7];
-    // NOTE(abi): `ret` leaves rsp 16-aligned at `entry`, where the SysV
-    // ABI wants rsp % 16 == 8 (what a real `call` leaves behind). that
-    // only matters for 16-byte-aligned SSE accesses, and the kernel is
-    // built -mno-sse, so leave it. if SSE is ever enabled, shift the
-    // whole frame down one word so the return address sits 16-aligned.
-    // TODO(memory): all processes currently share the same address
-    // space, so just reuse whatever's active right now.
-    p->context.cr3 = read_cr3();
+    vma_stack->start = stack;
+    vma_stack->end = *stack_p;
+
+    return vma_stack;
 }
 
 // the first thing a brand new process runs, landed on via swtch()'s
@@ -151,6 +140,9 @@ void init_process() {
         panic("could not allocate stack for init process");
     }
 
+    init->pid = __glbl_pid++;
+    memcpy(init->name, "init", strlen("init") + 1); // +1 NULL
+
     // addrspace is a linked list of virtual memory regions,
     // each region representing an area of VM with its permissions,
     // type (metadata), and base and end pointers
@@ -164,37 +156,17 @@ void init_process() {
 
     list_add(&stack_region->node, &init->addrspace.vm_list);
 
-    init->state = READY;
-    init->pagetable = (struct p4d_t *) kmalloc_a(4096);
     init->context = (struct context){0};
-}
 
-void __init() {
-    init->pid = __glbl_pid++;
-    memcpy(init->name, "init", strlen("init") + 1); // +1 for the NUL
-    init->parent = NULL;
-    virt_addr_t stack = kmalloc_a(KSTACK_SIZE);
-    if (!stack) {
-        panic("could not allocate stack for init");
-    }
-    // TODO unmap guard page on kstack. for now, we overcompensate
-    // with a largened stack to avoid overflows. see notes
-    // at process.h
-    init->addrspace.stack_base = stack;
-    init->addrspace.stack_end = stack + KSTACK_SIZE;
-    // RUNNING, not READY: init is the process executing right now, and
-    // it has no saved frame yet (context.rsp is still 0 until the first
-    // swtch() *out* of it fills it in). marking it READY would let
-    // scheduler() pick it and ctx_switch() to itself, loading rsp = 0.
+    p4d_t *bootstrap = (p4d_t *) PAGE_GET_ADDR(read_cr3());
+    p4d_t *p4d = (p4d_t *) kmalloc_a(sizeof(p4d_t));
+    memcpy(p4d, bootstrap, sizeof(p4d_t));
+    init->pagetable = p4d;
+
+    // bootstrap: previously running context is abandoned
     init->state = RUNNING;
-
-    // TODO(memory): the current paging setup reads the
-    // current cr3 value, instead of filling it in with
-    // something provided.
-    init->context = (struct context) {0};
-    init->context.cr3 = read_cr3();
-
     cpus[0].task = init;
+    ctx_switch(init);
 }
 
 struct process *alloc_process() {
