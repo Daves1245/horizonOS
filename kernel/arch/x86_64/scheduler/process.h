@@ -135,7 +135,7 @@ struct process {
   struct list_head sched;
 
   enum process_state state;
-  p4d_t *pagetable;
+  phys_addr_t cr3;
   struct context context;
 
 };

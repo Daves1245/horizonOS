@@ -41,7 +41,7 @@ void ctx_switch(struct process *new) {
 
     cpus[0].task = new;
 
-    swtch(&old->context.rsp, new->context.rsp, (virt_addr_t) new->pagetable);
+    swtch(&old->context.rsp, new->context.rsp, new->cr3);
 
     irq_restore(flags);
 }

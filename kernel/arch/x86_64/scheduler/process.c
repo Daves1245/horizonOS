@@ -141,7 +141,8 @@ void init_process() {
     }
 
     init->pid = __glbl_pid++;
-    memcpy(init->name, "init", strlen("init") + 1); // +1 NULL
+    char init_name[] = {'i', 'n', 'i', 't', '\0'};
+    memcpy(init->name, init_name, strlen("init") + 1); // +1 NULL
 
     // addrspace is a linked list of virtual memory regions,
     // each region representing an area of VM with its permissions,
@@ -158,10 +159,10 @@ void init_process() {
 
     init->context = (struct context){0};
 
-    p4d_t *bootstrap = (p4d_t *) PAGE_GET_ADDR(read_cr3());
+    p4d_t *bootstrap = (p4d_t *) phys_to_virt(PAGE_GET_ADDR(read_cr3()));
     p4d_t *p4d = (p4d_t *) kmalloc_a(sizeof(p4d_t));
     memcpy(p4d, bootstrap, sizeof(p4d_t));
-    init->pagetable = p4d;
+    init->cr3 = virt_to_phys((virt_addr_t) p4d);
 
     // bootstrap: previously running context is abandoned
     init->state = RUNNING;
