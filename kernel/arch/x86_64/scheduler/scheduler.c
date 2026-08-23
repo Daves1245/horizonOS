@@ -11,10 +11,9 @@ extern void swtch(uint64_t *old_rsp, uint64_t new_rsp, uint64_t new_cr3);
 // Multilevel feedback queue
 struct list_head mlfq[NUM_PRIORITY_LEVELS];
 
-// 
 struct list_head ready;
 
-int mlfq_lock;
+lock_t mlfq_lock;
 
 /* prepare data structures (mlfq and ready list) */
 void init_scheduler() {
@@ -26,6 +25,13 @@ void init_scheduler() {
     }
 }
 
+// TODO(usermode)
+// when we switch to a higher privilege level, we have
+// to separate out stacks becuase contents of a less
+// privileged stack cannot be trusted. TSS i think
+// is how this implemented for x86_64? i know x86
+// supported full hardware context switches with it,
+// but it's less used in x86_64.
 void ctx_switch(struct process *new) {
     // TODO(multicore)
 
@@ -35,7 +41,7 @@ void ctx_switch(struct process *new) {
 
     cpus[0].task = new;
 
-    swtch(&old->context.rsp, new->context.rsp, new->context.cr3);
+    swtch(&old->context.rsp, new->context.rsp, (virt_addr_t) new->pagetable);
 
     irq_restore(flags);
 }
@@ -60,7 +66,7 @@ void scheduler() {
         struct process *p;
         struct process *tmp; // temporary storage  for safe iteration (deleting nodes while iterating)
         int found = 0;
-        acquire_lock(&mlfq_lock);
+        spinlock(&mlfq_lock);
         for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
             // careful functions: https://docs.kernel.org/core-api/list.html#c.list_empty_careful
             // tests whether a list is empty _and_ checks that no other CPU might be in the process of modifying either member (next or prev)
@@ -70,7 +76,7 @@ void scheduler() {
                     list_del_init_careful(&p->sched);
                     struct cpu *cpu = mycpu();
                     cpu->task = p;
-                    release_lock(&mlfq_lock);
+                    release(&mlfq_lock);
                     // TODO memory leak race condition - if we interrupt here, we lose
                     // the pointer to the process that just ran (p).
                     ctx_switch(p);
@@ -81,30 +87,7 @@ void scheduler() {
             }
             if (found) break;
         }
-        release_lock(&mlfq_lock);
-
-        int found = 0;
-        // TODO(multicore)
-        // to support more than one cpu, swtch() must take in which cpu
-        // to perform the switch on, and each process must also have a
-        // lock to prevent data races between multiple schedulers.
-        // each cpu must run its own scheduler(). for a multicore system,
-        // we must wait at the end for an interrupt at the end from another
-        // core.
-        for (; !found ;) {
-            if (p->state == READY) {
-                p->state = RUNNING;
-                ctx_switch(p);
-                if (p->state == RUNNING) {
-                    p->state = READY;
-                }
-                found = 1;
-            }
-
-            if (p == &processes[NUM_PROCESSES]) {
-                p = &processes[0];
-            }
-        }
+        release(&mlfq_lock);
     }
 }
 

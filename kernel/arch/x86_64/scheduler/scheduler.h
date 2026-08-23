@@ -5,5 +5,6 @@
 
 void scheduler();
 void yield();
+void ctx_switch(struct process *p);
 
 #endif
