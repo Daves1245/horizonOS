@@ -103,6 +103,11 @@ struct cpu {
 
   // currently running process
   struct process *task;
+
+  // the scheduler runs as a process with a stack of its own, so that control
+  // can be handed back to it without borrowing the stack of whoever was
+  // interrupted. it is not on the mlfq -- it is what services the mlfq.
+  struct process *scheduler_proc;
 };
 
 void init_process();
@@ -138,10 +143,15 @@ struct process {
   phys_addr_t cr3;
   struct context context;
 
+  // where the process starts on its very first run. swtch()'s ret always
+  // lands in forkret(), which does the first-run housekeeping and then calls
+  // this -- a fresh process has no real return address to go back to.
+  void (*entry)(void);
+
 };
 
 void sched();
-int fork(const char *name);
+int fork(const char *name, void (*entry)(void), int level);
 
 struct process *myproc();
 struct cpu *mycpu();
