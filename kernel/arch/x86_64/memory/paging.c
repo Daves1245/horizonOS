@@ -19,6 +19,49 @@ void init_paging(void) {
 }
 
 /**
+ * Break a huge page into the next lebel
+ *
+ * Limine maps the HHDM (and the kernel image) with the largest pages it can
+ * for some reason, so walking down to the PT level runs into a PDPT or
+ * PD entry while we have PAGE_PS set. These entries are 1 GiB/2 MiB *frames*,
+ * not the address of the next table down. Following one gives us a bogus/garbage
+ * frame, and writing to it can corrupt unrelated memory / is UB (i do declare).
+ *
+ * The fix is we replace the entry with a real table whose 512 entries
+ * reproduce the same translation one level down. The mapping is left
+ * unchanged, and the walk below is allowed to do this whether or not
+ * the caller passed create.
+ *
+ * @param huge The PDPT/PD huge entry
+ * @param step How many bytes the new entry should have: 2 MiB when splitting a 1 GiB page,
+ *                                                    PAGE_SIZE when splitting a 2 MiB one
+ * @return Physical address of the new table one level down
+ */
+static phys_addr_t split_huge_entry(uint64_t huge, uint64_t step) {
+    // flags live in bits 11-0 and 63-52, so the huge-page PAT bit (bit 12) is
+    // dropped here rather than translated into its PT-level position (bit 7).
+    // TODO(pat) revisit once we map device memory with a non-WB type
+    uint64_t flags = huge & ~PAGE_FRAME_MASK;
+
+    // bit 12 is part of PAGE_FRAME_MASK but is *not* part of a huge frame's
+    // address, so align down to the size the entry actually maps
+    phys_addr_t base = PAGE_GET_ADDR(huge) & ~((step * 512) - 1);
+
+    // at the PT level bit 7 means PAT, not PS. a 4 KiB entry must not carry it
+    if (step == PAGE_SIZE) {
+        flags &= ~PAGE_PS;
+    }
+
+    uint64_t *table = (uint64_t *) kmalloc_az(PAGE_SIZE);
+
+    for (uint64_t i = 0; i < 512; i++) {
+        table[i] = (base + i * step) | flags;
+    }
+
+    return virt_to_phys((virt_addr_t) table);
+}
+
+/**
  * Get or create a page table entry for a virtual address
  *
  * @param vaddr Virtual address
@@ -34,14 +77,16 @@ pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3) {
     uint64_t pml4_idx = PML4_INDEX(vaddr);
     p4e_t *pml4e = &pml4->entries[pml4_idx];
 
+    // no PAGE_PS check at this level: with 4-level paging bit 7 of a PML4
+    // entry is reserved and must be 0, so a PML4 entry is always a table
+
     pud_t *pud;
     if (!(p4e_val(*pml4e) & PAGE_PRESENT)) {
         if (!create) {
             return NULL;
         }
 
-        pud = (pud_t *) kmalloc_a(sizeof(pud_t));
-        memset(pud, 0, sizeof(pud_t));
+        pud = (pud_t *) kmalloc_az(sizeof(pud_t));
 
         phys_addr_t pud_phys = virt_to_phys((virt_addr_t) pud);
         *p4e_ptr(pml4e) = pud_phys | PAGE_PRESENT | PAGE_WRITE;
@@ -59,12 +104,22 @@ pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3) {
             return NULL;
         }
 
-        pd = (pd_t *) kmalloc_a(sizeof(pd_t));
-        memset(pd, 0, sizeof(pd_t));
+        pd = (pd_t *) kmalloc_az(sizeof(pd_t));
 
         phys_addr_t pd_phys = virt_to_phys((virt_addr_t) pd);
         *pue_ptr(pue) = pd_phys | PAGE_PRESENT | PAGE_WRITE;
     } else {
+        if (pue_val(*pue) & PAGE_PS) {
+            // 1 GiB page: swap it for a page directory of 512 2 MiB pages.
+            phys_addr_t split = split_huge_entry(pue_val(*pue), 0x200000UL);
+            *pue_ptr(pue) = split | PAGE_PRESENT | PAGE_WRITE |
+                            (pue_val(*pue) & (PAGE_USER | PAGE_NX));
+
+            if (cr3 == read_cr3()) {
+                flush_tlb_all();
+            }
+        }
+
         phys_addr_t pd_phys = PAGE_GET_ADDR(pue_val(*pue));
         pd = (pd_t *) phys_to_virt(pd_phys);
     }
@@ -78,17 +133,27 @@ pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3) {
             return NULL;
         }
 
-        pt = (pt_t *) kmalloc_a(sizeof(pt_t));
-        memset(pt, 0, sizeof(pt_t));
+        pt = (pt_t *) kmalloc_az(sizeof(pt_t));
 
         phys_addr_t pt_phys = virt_to_phys((virt_addr_t) pt);
         *pde_ptr(pde) = pt_phys | PAGE_PRESENT | PAGE_WRITE;
     } else {
+        if (pde_val(*pde) & PAGE_PS) {
+            // 2 MiB page: swap it for a page table of 512 4 KiB pages
+            phys_addr_t split = split_huge_entry(pde_val(*pde), PAGE_SIZE);
+            *pde_ptr(pde) = split | PAGE_PRESENT | PAGE_WRITE |
+                            (pde_val(*pde) & (PAGE_USER | PAGE_NX));
+
+            if (cr3 == read_cr3()) {
+                flush_tlb_all();
+            }
+        }
+
         phys_addr_t pt_phys = PAGE_GET_ADDR(pde_val(*pde));
         pt = (pt_t *) phys_to_virt(pt_phys);
     }
 
-    // return the page table entry
+    // physical address of table entry
     return &pt->entries[PT_INDEX(vaddr)];
 }
 
@@ -101,7 +166,7 @@ pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3) {
  * @param writeable 1 for writable pages, 0 for read-only
  */
 void map_page(virt_addr_t virt_addr, uint64_t phys_addr, int iskernel, int writeable, uint64_t cr3) {
-    // Align addresses to page boundaries
+    // align addresses to page boundaries
     virt_addr &= ~0xFFFUL;
     phys_addr &= ~0xFFFUL;
 
@@ -112,7 +177,7 @@ void map_page(virt_addr_t virt_addr, uint64_t phys_addr, int iskernel, int write
         return;
     }
 
-    // Set up the page table entry
+    // set up the page table entry
     *pte_ptr(pte) = phys_addr | PAGE_PRESENT;
 
     if (writeable) {
@@ -123,7 +188,7 @@ void map_page(virt_addr_t virt_addr, uint64_t phys_addr, int iskernel, int write
         *pte_ptr(pte) |= PAGE_USER;
     }
 
-    // Flush TLB for this page
+    // flush TLB for this page
     invalidate_page(virt_addr);
 }
 

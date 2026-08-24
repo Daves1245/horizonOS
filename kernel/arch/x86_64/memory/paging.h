@@ -41,6 +41,9 @@
 #define PAGE_GLOBAL         (1UL << 8)   // Global page (not flushed on CR3 load)
 #define PAGE_NX             (1UL << 63)  // No-execute bit
 
+// CR4 bits we care about here
+#define CR4_PGE             (1UL << 7)   // global page enable
+
 // the page frame number (PFN) is found in bits
 // 51-12, with the rest being zeroed from either flag
 // bits or being reserved. remember, pages are 4KiB aligned.
@@ -170,7 +173,7 @@ void init_paging(void);
 void map_physical_range(phys_addr_t phys_addr, uint32_t size, int iskernel, int writeable, uint64_t cr3);
 pte_t *get_page_entry(virt_addr_t vaddr, int create, uint64_t cr3);
 void map_page(virt_addr_t vaddr, phys_addr_t phys_addr, int iskernel, int writeable, uint64_t cr3);
-phys_addr_t unmap_page(phys_addr_t phys_addr, uint64_t cr3);
+phys_addr_t unmap_page(virt_addr_t vaddr, uint64_t cr3);
 
 // TLB management
 static inline void invalidate_page(virt_addr_t vaddr) {
@@ -200,6 +203,23 @@ static inline void write_cr3(uint64_t cr3) {
 
 static inline void write_cr4(uint64_t cr4) {
     asm volatile("mov %0, %%cr4" :: "r"(cr4) : "memory");
+}
+
+// invlpg drops the entry for a single page, which is no good after we have
+// rewritten a whole 1 gb /2 mb translation. reloading cr3 flushes the rest,
+// except for entries marked PAGE_GLOBAL, nd limine is free to mark the kernel
+// and HHDM mappings global. clearing and restoring CR4.PGE is the way to drop
+// those too (SDM Vol. 3A, 4.10.4.1).
+static inline void flush_tlb_all(void) {
+    uint64_t cr4 = read_cr4();
+
+    if (cr4 & CR4_PGE) {
+        write_cr4(cr4 & ~CR4_PGE);
+        write_cr4(cr4);
+        return;
+    }
+
+    write_cr3(read_cr3());
 }
 
 #endif
