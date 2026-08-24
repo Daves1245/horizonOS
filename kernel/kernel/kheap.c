@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 #include "kheap.h"
 #include <common.h>
@@ -34,5 +35,12 @@ virt_addr_t kmalloc_ap(uint32_t sz, phys_addr_t *phys) {
 virt_addr_t kmalloc(uint32_t sz) {
     virt_addr_t ret = placement_address;
     placement_address += sz;
+    return ret;
+}
+
+// page aligned and zeroed
+virt_addr_t kmalloc_az(uint32_t sz) {
+    virt_addr_t ret = kmalloc_a(sz);
+    memset((void *) ret, 0, sz);
     return ret;
 }
