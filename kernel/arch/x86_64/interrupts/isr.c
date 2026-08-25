@@ -51,8 +51,6 @@ void page_fault_handler(struct interrupt_context *regs) {
 
     // TODO whenever we add shared memory, we'll have to add
     // refcounts to frames. we'll check that here
-
-    // 
 }
 
 void isr_handler(struct interrupt_context *regs) {
