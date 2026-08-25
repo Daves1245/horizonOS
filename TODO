@@ -4,19 +4,44 @@
 - play PCM embedded data pointed to by file wrapper
 ac97.c: `void play(struct file pcm_data);`
 
-# Panic
-- panic doesn't seem to print to the screen for some reason.
-
 # Scheduler
-- create a scheduler process
-- hook timer ISR to return execution to the scheduler process
-- rewrite yield() to not jump into scheduler, but halt until
-ready (this should be safe enough to work with now, but we'll
-want to hand off the rest of the time slice to another process
-for a robust solution.)
-- don't pass pagetable by value; refactor it to an addrspace struct
+- have fork() continue exiting from where the parent called instead of
+giving it an entry* function to start from
+
+- page fault scheduler bug, likely from a null struct offset somewhere
+cool! first scheduler bug
+
+- add boost values to MLFQ (whoops not completely implemented yet) and use OSTEP
+hw for sanity checking values.
+
+- only demote a process' level in the MLFQ if it completely used up its time slice (
+    global boolean, unset by process and set by timer interrupt, checked by scheduler?
+    should be simple eks dee).
+
+- add TSS tracking for privilege levels through different stacks (similarly,
+add privilege level to type in vma region describing stack per process)
+
+- make cpu.{c,h} and move struct cpu, read_rflags() into it
+
+- look up how gcc handles private function calling sequences, and determine if
+forkret() [process.c] can be made private (static).
+
+- properly handle exiting processes. this includes reaping ZOMBIE processes and freeing
+their memory, as well as the slots that they take up in the process table. careful that
+this is done carefully around the scheduler code that is very prone to mistakes!
+
+- verify guard page for stacks work (trivially verifiable through a stack overflow)
+
+- review the myproc() implementation.
 
 # Memory
 - remove cr4 references from process-specific code.
 - communicate that cr3 is usually the *address bits*, since
 the register values holds more than just that.
+- have each process track their own address space (maybe this is as simple as
+    just clearing the page table entries and flushing the TLB? paging should
+    create new pages)
+
+    oh, actually we cant do this since we dont have on-demand paging yet. we'd have to
+    split this into a physical memory allocator and a page fault handler interrupt first.
+    after that, we can just clear the pte's and let page faults do their thing.

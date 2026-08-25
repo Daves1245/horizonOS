@@ -32,9 +32,9 @@ kernel_output.txt
 */*/*.log
 
 # Vim files
-*.swp
-*.swo
-*.swn
+[._]*.sw[a-p]
+[._]s[a-p]
+tags
 
 # log files
 *.log
