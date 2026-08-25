@@ -217,12 +217,7 @@ void init() {
 
   printk(KERN_INFO, "init: forked A (pid %d) and B (pid %d)\n", a, b);
 
-  // the scheduler is a process with a kernel stack of its own,
-  // rather than running on the stack of the process that happened
-  // to call scheduler(). this makes the TODO work later: an ISR can hand
-  // control back to a context that is not the interrupted process' own.
-  //
-  // it is not on the mlfq since queueing it would have it pick itself.
+  // the scheduler process is not on the mlfq since queueing it would have it pick itself.
   // doing a swtch() with old == new saves the outgoing %rsp in the context it will restore.
   struct process *sched_p = alloc_process("scheduler", scheduler);
   if (!sched_p) {
@@ -245,8 +240,15 @@ void init() {
   // init is the idle task from here. it has to keep handing the cpu back
   // rather than halting: nothing preempts us yet, so a halt here would
   // strand every other process still on the queue.
-  // TODO(scheduler) once the timer ISR drives the scheduler this goes back
-  // to being a hlt loop, and yield() can wait on ready instead of spinning.
+  //
+  // TODO(bugs):
+  // bugs bugs bugs bugs bugs!
+  //
+  // if we remove this, we enter lots of races when running QEMU.
+  // we might hang before starting the ABAB test, miss a newline print
+  // for some reason, or have nothing happen. but for now we should be able
+  // to 'exit' init (for now, later we'll loop back into kernel code and setup other
+  // things)
   for (;;) {
     yield();
   }
