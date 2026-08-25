@@ -5,6 +5,7 @@
 #include <log.h>
 #include <kernel/panic.h>
 #include <drivers/serial.h>
+#include <drivers/timer.h>
 
 #include <halt.h>
 
@@ -233,6 +234,10 @@ void init() {
   mycpu()->scheduler_proc = sched_p;
 
   printk(KERN_INFO, "init: starting scheduler\n");
+
+  // last bit: hook the scheduler into the end of every interrupt
+  register_interrupt_handler(TIMER_INT_NO, timer_interrupt_handler_sched);
+
   // hand the cpu over. init is on the mlfq, so the scheduler switches back
   // here when it comes round to us.
   ctx_switch(sched_p);
@@ -275,6 +280,7 @@ void init_process() {
   // through ctx_switch() isntalling init_p as cpus[0].task itself.
   cpus[0].task = &bootstrap_proc;
   init_p->state = RUNNING;
+
   ctx_switch(init_p);
 
   // nothing past this point
