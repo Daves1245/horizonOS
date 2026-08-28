@@ -1,7 +1,7 @@
 #include "mm.h"
 
-uint64_t kernel_phys_base = 0;
-uint64_t kernel_virt_base = 0;
+uint64_t kernel_phys_base;
+uint64_t kernel_virt_base;
 
 phys_addr_t virt_to_phys(virt_addr_t addr) {
 #ifdef __x86_64__
