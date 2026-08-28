@@ -1,6 +1,6 @@
 #include <games/pong.h>
 #include <drivers/ac97.h>
-#include <drivers/graphics.h>
+#include <kernel/graphics.h>
 #include <time.h>
 
 #include <math.h>

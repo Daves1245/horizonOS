@@ -1,7 +1,7 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-#include <drivers/graphics.h>
+#include <kernel/graphics.h>
 #include <kernel/console.h>
 
 #define SHELL_BUFFER_SIZE 256

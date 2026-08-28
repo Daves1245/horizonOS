@@ -1,6 +1,6 @@
 #include <kernel/console.h>
 #include <fonts/font.h>
-#include <drivers/graphics.h>
+#include <kernel/graphics.h>
 #include <stdarg.h>
 
 static const fontStyle_t *console_font;

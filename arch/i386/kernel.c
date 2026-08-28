@@ -18,7 +18,7 @@
 #include <jury/test_paging.h>
 #include <jury/test_vm.h>
 #include "multiboot_info.h"
-#include <drivers/graphics.h>
+#include <kernel/graphics.h>
 #include <kernel/console.h>
 #include <drivers/ac97.h>
 #include <games/pong.h>

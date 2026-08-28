@@ -1,4 +1,4 @@
-#include <drivers/graphics.h>
+#include <kernel/graphics.h>
 #include <serial.h>
 #include "multiboot_info.h"
 #include "memory/paging.h"

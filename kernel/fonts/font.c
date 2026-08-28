@@ -2,7 +2,7 @@
  * Bitmaps are packed MSB-first, each glyph is GlyphBytesWidth * GlyphHeight bytes. */
 
 #include <fonts/font.h>
-#include <drivers/graphics.h>
+#include <kernel/graphics.h>
 
 int font_draw_char(const fontStyle_t *font, char c, int x, int y,
 		   uint32_t color) {

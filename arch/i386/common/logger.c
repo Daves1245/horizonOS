@@ -1,6 +1,6 @@
 #include "logger.h"
-#include <drivers/console.h>
-#include <drivers/graphics.h>
+#include <kernel/console.h>
+#include <kernel/graphics.h>
 #include <serial.h>
 
 /* color palette matching log.h conventions */
@@ -17,7 +17,7 @@
  * cannot be initialized at early boot.  Call logger_init_console() right
  * after console_init() to switch from serial-only to console+serial output.
  */
-static int g_console_ready = 0;
+static int g_console_ready;
 
 void logger_init_console(void) {
 	g_console_ready = 1;

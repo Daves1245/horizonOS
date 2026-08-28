@@ -22,7 +22,7 @@
 #include <apic/madt.h>
 #include <halt.h>
 #include <time.h>
-#include <drivers/graphics.h>
+#include <kernel/graphics.h>
 #include <kernel/console.h>
 
 #include <drivers/ac97.h>
