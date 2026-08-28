@@ -5,7 +5,7 @@
 #include <log.h>
 #include <kernel/panic.h>
 #include <serial.h>
-#include <drivers/timer.h>
+#include <time.h>
 
 #include <halt.h>
 

@@ -2,7 +2,7 @@
 #include <drivers/ac97.h>
 #include <drivers/ps2k.h>
 #include <drivers/graphics.h>
-#include <drivers/timer.h>
+#include <time.h>
 
 #include <math.h>
 #include <rand.h>

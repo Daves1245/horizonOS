@@ -2,7 +2,7 @@
 #include "keyboard.h"
 #include <string.h>
 #include <serial.h>
-#include <drivers/timer.h>
+#include <time.h>
 #include <log.h>
 #include <kernel/types.h>
 

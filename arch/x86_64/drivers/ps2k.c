@@ -22,7 +22,7 @@
 #include <serial.h>
 #include <apic/apic.h>
 #include <keyboard.h>
-#include <drivers/timer.h>
+#include <time.h>
 
 /** @brief TODO: ACPI PNP ID matched by this driver. */
 #define PS2K_PNP_ID "PNP0303"

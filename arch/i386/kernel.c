@@ -14,7 +14,7 @@
 #include <apic/rsdp.h>
 #include "drivers/keyboard/keyboard.h"
 #include <serial.h>
-#include <drivers/timer.h>
+#include <time.h>
 #include <jury/test_paging.h>
 #include <jury/test_vm.h>
 #include "multiboot_info.h"

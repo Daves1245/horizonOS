@@ -21,7 +21,7 @@
 #include <apic/apic.h>
 #include <apic/madt.h>
 #include <halt.h>
-#include <drivers/timer.h>
+#include <time.h>
 #include <drivers/graphics.h>
 #include <drivers/console.h>
 

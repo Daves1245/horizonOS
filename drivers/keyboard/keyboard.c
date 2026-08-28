@@ -10,7 +10,7 @@
 #include <string.h>
 #include <drivers/console.h>
 #include <kernel/panic.h>
-#include <drivers/timer.h>
+#include <time.h>
 #endif
 
 #define KEYBOARD_DATA_PORT 0x60

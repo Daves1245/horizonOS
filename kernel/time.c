@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <kernel/tty.h>
-#include <drivers/timer.h>
+#include <time.h>
 
 #ifdef __x86_64__
 #include <x86_64/scheduler/process.h>
