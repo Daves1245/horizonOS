@@ -374,20 +374,20 @@ endif()
 set(KERNEL_COMMON_SOURCES
     ${ARCHDIR}/kernel.c
     kernel/kheap.c
-    drivers/timer.c
     drivers/keyboard/keyboard.c
     drivers/ac97.c
     drivers/pci.c
     drivers/graphics.c
-    drivers/font.c
     drivers/console.c
     kernel/fonts/fontlibrary.c
+    kernel/fonts/font.c
     kernel/apic/rsdp.c
     kernel/apic/apic.c
     kernel/apic/madt.c
     kernel/halt.c
     kernel/mm.c
     kernel/games/pong.c
+    kernel/time.c
     include/serial.c
 )
 

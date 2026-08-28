@@ -1,7 +1,7 @@
 /* font.c — 1bpp bitmap font renderer for fontStyle_t (bmfont2c.py output).
  * Bitmaps are packed MSB-first, each glyph is GlyphBytesWidth * GlyphHeight bytes. */
 
-#include <drivers/font.h>
+#include <fonts/font.h>
 #include <drivers/graphics.h>
 
 int font_draw_char(const fontStyle_t *font, char c, int x, int y,
