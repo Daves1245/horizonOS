@@ -225,11 +225,12 @@ static char scancode_to_ascii_uppercase[] = { 0,
 					      LEFT_ALT,
 					      SPACE };
 
-static int shift_pressed = 0;
+static int shift_pressed;
 
 // Wait for keyboard controller input buffer to be empty
-static void wait_for_kbd_input() {
+static void wait_for_kbd_input(void) {
 	int timeout = 100000;
+
 	while (timeout-- > 0) {
 		if ((inb(KEYBOARD_STATUS_PORT) & 0x02) == 0) {
 			return;
@@ -241,8 +242,9 @@ static void wait_for_kbd_input() {
 }
 
 // wait for keyboard controller output buffer to be full
-static int wait_for_kbd_output() {
+static int wait_for_kbd_output(void) {
 	int timeout = 100000;
+
 	while (timeout-- > 0) {
 		if (inb(KEYBOARD_STATUS_PORT) & 0x01) {
 			return 1;
@@ -255,7 +257,7 @@ static int wait_for_kbd_output() {
 }
 
 // initialize PS/2 keyboard controller hardware
-static void init_ps2_controller() {
+static void init_ps2_controller(void) {
 #ifdef DEBUG
 	log_debug("[keyboard]: initializing PS/2 controller...\n");
 #endif
@@ -272,6 +274,7 @@ static void init_ps2_controller() {
 	// read controller configuration byte
 	wait_for_kbd_input();
 	outb(KEYBOARD_STATUS_PORT, 0x20);
+
 	if (wait_for_kbd_output()) {
 		uint8_t config = inb(KEYBOARD_DATA_PORT);
 
@@ -289,8 +292,10 @@ static void init_ps2_controller() {
 	// perform controller self-test
 	wait_for_kbd_input();
 	outb(KEYBOARD_STATUS_PORT, 0xAA);
+
 	if (wait_for_kbd_output()) {
 		uint8_t result = inb(KEYBOARD_DATA_PORT);
+
 		if (result == 0x55) {
 #ifdef DEBUG
 			log_success(
@@ -306,8 +311,10 @@ static void init_ps2_controller() {
 	// test keyboard port
 	wait_for_kbd_input();
 	outb(KEYBOARD_STATUS_PORT, 0xAB);
+
 	if (wait_for_kbd_output()) {
 		uint8_t result = inb(KEYBOARD_DATA_PORT);
+
 		if (result == 0x00) {
 #ifdef DEBUG
 			log_success("[keyboard]: keyboard port test passed\n");
@@ -325,8 +332,10 @@ static void init_ps2_controller() {
 	// reset keyboard device
 	wait_for_kbd_input();
 	outb(KEYBOARD_DATA_PORT, 0xFF);
+
 	if (wait_for_kbd_output()) {
 		uint8_t ack = inb(KEYBOARD_DATA_PORT);
+
 		if (ack == 0xFA) {
 #ifdef DEBUG
 			log_debug("[keyboard]: keyboard reset ACK received\n");
@@ -334,6 +343,7 @@ static void init_ps2_controller() {
 			// wait for self-test result
 			if (wait_for_kbd_output()) {
 				uint8_t result = inb(KEYBOARD_DATA_PORT);
+
 				if (result == 0xAA) {
 #ifdef DEBUG
 					log_success(
@@ -356,8 +366,10 @@ static void init_ps2_controller() {
 	// enable scanning
 	wait_for_kbd_input();
 	outb(KEYBOARD_DATA_PORT, 0xF4);
+
 	if (wait_for_kbd_output()) {
 		uint8_t ack = inb(KEYBOARD_DATA_PORT);
+
 		if (ack == 0xFA) {
 #ifdef DEBUG
 			log_success("[keyboard]: scanning enabled\n");
@@ -389,6 +401,7 @@ void keyboard_interrupt_handler(struct interrupt_context *regs) {
 		// convert to ASCII and print
 		if (scancode < sizeof(scancode_to_ascii)) {
 			char c;
+
 			if (shift_pressed) {
 				c = scancode_to_ascii_uppercase[scancode];
 			} else {
@@ -406,12 +419,12 @@ void keyboard_interrupt_handler(struct interrupt_context *regs) {
 	apic_send_eoi();
 }
 
-void setup_keyboard_irq() {
+void setup_keyboard_irq(void) {
 	// register keyboard interrupt handler for IRQ 1 (vector 33 after PIC remap)
 	register_interrupt_handler(33, keyboard_interrupt_handler);
 }
 
-void init_keyboard() {
+void init_keyboard(void) {
 #ifdef DEBUG
 	log_info("[keyboard]: initializing PS/2 keyboard driver\n");
 #endif
