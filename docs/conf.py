@@ -36,7 +36,7 @@ exhale_args = {
     "exhaleExecutesDoxygen": True,
     "exhaleDoxygenStdin": """
         PROJECT_NAME      = Horizon
-        INPUT             = ../kernel ../libc
+        INPUT             = ../arch ../include ../kernel ../libc
         FILE_PATTERNS     = *.c *.h
         RECURSIVE         = YES
         EXTRACT_ALL       = YES
