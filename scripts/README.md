@@ -2,6 +2,9 @@
 
 ./scripts/checkpatch.pl --no-tree --file --terse --show-types arch/x86_64/scheduler/process.c
 
+## ignore braces (we don't do next-line for functions like the linux kernel)
+./scripts/checkpatch.pl --no-tree --file --terse --show-types --ignore=OPEN_BRACE arch/**/*.c
+
 # check what's about to be commited
 
 git diff | ./scripts/checkpatch.pl --no-tree --no-signoff -
