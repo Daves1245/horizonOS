@@ -378,6 +378,7 @@ set(KERNEL_COMMON_SOURCES
     drivers/ac97.c
     drivers/pci.c
     drivers/graphics.c
+    drivers/serial.c
     kernel/fonts/fontlibrary.c
     kernel/fonts/font.c
     kernel/apic/rsdp.c
@@ -387,7 +388,6 @@ set(KERNEL_COMMON_SOURCES
     kernel/mm.c
     kernel/games/pong.c
     kernel/time.c
-    include/serial.c
     include/kernel/console.c
 )
 
