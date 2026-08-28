@@ -1,0 +1,3 @@
+# function names in @@ hunk headers and identifier/operator
+# aware tokenization for --word-diff
+*.[ch] diff=cpp
