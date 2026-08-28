@@ -142,6 +142,10 @@ set(KERNEL_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/arch
     ${CMAKE_CURRENT_SOURCE_DIR}/kernel
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers
+    # last so an arch-local drivers/ header
+    # (arch/x86_64/drivers/ps2k.h) still wins
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # Link flags and libraries
@@ -370,14 +374,14 @@ endif()
 set(KERNEL_COMMON_SOURCES
     ${ARCHDIR}/kernel.c
     kernel/kheap.c
-    kernel/drivers/serial.c
-    kernel/drivers/timer.c
-    kernel/drivers/keyboard/keyboard.c
-    kernel/drivers/ac97.c
-    kernel/drivers/pci.c
-    kernel/drivers/graphics.c
-    kernel/drivers/font.c
-    kernel/drivers/console.c
+    drivers/serial.c
+    drivers/timer.c
+    drivers/keyboard/keyboard.c
+    drivers/ac97.c
+    drivers/pci.c
+    drivers/graphics.c
+    drivers/font.c
+    drivers/console.c
     kernel/fonts/fontlibrary.c
     kernel/apic/rsdp.c
     kernel/apic/apic.c
@@ -385,6 +389,13 @@ set(KERNEL_COMMON_SOURCES
     kernel/halt.c
     kernel/mm.c
     kernel/games/pong.c
+)
+
+set(SUBSYSTEMS
+    arch
+    drivers
+    kernel
+    fs
 )
 
 # All kernel sources
@@ -420,6 +431,12 @@ target_compile_definitions(horizon.kernel PRIVATE
 )
 
 target_include_directories(horizon.kernel PRIVATE
+    ${KERNEL_INCLUDE_DIRS}
+    ${KERNEL_ARCH_INCLUDE_DIRS}
+)
+
+# includes for libc
+target_include_directories(k PRIVATE
     ${KERNEL_INCLUDE_DIRS}
     ${KERNEL_ARCH_INCLUDE_DIRS}
 )
