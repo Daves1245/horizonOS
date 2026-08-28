@@ -1,5 +1,5 @@
 #include <drivers/graphics.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <string.h>
 #include <kheap.h>
 #include <mm.h>

@@ -13,7 +13,7 @@
 #include <apic/madt.h>
 #include <apic/rsdp.h>
 #include "drivers/keyboard/keyboard.h"
-#include <drivers/serial.h>
+#include <serial.h>
 #include <drivers/timer.h>
 #include <jury/test_paging.h>
 #include <jury/test_vm.h>

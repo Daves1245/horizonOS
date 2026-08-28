@@ -1,5 +1,5 @@
 #include <drivers/graphics.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include "multiboot_info.h"
 #include "memory/paging.h"
 

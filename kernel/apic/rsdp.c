@@ -19,7 +19,7 @@
 extern virt_addr_t rsdp_addr;
 #endif
 
-#include <drivers/serial.h>
+#include <serial.h>
 
 extern volatile struct limine_hhdm_request hhdm_request;
 

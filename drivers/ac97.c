@@ -2,7 +2,7 @@
 #include <io.h>
 #include <drivers/pci.h>
 #include <drivers/timer.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <interrupts/isr.h>
 #include <apic/apic.h>
 #include <halt.h>

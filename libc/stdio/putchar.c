@@ -3,7 +3,7 @@
 #if defined(__is_libk)
 #include <kernel/tty.h>
 
-#include <drivers/serial.h>
+#include <serial.h>
 
 extern int serial_initialized;
 #endif

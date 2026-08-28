@@ -1,7 +1,7 @@
 #include "log.h"
 #include <drivers/console.h>
 #include <drivers/graphics.h>
-#include <drivers/serial.h>
+#include <serial.h>
 
 enum log_level log_level = KERN_DEBUG;
 

@@ -10,7 +10,7 @@
 #include <common.h>
 #include <mm.h>
 #include <apic/rsdp.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <uacpi/types.h>
 #include <uacpi/uacpi_init.h>
 #include <kernel/panic.h>

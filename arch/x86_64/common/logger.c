@@ -1,5 +1,5 @@
 #include <kernel/logger.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>

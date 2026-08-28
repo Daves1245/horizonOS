@@ -4,7 +4,7 @@
 #include <x86_64/scheduler/scheduler.h>
 #include <log.h>
 #include <kernel/panic.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <drivers/timer.h>
 
 #include <halt.h>

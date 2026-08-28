@@ -1,5 +1,5 @@
 #include <kernel/panic.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <stdint.h>
 
 struct regs {

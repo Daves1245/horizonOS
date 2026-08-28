@@ -19,7 +19,7 @@
 #include <uacpi/resources.h>
 #include <acpi/acpi_driver.h>
 #include <io.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <apic/apic.h>
 #include <keyboard.h>
 #include <drivers/timer.h>

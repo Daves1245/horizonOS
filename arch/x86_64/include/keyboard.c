@@ -10,7 +10,7 @@
 #include "keyboard.h"
 #include <string.h>
 #include <drivers/console.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <kernel/panic.h>
 
 extern struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS]

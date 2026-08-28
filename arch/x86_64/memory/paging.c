@@ -1,7 +1,7 @@
 #include "paging.h"
 #include <kheap.h>
 #include <string.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <kernel/logger.h>
 #include <limine.h>
 

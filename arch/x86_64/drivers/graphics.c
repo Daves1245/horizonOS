@@ -1,5 +1,5 @@
 #include <drivers/graphics.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <limine.h>
 
 void graphics_init(struct limine_framebuffer *framebuffer) {

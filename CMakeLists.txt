@@ -374,7 +374,6 @@ endif()
 set(KERNEL_COMMON_SOURCES
     ${ARCHDIR}/kernel.c
     kernel/kheap.c
-    drivers/serial.c
     drivers/timer.c
     drivers/keyboard/keyboard.c
     drivers/ac97.c
@@ -389,6 +388,7 @@ set(KERNEL_COMMON_SOURCES
     kernel/halt.c
     kernel/mm.c
     kernel/games/pong.c
+    include/serial.c
 )
 
 set(SUBSYSTEMS

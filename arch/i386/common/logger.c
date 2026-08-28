@@ -1,7 +1,7 @@
 #include "logger.h"
 #include <drivers/console.h>
 #include <drivers/graphics.h>
-#include <drivers/serial.h>
+#include <serial.h>
 
 /* color palette matching log.h conventions */
 #define LOG_FG_INFO rgb(0xCC, 0xCC, 0xCC)

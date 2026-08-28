@@ -1,7 +1,7 @@
 #include "shell.h"
 #include "keyboard.h"
 #include <string.h>
-#include <drivers/serial.h>
+#include <serial.h>
 #include <drivers/timer.h>
 #include <log.h>
 #include <kernel/types.h>
