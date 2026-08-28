@@ -113,7 +113,7 @@ enum SCANCODE {
 
 #ifdef __i386__
 static uint8_t key_state[256];
-static int extended_prefix = 0;
+static int extended_prefix;
 
 int is_key_pressed(uint8_t scan_code) {
 	return key_state[scan_code];
@@ -237,12 +237,13 @@ static char scancode_to_ascii_uppercase[] = { 0,
 					      LEFT_ALT,
 					      SPACE };
 
-static int shift_pressed = 0;
+static int shift_pressed;
 #endif /* __i386__ */
 
 // Wait for keyboard controller input buffer to be empty
-static void wait_for_kbd_input() {
+static void wait_for_kbd_input(void) {
 	int timeout = 100000;
+
 	while (timeout-- > 0) {
 		if ((inb(KEYBOARD_STATUS_PORT) & 0x02) == 0) {
 			return;
@@ -254,8 +255,9 @@ static void wait_for_kbd_input() {
 }
 
 // wait for keyboard controller output buffer to be full
-static int wait_for_kbd_output() {
+static int wait_for_kbd_output(void) {
 	int timeout = 100000;
+
 	while (timeout-- > 0) {
 		if (inb(KEYBOARD_STATUS_PORT) & 0x01) {
 			return 1;
@@ -268,7 +270,7 @@ static int wait_for_kbd_output() {
 }
 
 // initialize PS/2 keyboard controller hardware
-static void init_ps2_controller() {
+static void init_ps2_controller(void) {
 #ifdef DEBUG
 	log_debug("[keyboard]: initializing PS/2 controller...\n");
 #endif
@@ -285,6 +287,7 @@ static void init_ps2_controller() {
 	// read controller configuration byte
 	wait_for_kbd_input();
 	outb(KEYBOARD_STATUS_PORT, 0x20);
+
 	if (wait_for_kbd_output()) {
 		uint8_t config = inb(KEYBOARD_DATA_PORT);
 
@@ -302,8 +305,10 @@ static void init_ps2_controller() {
 	// perform controller self-test
 	wait_for_kbd_input();
 	outb(KEYBOARD_STATUS_PORT, 0xAA);
+
 	if (wait_for_kbd_output()) {
 		uint8_t result = inb(KEYBOARD_DATA_PORT);
+
 		if (result == 0x55) {
 #ifdef DEBUG
 			log_success(
@@ -319,8 +324,10 @@ static void init_ps2_controller() {
 	// test keyboard port
 	wait_for_kbd_input();
 	outb(KEYBOARD_STATUS_PORT, 0xAB);
+
 	if (wait_for_kbd_output()) {
 		uint8_t result = inb(KEYBOARD_DATA_PORT);
+
 		if (result == 0x00) {
 #ifdef DEBUG
 			log_success("[keyboard]: keyboard port test passed\n");
@@ -338,8 +345,10 @@ static void init_ps2_controller() {
 	// reset keyboard device
 	wait_for_kbd_input();
 	outb(KEYBOARD_DATA_PORT, 0xFF);
+
 	if (wait_for_kbd_output()) {
 		uint8_t ack = inb(KEYBOARD_DATA_PORT);
+
 		if (ack == 0xFA) {
 #ifdef DEBUG
 			log_debug("[keyboard]: keyboard reset ACK received\n");
@@ -347,6 +356,7 @@ static void init_ps2_controller() {
 			// wait for self-test result
 			if (wait_for_kbd_output()) {
 				uint8_t result = inb(KEYBOARD_DATA_PORT);
+
 				if (result == 0xAA) {
 #ifdef DEBUG
 					log_success(
@@ -369,8 +379,10 @@ static void init_ps2_controller() {
 	// enable scanning
 	wait_for_kbd_input();
 	outb(KEYBOARD_DATA_PORT, 0xF4);
+
 	if (wait_for_kbd_output()) {
 		uint8_t ack = inb(KEYBOARD_DATA_PORT);
+
 		if (ack == 0xFA) {
 #ifdef DEBUG
 			log_success("[keyboard]: scanning enabled\n");
@@ -397,13 +409,16 @@ void keyboard_interrupt_handler(struct interrupt_context *regs) {
 	}
 
 	int was_extended = extended_prefix;
+
 	extended_prefix = 0;
 
 	uint8_t base = scancode & 0x7F;
+
 	int is_release = (scancode & 0x80) != 0;
 
 	/* index extended keys into the upper half of key_state (base | 0x80) */
 	uint8_t key_idx = was_extended ? (base | 0x80) : base;
+
 	key_state[key_idx] = !is_release;
 
 	/* track shift state for ascii translation */
@@ -435,12 +450,12 @@ void keyboard_interrupt_handler(struct interrupt_context *regs) {
 #endif
 }
 
-void setup_keyboard_irq() {
+void setup_keyboard_irq(void) {
 	// register keyboard interrupt handler for IRQ 1 (vector 33 after PIC remap)
 	register_interrupt_handler(33, keyboard_interrupt_handler);
 }
 
-void init_keyboard() {
+void init_keyboard(void) {
 #ifdef DEBUG
 	log_info("[keyboard]: initializing PS/2 keyboard driver\n");
 #endif
@@ -473,7 +488,9 @@ void keyboard_push(int level, struct key_event_t entry) {
 
 int keyboard_poll(int level, struct key_event_t *out) {
 	int head = keyboard_queue_state[level].head;
+
 	int tail = keyboard_queue_state[level].tail;
+
 	if (tail == head)
 		return 0;
 	*out = keyboard_multilevel_queue[level][tail];
@@ -483,6 +500,7 @@ int keyboard_poll(int level, struct key_event_t *out) {
 
 struct key_event_t keyboard_block_read(int level) {
 	struct key_event_t out;
+
 	while (!keyboard_poll(level, &out))
 		asm volatile("hlt");
 	return out;
@@ -506,15 +524,18 @@ void remove_keyboard_listener(int level) {
 
 int readline(int level, char *buf, int len) {
 	int pos = 0;
+
 	if (len <= 0)
 		return 0;
 
 	for (;;) {
 		struct key_event_t ev = keyboard_block_read(level);
+
 		if (ev.type != KEY_EVENT_DOWN)
 			continue;
 
 		char c = (char)ev.value;
+
 		if (c == '\n') {
 			console_putchar('\n');
 			buf[pos] = '\0';
