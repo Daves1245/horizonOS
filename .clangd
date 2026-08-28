@@ -1,0 +1,20 @@
+CompileFlags:
+  Compiler: clang
+  Add:
+    - --target=x86_64-elf
+    - -ffreestanding
+  Remove:
+    - -no-pie
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+  Designators: Yes
+
+Index:
+  StandardLibrary: No

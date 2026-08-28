@@ -1,0 +1,9 @@
+# limine
+include/limine.h
+
+# font generator
+fonts/fontlibrary.c
+kernel/fonts/fontlibrary.c
+
+# everything in docs
+docs/*
