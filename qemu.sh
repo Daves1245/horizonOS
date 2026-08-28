@@ -9,10 +9,10 @@ esac
 AC97="-device AC97,audiodev=snd0"
 
 # Detect which architecture to use (default to i386 if both exist)
-if [ -f build/i386/kernel/horizon.kernel ]; then
+if [ -f build/i386/horizon.kernel ]; then
     ARCH="i386"
     ISO_FILE="build/i386/horizon.iso"
-    KERNEL_PATH="build/i386/kernel/horizon.kernel"
+    KERNEL_PATH="build/i386/horizon.kernel"
     QEMU_BIN="qemu-system-i386"
     USE_CDROM=1
 elif [ -f build/x86_64/horizon.iso ]; then
@@ -63,7 +63,7 @@ else
     elif [ "$1" = "gdb" ]; then
         # -s = gdbstub on tcp::1234, -S = freeze CPU at reset so gdb can attach
         # before Limine runs. Attach with:
-        #   x86_64-elf-gdb build/x86_64/kernel/horizon.kernel
+        #   x86_64-elf-gdb build/x86_64/horizon.kernel
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
             -vga std \
             -machine pc,smm=off \
