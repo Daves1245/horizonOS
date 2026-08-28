@@ -55,37 +55,33 @@ struct regs {
 };
 
 static void snapshot_regs(struct regs *r) {
-	__asm__ volatile (
-		"movl %%eax, 0(%0)\n"
-		"movl %%ebx, 4(%0)\n"
-		"movl %%ecx, 8(%0)\n"
-		"movl %%edx, 12(%0)\n"
-		"movl %%esi, 16(%0)\n"
-		"movl %%edi, 20(%0)\n"
-		"movl %%ebp, 24(%0)\n"
-		"movl %%esp, 28(%0)\n"
-		:
-		: "r"(r)
-		: "memory"
-	);
+	__asm__ volatile("movl %%eax, 0(%0)\n"
+			 "movl %%ebx, 4(%0)\n"
+			 "movl %%ecx, 8(%0)\n"
+			 "movl %%edx, 12(%0)\n"
+			 "movl %%esi, 16(%0)\n"
+			 "movl %%edi, 20(%0)\n"
+			 "movl %%ebp, 24(%0)\n"
+			 "movl %%esp, 28(%0)\n"
+			 :
+			 : "r"(r)
+			 : "memory");
 
 	uint32_t eflags;
-	__asm__ volatile (
-		"pushfl\n"
-		"popl %0\n"
-		: "=r"(eflags)
-	);
+	__asm__ volatile("pushfl\n"
+			 "popl %0\n"
+			 : "=r"(eflags));
 	r->eflags = eflags;
 
 	uint32_t cr2, cr3;
-	__asm__ volatile ("movl %%cr2, %0" : "=r"(cr2));
-	__asm__ volatile ("movl %%cr3, %0" : "=r"(cr3));
+	__asm__ volatile("movl %%cr2, %0" : "=r"(cr2));
+	__asm__ volatile("movl %%cr3, %0" : "=r"(cr3));
 	r->cr2 = cr2;
 	r->cr3 = cr3;
 }
 
 void _panic(const char *msg, const char *file, int line, const char *func) {
-	__asm__ volatile ("cli");
+	__asm__ volatile("cli");
 
 	struct regs r;
 	snapshot_regs(&r);
@@ -112,20 +108,25 @@ void _panic(const char *msg, const char *file, int line, const char *func) {
 
 	// line 4-6: registers, 4 per row
 	int row = 4;
-	struct { const char *name; uint32_t val; } regs[] = {
-		{"EAX", r.eax}, {"EBX", r.ebx}, {"ECX", r.ecx}, {"EDX", r.edx},
-		{"ESI", r.esi}, {"EDI", r.edi}, {"EBP", r.ebp}, {"ESP", r.esp},
-		{"FLG", r.eflags}, {"CR2", r.cr2}, {"CR3", r.cr3},
+	struct {
+		const char *name;
+		uint32_t val;
+	} regs[] = {
+		{ "EAX", r.eax }, { "EBX", r.ebx }, { "ECX", r.ecx },
+		{ "EDX", r.edx }, { "ESI", r.esi }, { "EDI", r.edi },
+		{ "EBP", r.ebp }, { "ESP", r.esp }, { "FLG", r.eflags },
+		{ "CR2", r.cr2 }, { "CR3", r.cr3 },
 	};
 
 	for (int i = 0; i < 11; i++) {
 		int col = (i % 4) * 16;
-		pos = vga_put_reg(row * VGA_WIDTH + col, regs[i].name, regs[i].val);
+		pos = vga_put_reg(row * VGA_WIDTH + col, regs[i].name,
+				  regs[i].val);
 		if (i % 4 == 3)
 			row++;
 	}
 
 	// halt
 	while (1)
-		__asm__ volatile ("hlt");
+		__asm__ volatile("hlt");
 }

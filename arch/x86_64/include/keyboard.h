@@ -30,9 +30,9 @@
  * field as well..
  */
 enum key_event_type {
-    KEY_EVENT_NONE = 0, /**< Empty / uninitialized slot. */
-    KEY_EVENT_DOWN = 1, /**< Key was pressed (make code). */
-    KEY_EVENT_UP   = 2, /**< Key was released (break code). */
+	KEY_EVENT_NONE = 0, /**< Empty / uninitialized slot. */
+	KEY_EVENT_DOWN = 1, /**< Key was pressed (make code). */
+	KEY_EVENT_UP = 2, /**< Key was released (break code). */
 };
 
 /**
@@ -46,10 +46,10 @@ enum key_event_type {
  * TODO
  */
 struct key_event_t {
-    int8_t type;       /**< One of ::key_event_type. */
-    int8_t scan_code;  /**< Raw PS/2 scan code. */
-    int8_t value;      /**< Translated character value, if any. */
-    int8_t timestamp;  /**< Timestamp of the event in ms since boot. */
+	int8_t type; /**< One of ::key_event_type. */
+	int8_t scan_code; /**< Raw PS/2 scan code. */
+	int8_t value; /**< Translated character value, if any. */
+	int8_t timestamp; /**< Timestamp of the event in ms since boot. */
 };
 
 /**
@@ -62,15 +62,16 @@ struct key_event_t {
  * call. We assume tasks act in good-faith and provide the id that
  * was given to them, and the id is valid. TODO
  */
-extern struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
+extern struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS]
+						   [RING_BUFFER_SIZE];
 
 /**
  * @brief Head/tail indices and in-use flag for one listener queue.
  */
 struct keyboard_queue_state {
-    volatile int head; /**< Next slot to write. */
-    volatile int tail; /**< Next slot to read. */
-    int used;          /**< Non-zero if this level has a registered listener. */
+	volatile int head; /**< Next slot to write. */
+	volatile int tail; /**< Next slot to read. */
+	int used; /**< Non-zero if this level has a registered listener. */
 };
 
 /**

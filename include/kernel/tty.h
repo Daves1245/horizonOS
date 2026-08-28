@@ -19,6 +19,6 @@ void terminal_set_cursor(size_t x, size_t y);
 void update_hardware_cursor(void);
 
 void terminal_setcolor(uint8_t color);
-void print_colored(const char* str, uint8_t fg, uint8_t bg);
+void print_colored(const char *str, uint8_t fg, uint8_t bg);
 
 #endif

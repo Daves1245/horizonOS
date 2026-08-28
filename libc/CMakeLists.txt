@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Include directories (matching original Makefile: -Iinclude -I../kernel/kernel/)
+# Include directories (matching original Makefile: -Iinclude -I../kernel/)
 set(LIBC_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/kernel/kernel
+    ${CMAKE_SOURCE_DIR}/kernel
 )
 
 # Architecture-specific settings
@@ -18,10 +18,10 @@ set(LIBK_C_FLAGS ${LIBC_C_FLAGS})
 set(LIBK_COMPILE_DEFS "__is_libk")
 
 # Add architecture-specific flags
-# Original Makefile: LIBK_CPPFLAGS includes -I../kernel/arch/i386 (or appropriate arch)
+# Original Makefile: LIBK_CPPFLAGS includes -I../arch/i386 (or appropriate arch)
 if(ARCH STREQUAL "i386")
     # i386 has minimal arch-specific flags
-    set(LIBK_INCLUDE_DIRS ${LIBC_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/kernel/arch/${ARCH})
+    set(LIBK_INCLUDE_DIRS ${LIBC_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/arch/${ARCH})
 elseif(ARCH STREQUAL "x86_64")
     list(APPEND LIBK_C_FLAGS
         -fno-stack-protector
@@ -33,7 +33,7 @@ elseif(ARCH STREQUAL "x86_64")
         -mno-red-zone
         -mcmodel=kernel
     )
-    set(LIBK_INCLUDE_DIRS ${LIBC_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/kernel/arch/${ARCH})
+    set(LIBK_INCLUDE_DIRS ${LIBC_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/arch/${ARCH})
 else()
     set(LIBK_INCLUDE_DIRS ${LIBC_INCLUDE_DIRS})
 endif()

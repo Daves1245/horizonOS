@@ -3,9 +3,9 @@
 
 #define MAX_STRCMP_COMPARISONS 1000
 
-int memcmp(const void* aptr, const void* bptr, size_t size) {
-	const unsigned char* a = (const unsigned char*) aptr;
-	const unsigned char* b = (const unsigned char*) bptr;
+int memcmp(const void *aptr, const void *bptr, size_t size) {
+	const unsigned char *a = (const unsigned char *)aptr;
+	const unsigned char *b = (const unsigned char *)bptr;
 	for (size_t i = 0; i < size; i++) {
 		if (a[i] < b[i])
 			return -1;
@@ -15,35 +15,35 @@ int memcmp(const void* aptr, const void* bptr, size_t size) {
 	return 0;
 }
 
-void* memcpy(void* restrict dstptr, const void* restrict srcptr, size_t size) {
-	unsigned char* dst = (unsigned char*) dstptr;
-	const unsigned char* src = (const unsigned char*) srcptr;
+void *memcpy(void *restrict dstptr, const void *restrict srcptr, size_t size) {
+	unsigned char *dst = (unsigned char *)dstptr;
+	const unsigned char *src = (const unsigned char *)srcptr;
 	for (size_t i = 0; i < size; i++)
 		dst[i] = src[i];
 	return dstptr;
 }
 
-void* memmove(void* dstptr, const void* srcptr, size_t size) {
-	unsigned char* dst = (unsigned char*) dstptr;
-	const unsigned char* src = (const unsigned char*) srcptr;
+void *memmove(void *dstptr, const void *srcptr, size_t size) {
+	unsigned char *dst = (unsigned char *)dstptr;
+	const unsigned char *src = (const unsigned char *)srcptr;
 	if (dst < src) {
 		for (size_t i = 0; i < size; i++)
 			dst[i] = src[i];
 	} else {
 		for (size_t i = size; i != 0; i--)
-			dst[i-1] = src[i-1];
+			dst[i - 1] = src[i - 1];
 	}
 	return dstptr;
 }
 
-void* memset(void* bufptr, int value, size_t size) {
-	unsigned char* buf = (unsigned char*) bufptr;
+void *memset(void *bufptr, int value, size_t size) {
+	unsigned char *buf = (unsigned char *)bufptr;
 	for (size_t i = 0; i < size; i++)
-		buf[i] = (unsigned char) value;
+		buf[i] = (unsigned char)value;
 	return bufptr;
 }
 
-size_t strlen(const char* str) {
+size_t strlen(const char *str) {
 	size_t len = 0;
 	while (str[len])
 		len++;
@@ -88,12 +88,13 @@ int strcmp(const char *s1, const char *s2) {
 }
 
 void itoa(char *dest, int num) {
-	char stack[12] = {0};
+	char stack[12] = { 0 };
 	int i;
 	for (i = 0; i < 11; i++) {
 		stack[i] = num % 10;
 		num /= 10;
-		if (num == 0) break;
+		if (num == 0)
+			break;
 	}
 	for (int k = 0; k <= i; k++) {
 		dest[k] = stack[i - k] + '0';
@@ -102,7 +103,7 @@ void itoa(char *dest, int num) {
 }
 
 void itoa_hex(char *dest, unsigned int num) {
-	char stack[9] = {0};  // 8 hex digits + null terminator
+	char stack[9] = { 0 }; // 8 hex digits + null terminator
 	int i;
 
 	if (num == 0) {

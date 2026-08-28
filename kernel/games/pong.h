@@ -5,12 +5,12 @@
 #include <mm.h>
 
 struct obj {
-  int x;
-  int y;
-  int width;
-  int height;
-  int vel_x;
-  int vel_y;
+	int x;
+	int y;
+	int width;
+	int height;
+	int vel_x;
+	int vel_y;
 };
 
 /* audio addresses embedded into memory by the linker */

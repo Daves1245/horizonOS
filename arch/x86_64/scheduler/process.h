@@ -29,38 +29,39 @@
 
 /* Intel SDM Vol. 1, §3.4.3 */
 /* Status flags — written by arithmetic/logic instructions */
-#define FL_CF        0x00000001  /* bit  0: carry — unsigned overflow/borrow      */
-                                 /*         also the result bit of bt/bts/btr     */
-#define FL_RESERVED1 0x00000002  /* bit  1: reserved, always reads 1              */
-#define FL_PF        0x00000004  /* bit  2: parity — even # of set bits in low 8  */
-#define FL_AF        0x00000010  /* bit  4: adjust — carry out of bit 3, for BCD  */
-#define FL_ZF        0x00000040  /* bit  6: zero — result was 0                   */
-#define FL_SF        0x00000080  /* bit  7: sign — copy of the result's high bit  */
-#define FL_OF        0x00000800  /* bit 11: overflow — signed overflow            */
+#define FL_CF 0x00000001 /* bit  0: carry — unsigned overflow/borrow      */
+/*         also the result bit of bt/bts/btr     */
+#define FL_RESERVED1 \
+	0x00000002 /* bit  1: reserved, always reads 1              */
+#define FL_PF 0x00000004 /* bit  2: parity — even # of set bits in low 8  */
+#define FL_AF 0x00000010 /* bit  4: adjust — carry out of bit 3, for BCD  */
+#define FL_ZF 0x00000040 /* bit  6: zero — result was 0                   */
+#define FL_SF 0x00000080 /* bit  7: sign — copy of the result's high bit  */
+#define FL_OF 0x00000800 /* bit 11: overflow — signed overflow            */
 
 /* Control flags */
-#define FL_TF        0x00000100  /* bit  8: trap — raise #DB after every instr;   */
-                                 /*         this is how single-stepping works     */
-#define FL_IF        0x00000200  /* bit  9: interrupt enable — sti sets, cli      */
-                                 /*         clears. Maskable IRQs only.           */
-#define FL_DF        0x00000400  /* bit 10: direction — 1 = string ops (movs,     */
-                                 /*         stos) walk downward. cld before use.  */
+#define FL_TF 0x00000100 /* bit  8: trap — raise #DB after every instr;   */
+/*         this is how single-stepping works     */
+#define FL_IF 0x00000200 /* bit  9: interrupt enable — sti sets, cli      */
+/*         clears. Maskable IRQs only.           */
+#define FL_DF 0x00000400 /* bit 10: direction — 1 = string ops (movs,     */
+/*         stos) walk downward. cld before use.  */
 
 /* System flags */
-#define FL_IOPL      0x00003000  /* bits 12-13: I/O privilege level (2-bit field) */
-#define FL_IOPL_SHIFT 12         /*         gates in/out and cli/sti for CPL > 0  */
-#define FL_NT        0x00004000  /* bit 14: nested task — legacy hardware task    */
-                                 /*         switching; meaningless in long mode   */
-#define FL_RF        0x00010000  /* bit 16: resume — suppress instruction         */
-                                 /*         breakpoints for one instruction       */
-#define FL_VM        0x00020000  /* bit 17: virtual-8086 mode; unavailable in     */
-                                 /*         long mode                             */
-#define FL_AC        0x00040000  /* bit 18: alignment check (with CR0.AM) —       */
-                                 /*         doubles as SMAP override via stac/clac*/
-#define FL_VIF       0x00080000  /* bit 19: virtual interrupt flag (VME/PVI)      */
-#define FL_VIP       0x00100000  /* bit 20: virtual interrupt pending             */
-#define FL_ID        0x00200000  /* bit 21: writable iff CPUID is supported —     */
-                                 /*         the classic CPUID detection trick     */
+#define FL_IOPL 0x00003000 /* bits 12-13: I/O privilege level (2-bit field) */
+#define FL_IOPL_SHIFT 12 /*         gates in/out and cli/sti for CPL > 0  */
+#define FL_NT 0x00004000 /* bit 14: nested task — legacy hardware task    */
+/*         switching; meaningless in long mode   */
+#define FL_RF 0x00010000 /* bit 16: resume — suppress instruction         */
+/*         breakpoints for one instruction       */
+#define FL_VM 0x00020000 /* bit 17: virtual-8086 mode; unavailable in     */
+/*         long mode                             */
+#define FL_AC 0x00040000 /* bit 18: alignment check (with CR0.AM) —       */
+/*         doubles as SMAP override via stac/clac*/
+#define FL_VIF 0x00080000 /* bit 19: virtual interrupt flag (VME/PVI)      */
+#define FL_VIP 0x00100000 /* bit 20: virtual interrupt pending             */
+#define FL_ID 0x00200000 /* bit 21: writable iff CPUID is supported —     */
+/*         the classic CPUID detection trick     */
 /* Bits 3, 5, 15, 22-63 are reserved and read as 0 */
 
 // TODO(userspace)
@@ -68,46 +69,46 @@
 // to a higher privilege level
 
 struct context {
-  /* stack frame */
-  virt_addr_t rsp;
-  //virt_addr_t rbp; // not necessary
+	/* stack frame */
+	virt_addr_t rsp;
+	//virt_addr_t rbp; // not necessary
 
-  int intena;
-  int noff;
+	int intena;
+	int noff;
 
-  /* general purpose registers (not callee-saved between functions) */
-  uint64_t rbx;
-  uint64_t r12;
-  uint64_t r13;
-  uint64_t r14;
-  uint64_t r15;
+	/* general purpose registers (not callee-saved between functions) */
+	uint64_t rbx;
+	uint64_t r12;
+	uint64_t r13;
+	uint64_t r14;
+	uint64_t r15;
 
-  // ffu, mmx, see registers etc. (not currently used)
+	// ffu, mmx, see registers etc. (not currently used)
 };
 
 enum process_state {
-  UNUSED, // (i believe) c standard guarantees this will
-          // be default-0-initialized, so we include
-          // this UNUSED value to prevent the scheduler
-          // from accidentally using empty (bss'ed) data.
-  READY,
-  RUNNING,
-  SLEEPING,
-  ZOMBIE
+	UNUSED, // (i believe) c standard guarantees this will
+	// be default-0-initialized, so we include
+	// this UNUSED value to prevent the scheduler
+	// from accidentally using empty (bss'ed) data.
+	READY,
+	RUNNING,
+	SLEEPING,
+	ZOMBIE
 };
 
 struct cpu {
-  int cpuid;
-  int intena;
-  int noff;
+	int cpuid;
+	int intena;
+	int noff;
 
-  // currently running process
-  struct process *task;
+	// currently running process
+	struct process *task;
 
-  // the scheduler runs as a process with a stack of its own, so that control
-  // can be handed back to it without borrowing the stack of whoever was
-  // interrupted. it is not on the mlfq -- it is what services the mlfq.
-  struct process *scheduler_proc;
+	// the scheduler runs as a process with a stack of its own, so that control
+	// can be handed back to it without borrowing the stack of whoever was
+	// interrupted. it is not on the mlfq -- it is what services the mlfq.
+	struct process *scheduler_proc;
 };
 
 void init_process();
@@ -117,37 +118,36 @@ extern struct cpu cpus[NUM_CPUS];
 extern uint8_t __glbl_pid;
 
 struct addrspace {
-  phys_addr_t p4d_base; // pass to cr3
-  p4d_t *p4d;
-  // TODO(cleanup) ideally, we'd like to add a guard page
-  // at the end of the stack. we currently do that, but we don't
-  // have logic within the page fault handler to detect this.
-  // for now, we can just have two pointers, and compare if
-  // our accesses ever exceed the end of the stack. this
-  // adds on an unnecessary, expensive operation for now!
+	phys_addr_t p4d_base; // pass to cr3
+	p4d_t *p4d;
+	// TODO(cleanup) ideally, we'd like to add a guard page
+	// at the end of the stack. we currently do that, but we don't
+	// have logic within the page fault handler to detect this.
+	// for now, we can just have two pointers, and compare if
+	// our accesses ever exceed the end of the stack. this
+	// adds on an unnecessary, expensive operation for now!
 
-  struct list_head vm_list; // linked list of vm_region
+	struct list_head vm_list; // linked list of vm_region
 };
 
 struct process {
-  uint8_t pid;
-  char name[32];
+	uint8_t pid;
+	char name[32];
 
-  struct process *parent;
-  struct addrspace addrspace;
+	struct process *parent;
+	struct addrspace addrspace;
 
-  // entry into multilevel feedback queue in scheduler
-  struct list_head sched;
+	// entry into multilevel feedback queue in scheduler
+	struct list_head sched;
 
-  enum process_state state;
-  phys_addr_t cr3;
-  struct context context;
+	enum process_state state;
+	phys_addr_t cr3;
+	struct context context;
 
-  // where the process starts on its very first run. swtch()'s ret always
-  // lands in forkret(), which does the first-run housekeeping and then calls
-  // this -- a fresh process has no real return address to go back to.
-  void (*entry)(void);
-
+	// where the process starts on its very first run. swtch()'s ret always
+	// lands in forkret(), which does the first-run housekeeping and then calls
+	// this -- a fresh process has no real return address to go back to.
+	void (*entry)(void);
 };
 
 void sched();

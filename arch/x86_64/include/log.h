@@ -8,18 +8,18 @@
 #define WARN_FG rgb(0xFF, 0xFF, 0x00) // yellow
 #define ERROR_FG rgb(0xFF, 0x00, 0x00) // red
 #define FATAL_FG rgb(0xFF, 0xFF, 0xFF) // white on red
-#define OK_FG    rgb(0x00, 0xCC, 0x00)  // green
+#define OK_FG rgb(0x00, 0xCC, 0x00) // green
 #define FATAL_BG rgb(0xCC, 0x00, 0x00)
 
 // consecutive log levels
 enum log_level {
-		KERN_RAW, // TODO ideally this would be a separate function i think
-		KERN_DEBUG,
-		KERN_INFO,
-		KERN_OK,
-		KERN_WARN,
-		KERN_ERROR,
-		KERN_FATAL
+	KERN_RAW, // TODO ideally this would be a separate function i think
+	KERN_DEBUG,
+	KERN_INFO,
+	KERN_OK,
+	KERN_WARN,
+	KERN_ERROR,
+	KERN_FATAL
 };
 
 extern enum log_level log_level;

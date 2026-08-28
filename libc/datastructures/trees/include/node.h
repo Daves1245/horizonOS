@@ -6,8 +6,7 @@
  * XXX rename to btree?
  */
 struct tree {
-    struct tree *parent, *left, *right;
+	struct tree *parent, *left, *right;
 };
 
 #endif
-

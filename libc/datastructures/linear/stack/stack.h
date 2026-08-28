@@ -2,11 +2,11 @@
 #define CUP_STACK_H
 
 struct list {
-    struct list *next, *prev;
+	struct list *next, *prev;
 };
 
 struct stack {
-  struct list base;
+	struct list base;
 };
 
 typedef struct stack stack;

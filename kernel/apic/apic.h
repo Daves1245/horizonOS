@@ -22,34 +22,34 @@ void apic_set_base(uintptr_t virt);
 #define APIC_TIMER_CURRCNT 0x390
 
 /* LVT timer mode bits */
-#define APIC_TIMER_ONESHOT  0x00000000
+#define APIC_TIMER_ONESHOT 0x00000000
 #define APIC_TIMER_PERIODIC (1 << 17)
-#define APIC_TIMER_MASKED   (1 << 16)
+#define APIC_TIMER_MASKED (1 << 16)
 
 /* helper macro */
 #define APIC_REG(offset) (*(volatile uint32_t)(APIC_BASE + offset))
 
 static inline uint32_t read_msr_low(uint32_t msr) {
-    uint32_t low;
-    asm volatile("rdmsr" : "=a"(low) : "c"(msr) : "edx");
-    return low;
+	uint32_t low;
+	asm volatile("rdmsr" : "=a"(low) : "c"(msr) : "edx");
+	return low;
 }
 
 static inline uint32_t read_msr_high(uint32_t msr) {
-    uint32_t high;
-    asm volatile("rdmsr" : "=d"(high) : "c"(msr) : "eax");
-    return high;
+	uint32_t high;
+	asm volatile("rdmsr" : "=d"(high) : "c"(msr) : "eax");
+	return high;
 }
 
 int check_msr();
 
 static inline void write_msr(uint32_t msr, uint32_t low, uint32_t high) {
-    asm volatile("wrmsr" : : "c"(msr), "a"(low), "d"(high));
+	asm volatile("wrmsr" : : "c"(msr), "a"(low), "d"(high));
 }
 
 static inline void write_msr_low(uint32_t msr, uint32_t low) {
-    uint32_t high = read_msr_high(msr);
-    write_msr(msr, low, high);
+	uint32_t high = read_msr_high(msr);
+	write_msr(msr, low, high);
 }
 
 // there are two registers for ioapic - address register and
@@ -62,7 +62,8 @@ void ioapic_write(uint32_t reg, uint32_t value);
 uint32_t get_ioapic_base();
 uint8_t get_local_apic_id();
 void configure_ioapic_irq(uint8_t irq, uint8_t vector, uint8_t dest_apic_id);
-void configure_ioapic_irq_with_flags(uint8_t irq, uint8_t vector, uint8_t dest_apic_id, uint16_t flags);
+void configure_ioapic_irq_with_flags(uint8_t irq, uint8_t vector,
+				     uint8_t dest_apic_id, uint16_t flags);
 void disable_pic();
 
 // abstractino for architecture-independent implementation

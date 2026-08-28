@@ -1,9 +1,9 @@
 // For reduced memory usage
 struct node {
-  struct node *parent, *lchild, *rchild;
+	struct node *parent, *lchild, *rchild;
 };
 
 struct bst {
-  struct node root;
-  int (* comparator)(void *, void *);
+	struct node root;
+	int (*comparator)(void *, void *);
 }

@@ -2,10 +2,10 @@
 #define BENCHMARKING_H
 
 struct sort_context {
-    int *arr;                   /* Array to be checked */
-    size_t len;                 /* Length of array */
-    int failed[3];              /* Indices of failure */
-    int (*comp)(int, int);      /* Comparator function to use */
+	int *arr; /* Array to be checked */
+	size_t len; /* Length of array */
+	int failed[3]; /* Indices of failure */
+	int (*comp)(int, int); /* Comparator function to use */
 };
 
 int is_sorted(int *arr, struct sort_context *ctx);

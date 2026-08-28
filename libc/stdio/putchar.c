@@ -10,7 +10,7 @@ extern int serial_initialized;
 
 int putchar(int ic) {
 #if defined(__is_libk)
-	char c = (char) ic;
+	char c = (char)ic;
 	terminal_write(&c, sizeof(c));
 	// Also output to serial port for debugging
 	if (serial_initialized) {

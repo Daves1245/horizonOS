@@ -4,15 +4,15 @@
 #include <stdio.h>
 #include <string.h>
 
-static bool print(const char* data, size_t length) {
-	const unsigned char* bytes = (const unsigned char*) data;
+static bool print(const char *data, size_t length) {
+	const unsigned char *bytes = (const unsigned char *)data;
 	for (size_t i = 0; i < length; i++)
 		if (putchar(bytes[i]) == EOF)
 			return false;
 	return true;
 }
 
-int printf(const char* restrict format, ...) {
+int printf(const char *restrict format, ...) {
 	va_list parameters;
 	va_start(parameters, format);
 
@@ -38,11 +38,12 @@ int printf(const char* restrict format, ...) {
 			continue;
 		}
 
-		const char* format_begun_at = format++;
+		const char *format_begun_at = format++;
 
 		if (*format == 'c') {
 			format++;
-			char c = (char) va_arg(parameters, int /* char promotes to int */);
+			char c = (char)va_arg(parameters,
+					      int /* char promotes to int */);
 			if (!maxrem) {
 				// TODO: Set errno to EOVERFLOW.
 				return -1;
@@ -52,7 +53,7 @@ int printf(const char* restrict format, ...) {
 			written++;
 		} else if (*format == 's') {
 			format++;
-			const char* str = va_arg(parameters, const char*);
+			const char *str = va_arg(parameters, const char *);
 			size_t len = strlen(str);
 			if (maxrem < len) {
 				// TODO: Set errno to EOVERFLOW.
@@ -62,36 +63,36 @@ int printf(const char* restrict format, ...) {
 				return -1;
 			written += len;
 		} else if (*format == 'd') {
-            format++;
-            if (!maxrem) {
-                // TODO: Set errno to EOVERFLOW.
-                return -1;
-            }
-            char num_buff[12] = {0};
-            int num = va_arg(parameters, int);
-            itoa(num_buff, num);
-            size_t len = strlen(num_buff);
-            if (!print(num_buff, len)) {
-                // TODO set errno to (TODO).
-                return -1;
-            }
-            written += len;
-        } else if (*format == 'x') {
-            format++;
-            if (!maxrem) {
-                // TODO: Set errno to EOVERFLOW.
-                return -1;
-            }
-            char num_buff[9] = {0};
-            unsigned int num = va_arg(parameters, unsigned int);
-            itoa_hex(num_buff, num);
-            size_t len = strlen(num_buff);
-            if (!print(num_buff, len)) {
-                // TODO set errno to (TODO).
-                return -1;
-            }
-            written += len;
-        } else {
+			format++;
+			if (!maxrem) {
+				// TODO: Set errno to EOVERFLOW.
+				return -1;
+			}
+			char num_buff[12] = { 0 };
+			int num = va_arg(parameters, int);
+			itoa(num_buff, num);
+			size_t len = strlen(num_buff);
+			if (!print(num_buff, len)) {
+				// TODO set errno to (TODO).
+				return -1;
+			}
+			written += len;
+		} else if (*format == 'x') {
+			format++;
+			if (!maxrem) {
+				// TODO: Set errno to EOVERFLOW.
+				return -1;
+			}
+			char num_buff[9] = { 0 };
+			unsigned int num = va_arg(parameters, unsigned int);
+			itoa_hex(num_buff, num);
+			size_t len = strlen(num_buff);
+			if (!print(num_buff, len)) {
+				// TODO set errno to (TODO).
+				return -1;
+			}
+			written += len;
+		} else {
 			format = format_begun_at;
 			size_t len = strlen(format);
 			if (maxrem < len) {

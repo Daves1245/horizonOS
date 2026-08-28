@@ -11,15 +11,15 @@
 // these as a macro
 
 void spinlock(lock_t *lock) {
-  // explicit: atomic read-modify-write operation. reads the current state,
-  // writes the new state, and returns the value of the previous state
+	// explicit: atomic read-modify-write operation. reads the current state,
+	// writes the new state, and returns the value of the previous state
 
-  // memory_order_acquire:
-  while (atomic_flag_test_and_set_explicit(lock, memory_order_acquire)) {
-    __builtin_ia32_pause();
-  }
+	// memory_order_acquire:
+	while (atomic_flag_test_and_set_explicit(lock, memory_order_acquire)) {
+		__builtin_ia32_pause();
+	}
 }
 
 void release(lock_t *lock) {
-  atomic_flag_clear_explicit(lock, memory_order_release);
+	atomic_flag_clear_explicit(lock, memory_order_release);
 }

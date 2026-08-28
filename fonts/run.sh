@@ -5,4 +5,4 @@
  uv run python3 bmfont2c.py
 
 # copy over files into kernel
-cp fontlibrary.* ../kernel/kernel/fonts/
+cp fontlibrary.* ../kernel/fonts/

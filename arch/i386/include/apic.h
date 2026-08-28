@@ -7,14 +7,14 @@
 
 // MSR functions
 static inline uint32_t read_msr_low(uint32_t msr) {
-    uint32_t low, high;
-    asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
-    return low;
+	uint32_t low, high;
+	asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
+	return low;
 }
 
 static inline void write_msr_low(uint32_t msr, uint32_t value) {
-    uint32_t high = 0;
-    asm volatile("wrmsr" : : "c"(msr), "a"(value), "d"(high));
+	uint32_t high = 0;
+	asm volatile("wrmsr" : : "c"(msr), "a"(value), "d"(high));
 }
 
 // APIC functions

@@ -9,18 +9,18 @@
 #define ROOT 1
 
 struct heap {
-    int *arr;                       /* Array of integers */
-    size_t arr_len;                 /* Length of integer array */
-    int heap_size;                  /* Size of heap */
-    int (*comp)(int, int);          /* Comparator function */
+	int *arr; /* Array of integers */
+	size_t arr_len; /* Length of integer array */
+	int heap_size; /* Size of heap */
+	int (*comp)(int, int); /* Comparator function */
 };
 
 struct abstract_heap {
-    void *arr;                      /* Array of elements */
-    size_t elen;                    /* Length in bytes of an element */
-    int arr_len;                    /* Length of array */
-    int heap_size;                  /* Size of heap */
-    int (*comp)(void *, void *);    /* comparator function */
+	void *arr; /* Array of elements */
+	size_t elen; /* Length in bytes of an element */
+	int arr_len; /* Length of array */
+	int heap_size; /* Size of heap */
+	int (*comp)(void *, void *); /* comparator function */
 };
 
 /* Pop max/min element from heap */

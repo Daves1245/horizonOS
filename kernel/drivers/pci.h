@@ -4,10 +4,10 @@
 #include <stdint.h>
 
 struct pci_address_t {
-    uint8_t bus;
-    uint8_t device;
-    uint8_t function;
-    int valid; /* not part of BDF, externally added to check if value exists */
+	uint8_t bus;
+	uint8_t device;
+	uint8_t function;
+	int valid; /* not part of BDF, externally added to check if value exists */
 };
 
 // we only need to find the AC97 chip for now,

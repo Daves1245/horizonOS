@@ -5,9 +5,9 @@
 #define VECTOR_INIT_CAPACITY 10
 
 struct vector {
-  void **items; /* The internal array of the vector */
-  int capacity; /* The amount of elements the vector can currently keep track of */
-  int size; 	/* The current number of elements in the vector */
+	void **items; /* The internal array of the vector */
+	int capacity; /* The amount of elements the vector can currently keep track of */
+	int size; /* The current number of elements in the vector */
 };
 
 /* TODO move to separate file */

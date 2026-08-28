@@ -6,8 +6,8 @@
 
 /* Virtual Memory Regions */
 enum vm_type {
-    STACK,
-    HEAP,
+	STACK,
+	HEAP,
 };
 
 #define FL_VM_PROTECTED (1 << 0)
@@ -27,12 +27,12 @@ typedef uint32_t phys_addr_t;
 #endif
 
 struct vm_region {
-    uint64_t flags;
-    enum vm_type type;
-    virt_addr_t start;
-    virt_addr_t end;
+	uint64_t flags;
+	enum vm_type type;
+	virt_addr_t start;
+	virt_addr_t end;
 
-    struct list_head node; // a process' vm_region linked list
+	struct list_head node; // a process' vm_region linked list
 };
 
 phys_addr_t virt_to_phys(virt_addr_t addr);

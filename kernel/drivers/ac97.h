@@ -6,12 +6,12 @@
 #include <mm.h>
 
 /* PCI BAR offsets */
-#define AC97_NAMBAR  0x10  /* native audio mixer base address (NAM) */
-#define AC97_NABMBAR 0x14  /* native audio bus master base address (NABM) */
+#define AC97_NAMBAR 0x10 /* native audio mixer base address (NAM) */
+#define AC97_NABMBAR 0x14 /* native audio bus master base address (NABM) */
 
 /* NABM global registers */
-#define AC97_GLOBAL_CONTROL 0x2C  /* global control */
-#define AC97_GLOBAL_STATUS 0x30  /* global status */
+#define AC97_GLOBAL_CONTROL 0x2C /* global control */
+#define AC97_GLOBAL_STATUS 0x30 /* global status */
 
 /* global control bits */
 #define AC97_GLOBAL_CONTROL_INTERRUPT_ENABLE (1 << 0)
@@ -25,46 +25,57 @@
 #define AC97_GLOBAL_STATUS_SECONDARY_CODEC_READY (1 << 9)
 
 /* NABM per-channel register offsets (add to channel base) */
-#define AC97_BDL_BASE_ADDR              0x00  /* Buffer Descriptor List Base Address (32-bit) */
-#define AC97_CURRENT_INDEX_VALUE        0x04  /* Current Index Value (8-bit) */
-#define AC97_LAST_VALID_INDEX           0x05  /* Last Valid Index (8-bit) */
-#define AC97_CHANNEL_STATUS_REGISTER    0x06  /* Channel Status Register (16-bit) */
-#define AC97_POSITION_IN_CUR_BUFFER     0x08  /* Position In Current Buffer (16-bit) */
-#define AC97_PREFETCHED_INDEX_VALUE     0x0A  /* Prefetched Index Value (8-bit) */
-#define AC97_CHANNEL_CONTROL_REGISTER   0x0B  /* Channel Control Register (8-bit) */
+#define AC97_BDL_BASE_ADDR \
+	0x00 /* Buffer Descriptor List Base Address (32-bit) */
+#define AC97_CURRENT_INDEX_VALUE 0x04 /* Current Index Value (8-bit) */
+#define AC97_LAST_VALID_INDEX 0x05 /* Last Valid Index (8-bit) */
+#define AC97_CHANNEL_STATUS_REGISTER 0x06 /* Channel Status Register (16-bit) */
+#define AC97_POSITION_IN_CUR_BUFFER \
+	0x08 /* Position In Current Buffer (16-bit) */
+#define AC97_PREFETCHED_INDEX_VALUE 0x0A /* Prefetched Index Value (8-bit) */
+#define AC97_CHANNEL_CONTROL_REGISTER \
+	0x0B /* Channel Control Register (8-bit) */
 
 /* NABM channel base addresses */
-#define AC97_PCM_IN_BASE 0x00  /* PCM In */
-#define AC97_PCM_OUT_BASE 0x10  /* PCM Out */
-#define AC97_MIC_IN_BASE 0x20  /* Mic In */
+#define AC97_PCM_IN_BASE 0x00 /* PCM In */
+#define AC97_PCM_OUT_BASE 0x10 /* PCM Out */
+#define AC97_MIC_IN_BASE 0x20 /* Mic In */
 
 /* per-channel control register (CR) bits */
-#define AC97_CONTROL_REGISTER_RUN_PAUSE_BUS_MASTER  (1 << 0)  /* Run/Pause Bus Master */
-#define AC97_CONTROL_REGISTER_RESET_REGISTERS       (1 << 1)  /* Reset Registers */
-#define AC97_CONTROL_REGISTER_LAST_VALID_BUFFER_INTERRUPT_ENABLE (1 << 2)  /* Last Valid Buffer Interrupt Enable */
-#define AC97_CONTROL_REGISTER_ERROR_INTERRUPT_ENABLE (1 << 3)  /* FIFO Error Interrupt Enable */
-#define AC97_CONTROL_REGISTER_INTERRUPT_ON_COMPLETION_ENABLE (1 << 4)  /* Interrupt on Completion Enable */
+#define AC97_CONTROL_REGISTER_RUN_PAUSE_BUS_MASTER \
+	(1 << 0) /* Run/Pause Bus Master */
+#define AC97_CONTROL_REGISTER_RESET_REGISTERS (1 << 1) /* Reset Registers */
+#define AC97_CONTROL_REGISTER_LAST_VALID_BUFFER_INTERRUPT_ENABLE \
+	(1 << 2) /* Last Valid Buffer Interrupt Enable */
+#define AC97_CONTROL_REGISTER_ERROR_INTERRUPT_ENABLE \
+	(1 << 3) /* FIFO Error Interrupt Enable */
+#define AC97_CONTROL_REGISTER_INTERRUPT_ON_COMPLETION_ENABLE \
+	(1 << 4) /* Interrupt on Completion Enable */
 
 /* per-channel status register (SR) bits */
-#define AC97_STATUS_REGISTER_DMA_CONTROLLER_HALTED (1 << 0)  /* DMA Controller Halted */
-#define AC97_STATUS_REGISTER_CURRENT_EQUALS_LAST_VALID (1 << 1)  /* Current Equals Last Valid */
-#define AC97_STATUS_REGISTER_LAST_VALID_BUFFER_COMPLETION_INTERRUPT (1 << 2)  /* Last Valid Buffer Completion Interrupt */
-#define AC97_STATUS_REGISTER_BUFFER_COMPLETION_INTERRUPT_STATUS (1 << 3)  /* Buffer Completion Interrupt Status */
-#define AC97_STATUS_REGISTER_FIFO_ERROR (1 << 4)  /* FIFO Error */
+#define AC97_STATUS_REGISTER_DMA_CONTROLLER_HALTED \
+	(1 << 0) /* DMA Controller Halted */
+#define AC97_STATUS_REGISTER_CURRENT_EQUALS_LAST_VALID \
+	(1 << 1) /* Current Equals Last Valid */
+#define AC97_STATUS_REGISTER_LAST_VALID_BUFFER_COMPLETION_INTERRUPT \
+	(1 << 2) /* Last Valid Buffer Completion Interrupt */
+#define AC97_STATUS_REGISTER_BUFFER_COMPLETION_INTERRUPT_STATUS \
+	(1 << 3) /* Buffer Completion Interrupt Status */
+#define AC97_STATUS_REGISTER_FIFO_ERROR (1 << 4) /* FIFO Error */
 
 /* NAM (mixer/codec) registers */
-#define AC97_NAM_RESET          0x00  /* Reset */
-#define AC97_NAM_MASTER_VOLUME  0x02  /* Master Volume */
-#define AC97_NAM_PCM_OUT_VOLUME 0x18  /* PCM Out Volume */
-#define AC97_NAM_SAMPLE_RATE    0x2C  /* PCM Front DAC Rate */
-#define AC97_NAM_ADC_RATE       0x32  /* PCM LR ADC Rate */
+#define AC97_NAM_RESET 0x00 /* Reset */
+#define AC97_NAM_MASTER_VOLUME 0x02 /* Master Volume */
+#define AC97_NAM_PCM_OUT_VOLUME 0x18 /* PCM Out Volume */
+#define AC97_NAM_SAMPLE_RATE 0x2C /* PCM Front DAC Rate */
+#define AC97_NAM_ADC_RATE 0x32 /* PCM LR ADC Rate */
 
 /* BDL */
 #define AC97_BDL_MAX_ENTRIES 32
 
 /* BDL entry flags */
-#define AC97_BDL_IOC (1 << 15)  /* Interrupt on Completion */
-#define AC97_BDL_BUP (1 << 14)  /* Buffer Underrun Policy */
+#define AC97_BDL_IOC (1 << 15) /* Interrupt on Completion */
+#define AC97_BDL_BUP (1 << 14) /* Buffer Underrun Policy */
 
 /* vendor and device IDs (pic lookup) */
 #define AC97_VENDOR_ID 0x8086
@@ -80,9 +91,9 @@
 #define AC97_BUS_MASTER_ENABLE (1 << 2)
 
 struct bdl_entry {
-    uint32_t buffer_addr_phys;
-    uint16_t num_samples;
-    uint16_t flags;
+	uint32_t buffer_addr_phys;
+	uint16_t num_samples;
+	uint16_t flags;
 };
 
 /* linker-provided symbols for embedded audio data */

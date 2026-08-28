@@ -8,7 +8,7 @@
  * and w is the weight
  */
 struct edge {
-    int u, v, w;
+	int u, v, w;
 }
 
 /* Returns the cost of a MST of the graph depicted by edgeList */

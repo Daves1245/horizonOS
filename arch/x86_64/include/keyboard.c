@@ -13,28 +13,30 @@
 #include <drivers/serial.h>
 #include <kernel/panic.h>
 
-extern struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS][RING_BUFFER_SIZE];
+extern struct key_event_t keyboard_multilevel_queue[KEYBOARD_QUEUE_LEVELS]
+						   [RING_BUFFER_SIZE];
 extern struct keyboard_queue_state keyboard_queue_state[KEYBOARD_QUEUE_LEVELS];
 
 /**
  * @copydoc keyboard_push
  */
 void keyboard_push(int level, struct key_event_t entry) {
-    struct key_event_t *queue = keyboard_multilevel_queue[level];
+	struct key_event_t *queue = keyboard_multilevel_queue[level];
 
-    int head = keyboard_queue_state[level].head;
-    int next = (head + 1) % RING_BUFFER_SIZE;
+	int head = keyboard_queue_state[level].head;
+	int next = (head + 1) % RING_BUFFER_SIZE;
 
-    // on full, drop the oldest entry by advancing tail past it.
-    // keeping newer input matters more than protecting a slow consumer
-    // from seeing a gap; dropping the newest would silently hide keys.
-    if (next == keyboard_queue_state[level].tail) {
-        keyboard_queue_state[level].tail =
-            (keyboard_queue_state[level].tail + 1) % RING_BUFFER_SIZE;
-    }
+	// on full, drop the oldest entry by advancing tail past it.
+	// keeping newer input matters more than protecting a slow consumer
+	// from seeing a gap; dropping the newest would silently hide keys.
+	if (next == keyboard_queue_state[level].tail) {
+		keyboard_queue_state[level].tail =
+			(keyboard_queue_state[level].tail + 1) %
+			RING_BUFFER_SIZE;
+	}
 
-    memcpy(&queue[head], &entry, sizeof(struct key_event_t));
-    keyboard_queue_state[level].head = next;
+	memcpy(&queue[head], &entry, sizeof(struct key_event_t));
+	keyboard_queue_state[level].head = next;
 }
 
 /**
@@ -46,30 +48,31 @@ void keyboard_push(int level, struct key_event_t entry) {
  * currently-reading tail would corrupt silently.
  */
 int keyboard_poll(int level, struct key_event_t *out) {
-    struct key_event_t *key_queue = keyboard_multilevel_queue[level];
-    int head_index = keyboard_queue_state[level].head;
-    int tail_index = keyboard_queue_state[level].tail;
+	struct key_event_t *key_queue = keyboard_multilevel_queue[level];
+	int head_index = keyboard_queue_state[level].head;
+	int tail_index = keyboard_queue_state[level].tail;
 
-    if (tail_index == head_index) {
-        return 0;
-    }
+	if (tail_index == head_index) {
+		return 0;
+	}
 
-    out->type = key_queue[tail_index].type;
-    out->scan_code = key_queue[tail_index].scan_code;
-    out->value = key_queue[tail_index].value;
-    out->timestamp = key_queue[tail_index].timestamp;
+	out->type = key_queue[tail_index].type;
+	out->scan_code = key_queue[tail_index].scan_code;
+	out->value = key_queue[tail_index].value;
+	out->timestamp = key_queue[tail_index].timestamp;
 
-    keyboard_queue_state[level].tail = (tail_index + 1) % RING_BUFFER_SIZE;
-    return 1;
+	keyboard_queue_state[level].tail = (tail_index + 1) % RING_BUFFER_SIZE;
+	return 1;
 }
 
 /**
  * @copydoc keyboard_block_read
  */
 struct key_event_t keyboard_block_read(int level) {
-    struct key_event_t out;
-    while (!keyboard_poll(level, &out)) asm volatile("hlt");
-    return out;
+	struct key_event_t out;
+	while (!keyboard_poll(level, &out))
+		asm volatile("hlt");
+	return out;
 }
 
 /**
@@ -83,16 +86,16 @@ struct key_event_t keyboard_block_read(int level) {
  * TODO
  */
 int register_keyboard_listener() {
-    for (int level = 0; level < KEYBOARD_QUEUE_LEVELS; level++) {
-        if (!keyboard_queue_state[level].used) {
-            keyboard_queue_state[level].used = 1;
-            return level;
-        }
-    }
+	for (int level = 0; level < KEYBOARD_QUEUE_LEVELS; level++) {
+		if (!keyboard_queue_state[level].used) {
+			keyboard_queue_state[level].used = 1;
+			return level;
+		}
+	}
 
-    // temporary fix involves simply increasing KEYBOARD_QUEUE_LEVELS
-    console_puts("[register_keyboard_listener]: multiqueue is full\n");
-    panic("keyboard multiqueue full");
+	// temporary fix involves simply increasing KEYBOARD_QUEUE_LEVELS
+	console_puts("[register_keyboard_listener]: multiqueue is full\n");
+	panic("keyboard multiqueue full");
 }
 
 /**
@@ -103,30 +106,32 @@ int register_keyboard_listener() {
  * dropped.
  */
 int readline(int level, char *buf, int len) {
-    int pos = 0;
-    if (len <= 0) return 0;
+	int pos = 0;
+	if (len <= 0)
+		return 0;
 
-    for (;;) {
-        struct key_event_t ev = keyboard_block_read(level);
-        if (ev.type != KEY_EVENT_DOWN) continue;
+	for (;;) {
+		struct key_event_t ev = keyboard_block_read(level);
+		if (ev.type != KEY_EVENT_DOWN)
+			continue;
 
-        char c = (char) ev.value;
-        if (c == '\n') {
-            console_putchar('\n');
-            buf[pos] = '\0';
-            return pos;
-        } else if (c == '\b') {
-            if (pos > 0) {
-                pos--;
-                console_backspace();
-            }
-        } else if (c >= ' ' && c < 127) {
-            if (pos < len - 1) {
-                buf[pos++] = c;
-                console_putchar(c);
-            }
-        }
-    }
+		char c = (char)ev.value;
+		if (c == '\n') {
+			console_putchar('\n');
+			buf[pos] = '\0';
+			return pos;
+		} else if (c == '\b') {
+			if (pos > 0) {
+				pos--;
+				console_backspace();
+			}
+		} else if (c >= ' ' && c < 127) {
+			if (pos < len - 1) {
+				buf[pos++] = c;
+				console_putchar(c);
+			}
+		}
+	}
 }
 
 /**
@@ -138,7 +143,8 @@ int readline(int level, char *buf, int len) {
  * @param level The level assigned to the consumer
  */
 void remove_keyboard_listener(int level) {
-    // ids are associated with a level, id <-> level
-    // reset head, tail, and used flag
-    memset(&keyboard_queue_state[level], 0, sizeof(struct keyboard_queue_state));
+	// ids are associated with a level, id <-> level
+	// reset head, tail, and used flag
+	memset(&keyboard_queue_state[level], 0,
+	       sizeof(struct keyboard_queue_state));
 }

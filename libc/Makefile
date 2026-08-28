@@ -15,9 +15,9 @@ INCLUDEDIR?=$(PREFIX)/include
 LIBDIR?=$(EXEC_PREFIX)/lib
 
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude -I../kernel/kernel/
+CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude -I../kernel/
 LIBK_CFLAGS:=$(CFLAGS)
-LIBK_CPPFLAGS:=$(CPPFLAGS) -D__is_libk -I../kernel/arch/i386
+LIBK_CPPFLAGS:=$(CPPFLAGS) -D__is_libk -I../arch/i386
 
 ARCHDIR=arch/$(HOSTARCH)
 

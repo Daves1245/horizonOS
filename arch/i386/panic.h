@@ -2,8 +2,7 @@
 #define PANIC_H
 
 void panic(const char *reason) {
-  struct registers_t regs;
-
+	struct registers_t regs;
 }
 
 #endif

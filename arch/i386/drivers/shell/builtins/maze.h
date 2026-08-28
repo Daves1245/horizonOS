@@ -16,16 +16,15 @@
 #define DISPLAY_WIDTH 80
 
 struct cell {
-  int type;
-  // bools - has wall
-  int right_wall;
-  int bottom_wall;
+	int type;
+	// bools - has wall
+	int right_wall;
+	int bottom_wall;
 };
 
 extern struct cell maze[MAZE_HEIGHT][MAZE_WIDTH];
 extern char display_buffer[DISPLAY_HEIGHT][DISPLAY_WIDTH];
 extern int next_set_id;
-
 
 void maze_init();
 void draw_maze();
