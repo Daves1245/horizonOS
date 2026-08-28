@@ -15,6 +15,8 @@ Makefile
 
 # build files
 *.o
+*.d
+*.kernel
 
 # Log files generated on runs
 boot_debug.log
@@ -40,7 +42,7 @@ tags
 *.log
 
 # disassembly debugging
-kernel/horizon.kernel*
+horizon.kernel*
 
 # ctags
 .tags
