@@ -7,3 +7,7 @@ kernel/fonts/fontlibrary.c
 
 # everything in docs
 docs/*
+
+# we need this table properly spaced
+# and clang-format collapses it
+include/kernel/compiler.h
