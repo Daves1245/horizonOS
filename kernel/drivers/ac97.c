@@ -13,24 +13,24 @@
 
 extern uint8_t local_apic_id;
 
-static void controller_reset();
+static void controller_reset(void);
 static void enable_bus_master(struct pci_address_t);
-static void ready_codec();
-static void configure_codec();
+static void ready_codec(void);
+static void configure_codec(void);
 static void ac97_irq_handler(struct interrupt_context *regs);
-static void abort();
+static void abort(void);
 
 static struct bdl_entry ring_buffer[NUM_BDL_ENTRIES] = { 0 };
 
-static int last_valid_index = 0;
-static int bdl_entries_filled = 0;
+static int last_valid_index;
+static int bdl_entries_filled;
 
 static phys_addr_t audio_cur_pos; /* next audio position to fill into BDL */
 static phys_addr_t audio_data_end; /* physical end of audio data */
 
 static uint32_t nambar, nabmbar;
 
-int ac97_init() {
+int ac97_init(void) {
 	struct pci_address_t ac97_bdf =
 		pci_find_device(AC97_VENDOR_ID, AC97_DEVICE_ID);
 	if (!ac97_bdf.valid) {
@@ -77,17 +77,19 @@ int ac97_init() {
 
 static void enable_bus_master(struct pci_address_t bdf) {
 	uint32_t cmd = pci_read(bdf, AC97_PCI_COMMAND_REGISTER);
+
 	cmd |= AC97_BUS_MASTER_ENABLE |
 	       (1 << 0); // bus master + I/O space enable
 	pci_write(bdf, AC97_PCI_COMMAND_REGISTER, cmd);
 }
 
-static void controller_reset() {
+static void controller_reset(void) {
 	/* cold reset: CR bit (bit 1) = 0 asserts reset, = 1 deasserts it.
      * to perform a cold reset: clear CR (write 0 to bit 1), wait, then set CR to come out of reset.
      * AC97_GLOBAL_CONTROL_COLD_RESET = (1 << 1), so writing just GIE (bit 0) clears CR -> asserts reset.
      * then write CR | GIE to deassert reset and keep global interrupt enable. */
 	uint32_t glob_cnt_before = inl(nabmbar + AC97_GLOBAL_CONTROL);
+
 	serial_write_hex("[DEBUG]: ac97.c: GLOB_CNT before reset = ",
 			 glob_cnt_before);
 
@@ -104,7 +106,7 @@ static void controller_reset() {
 		     AC97_GLOBAL_CONTROL_INTERRUPT_ENABLE);
 }
 
-static void ready_codec() {
+static void ready_codec(void) {
 	// poll until the codec ready bit in NAMBAR + 0x30 is set (global status register)
 	// timeout and abort 1000ms if status register doesn't reflect codec is ready
 	if (!timeout(10000, inl(nabmbar + AC97_GLOBAL_STATUS) &
@@ -113,7 +115,7 @@ static void ready_codec() {
 	}
 }
 
-static void configure_codec() {
+static void configure_codec(void) {
 	// unmute and set max volume: bits [5:0] = right attenuation, [13:8] = left attenuation (0 = 0dB), bit 15 = mute
 	outw(nambar + AC97_NAM_MASTER_VOLUME, 0x0000);
 	outw(nambar + AC97_NAM_PCM_OUT_VOLUME, 0x0000);
@@ -125,7 +127,7 @@ static void configure_codec() {
 	serial_write("[ OK ]: ac97.c: codec configured\n");
 }
 
-static void abort() {
+static void abort(void) {
 	serial_write(
 		"[ERROR]: ac97.c: timeout while awaiting codec to be ready\n");
 	hcf();
@@ -156,6 +158,7 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
 
 	// fill the ring buffer with audio data
 	int i;
+
 	for (i = 0; i < NUM_BDL_ENTRIES && audio_start < audio_end; i++) {
 		ring_buffer[i].buffer_addr_phys = audio_start;
 		ring_buffer[i].num_samples =
@@ -177,7 +180,7 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
 	audio_data_end = audio_end;
 }
 
-void ac97_start_playback() {
+void ac97_start_playback(void) {
 	uint32_t bdl_phys = (uint32_t)virt_to_phys((virt_addr_t)ring_buffer);
 
 	// tell NABMBAR + BDL_BASE_ADDRESS where our data (ring_buffer) lies
@@ -195,7 +198,7 @@ void ac97_start_playback() {
 	     cr | AC97_CONTROL_REGISTER_RUN_PAUSE_BUS_MASTER);
 }
 
-void ac97_debug_status() {
+void ac97_debug_status(void) {
 	uint8_t civ =
 		inb(nabmbar + AC97_PCM_OUT_BASE + AC97_CURRENT_INDEX_VALUE);
 	uint8_t lvi = inb(nabmbar + AC97_PCM_OUT_BASE + AC97_LAST_VALID_INDEX);

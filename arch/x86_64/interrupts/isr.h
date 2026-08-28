@@ -2,6 +2,7 @@
 #define X86_64_ISR_H
 
 #include <stdint.h>
+#include <kernel/compiler.h>
 
 struct interrupt_context {
 	uint64_t ds;
@@ -9,7 +10,7 @@ struct interrupt_context {
 	uint64_t rdi, rsi, rbp, rdx, rcx, rbx, rax;
 	uint64_t int_no, err_code;
 	uint64_t rip, cs, rflags, rsp, ss;
-} __attribute__((packed));
+} __packed;
 
 typedef void (*isr_t)(struct interrupt_context *);
 

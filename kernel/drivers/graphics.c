@@ -72,8 +72,10 @@ void gfx_fill_rect(int x0, int y0, int x1, int y1, uint32_t val) {
 		return;
 	uint32_t stride = fb.pitch / 4;
 	uint32_t *buf = draw_buffer();
+
 	for (int y = y0; y <= y1; y++) {
 		uint32_t *row = &buf[y * stride];
+
 		for (int x = x0; x <= x1; x++)
 			row[x] = val;
 	}
@@ -83,6 +85,7 @@ void gfx_clear_screen(void) {
 	uint32_t count = screen_size / 4;
 	uint32_t val = 0;
 	uint32_t *dst = draw_buffer();
+
 	asm volatile("rep stosl"
 		     : "+D"(dst), "+c"(count)
 		     : "a"(val)

@@ -3,6 +3,7 @@
 
 #include "mm.h"
 #include <stdint.h>
+#include <kernel/compiler.h>
 #include <stddef.h>
 
 // lwn.net find: https://lwn.net/Articles/106177/
@@ -94,7 +95,7 @@ static inline page_entry_t *pte_ptr(pte_t *pte) {
 
 typedef struct page_table_t {
 	pte_t entries[512];
-} pt_t __attribute__((aligned(4096)));
+} pt_t __aligned(4096);
 
 /* Level 2 - Page middle directory */
 typedef uint64_t page_directory_t;
@@ -112,7 +113,7 @@ static inline page_directory_t *pde_ptr(pde_t *pde) {
 
 typedef struct {
 	pde_t entries[512];
-} pd_t __attribute__((aligned(4096)));
+} pd_t __aligned(4096);
 
 /* Level 3 - Page upper directory */
 typedef struct {
@@ -153,7 +154,7 @@ typedef struct {
 
 typedef struct {
 	pge_t entries[512];
-} pgd_t __attribute__((aligned(4096)));
+} pgd_t __aligned(4096);
 
 static inline page_global_dir_entry_t pge_val(pge_t pge) {
 	return pge.pge;
@@ -184,12 +185,14 @@ static inline void invalidate_page(virt_addr_t vaddr) {
 
 static inline uint64_t read_cr3(void) {
 	uint64_t cr3;
+
 	asm volatile("mov %%cr3, %0" : "=r"(cr3));
 	return cr3;
 }
 
 static inline uint64_t read_cr4(void) {
 	uint64_t cr4;
+
 	asm volatile("mov %%cr4, %0" : "=r"(cr4));
 	return cr4;
 }

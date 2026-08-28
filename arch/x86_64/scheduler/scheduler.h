@@ -5,10 +5,10 @@
 
 #define NUM_PRIORITY_LEVELS 3
 
-void init_scheduler();
+void init_scheduler(void);
 void sched_enqueue(struct process *p, int level);
-void scheduler();
-void yield();
+void scheduler(void);
+void yield(void);
 void ctx_switch(struct process *p);
 
 #endif

@@ -32,7 +32,7 @@
 #endif
 
 UACPI_BUILD_BUG_ON_WITH_MSG(
-	UACPI_DEFAULT_LOG_LEVEL<UACPI_LOG_ERROR || UACPI_DEFAULT_LOG_LEVEL>
+	UACPI_DEFAULT_LOG_LEVEL < UACPI_LOG_ERROR || UACPI_DEFAULT_LOG_LEVEL > 
 		UACPI_LOG_DEBUG,
 	"configured default log level is invalid");
 
@@ -41,8 +41,7 @@ UACPI_BUILD_BUG_ON_WITH_MSG(
 	"configured default loop timeout is invalid (expecting at least 1 second)");
 
 UACPI_BUILD_BUG_ON_WITH_MSG(UACPI_DEFAULT_MAX_CALL_STACK_DEPTH < 4,
-			    "configured default max call stack depth is invalid "
-			    "(expecting at least 4 frames)");
+			    "configured default max call stack depth is invalid (expecting at least 4 frames)");
 
 UACPI_BUILD_BUG_ON_WITH_MSG(
 	UACPI_PLAIN_LOG_BUFFER_SIZE < 16,

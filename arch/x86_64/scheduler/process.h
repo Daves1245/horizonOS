@@ -111,7 +111,7 @@ struct cpu {
 	struct process *scheduler_proc;
 };
 
-void init_process();
+void init_process(void);
 
 extern struct cpu cpus[NUM_CPUS];
 
@@ -150,13 +150,13 @@ struct process {
 	void (*entry)(void);
 };
 
-void sched();
+void sched(void);
 int fork(const char *name, void (*entry)(void), int level);
 
 struct process *myproc();
 struct cpu *mycpu();
 
-uint64_t irq_save();
+uint64_t irq_save(void);
 void irq_restore(uint64_t flags);
 
 #endif

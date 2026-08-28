@@ -7,6 +7,7 @@
 int font_draw_char(const fontStyle_t *font, char c, int x, int y,
 		   uint32_t color) {
 	uint8_t code = (uint8_t)c;
+
 	if (code < font->FirstAsciiCode ||
 	    code >= font->FirstAsciiCode + font->GlyphCount)
 		return font->FixedWidth ?
@@ -21,6 +22,7 @@ int font_draw_char(const fontStyle_t *font, char c, int x, int y,
 
 	for (int row = 0; row < font->GlyphHeight; row++) {
 		const uint8_t *row_data = &bmp[row * font->GlyphBytesWidth];
+
 		for (int col = 0; col < font->GlyphBytesWidth * 8; col++) {
 			if (row_data[col >> 3] & (0x80 >> (col & 7)))
 				gfx_put_pixel(x + col, y + row, color);

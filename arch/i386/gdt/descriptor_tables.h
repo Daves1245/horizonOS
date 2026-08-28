@@ -3,6 +3,7 @@
 // and align members of the struct.
 
 #include <stdint.h>
+#include <kernel/compiler.h>
 
 struct gdt_entry {
 	uint16_t limit_low; // lower 16 bits of limit
@@ -11,12 +12,12 @@ struct gdt_entry {
 	uint8_t access;
 	uint8_t granularity;
 	uint8_t base_high;
-} __attribute__((packed));
+} __packed;
 
 struct gdt_ptr {
 	uint16_t limit; // upper 16 bits of all selector limits
 	uint32_t base; // address of first gdt_entry struct
-} __attribute__((packed));
+} __packed;
 
 struct idt_entry {
 	uint16_t isr_low; // lower 16 bits to jmp to when int fires
@@ -31,7 +32,7 @@ typedef struct {
 	uint32_t base;
 } __attribute((packed)) idtr_t;
 
-__attribute__((aligned(0x10))) static struct idt_entry idt[256];
+__aligned(0x10) static struct idt_entry idt[256];
 
 void init_descriptor_tables();
 void terminal_initialize();

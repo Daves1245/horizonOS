@@ -5,6 +5,7 @@
 #define MULTIBOOT_INFO_H
 
 #include <stdint.h>
+#include <kernel/compiler.h>
 
 /* flags */
 #define MB_FLAG_MEM (1 << 0) // mem_lower/mem_upper valid
@@ -77,6 +78,6 @@ struct multiboot_info {
 			uint8_t blue_mask_size;
 		} rgb;
 	} color_info;
-} __attribute__((packed));
+} __packed;
 
 #endif

@@ -4,12 +4,12 @@
 #include <kernel/logger.h>
 
 // store found I/O APIC info
-static uint32_t ioapic_address = 0;
-static uint32_t ioapic_irq_base = 0;
-static uint8_t ioapic_id = 0;
+static uint32_t ioapic_address;
+static uint32_t ioapic_irq_base;
+static uint8_t ioapic_id;
 
 // store local APIC physical address (from MADT header)
-static uint32_t lapic_address = 0;
+static uint32_t lapic_address;
 
 // store IRQ overrides
 static struct {
@@ -17,7 +17,7 @@ static struct {
 	uint32_t global_irq;
 	uint16_t flags;
 } irq_overrides[16];
-static int num_overrides = 0;
+static int num_overrides;
 
 void parse_madt(void *madt_addr) {
 	// ensure the madt is mapped
@@ -26,6 +26,7 @@ void parse_madt(void *madt_addr) {
 	struct madt_extended_header *header =
 		(struct madt_extended_header *)madt_addr;
 	uint32_t length = header->header.length;
+
 	lapic_address = header->addr_flags.apic_address;
 	log_debug("[madt::parse_madt]: Local APIC physical address: 0x%x\n",
 		  lapic_address);
@@ -76,6 +77,7 @@ void parse_madt(void *madt_addr) {
 					 *)(entry +
 					    sizeof(struct madt_record_header));
 			uint16_t flags = *(uint16_t *) override->flags;
+
 			log_debug(
 				"[madt::parse_madt]: IRQ Override: Bus=%d, Source IRQ=%d -> Global IRQ=%d, Flags=0x%x\n",
 				override->bus_source, override->irq_source,

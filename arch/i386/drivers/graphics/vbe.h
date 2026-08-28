@@ -2,11 +2,12 @@
 #define VBE_H
 
 #include <stdint.h>
+#include <kernel/compiler.h>
 
 /* https://pdos.csail.mit.edu/6.828/2018/readings/hardware/vbe3.pdf */
 
 // page 25 - return structure of querying for controller information
-struct __attribute__((packed)) vbe_controller_info {
+struct __packed vbe_controller_info {
 	char signature[4]; // db 'VESA' VBE signature
 	uint16_t vbe_version; // dw 0300h version
 	uint32_t oem_string; // dd ? VbeFarPtr to OEM string
@@ -24,7 +25,7 @@ struct __attribute__((packed)) vbe_controller_info {
 	char oem_data[256]; // data area for oem strings
 };
 
-struct __attribute__((packed)) vbe_model_info_block {
+struct __packed vbe_model_info_block {
 	// Mandatory information for all VBE revisions
 	uint16_t mode_attributes; // dw ? mode attributes
 	uint8_t win_a_attributes; // db ? window A attributes

@@ -1,9 +1,10 @@
 #include <stdint.h>
+#include <kernel/compiler.h>
 #include <stdlib.h>
 
 uintptr_t __stack_chk_guard = 0x595e9fbd42d4b592;
 
-__attribute__((noreturn)) void __stack_chk_fail(void) {
+__noreturn void __stack_chk_fail(void) {
 	const char *message = "*** STACK SMASHING DETECTED ***";
 	volatile uint16_t *vga = (uint16_t *)0xB8000;
 

@@ -2,6 +2,7 @@
 #define RSDP_H
 
 #include <stdint.h>
+#include <kernel/compiler.h>
 #include <kernel/types.h>
 #include "madt.h"
 
@@ -12,7 +13,7 @@ struct rsdp_t {
 	char oemid[6];
 	uint8_t revision;
 	uint32_t rsdt_addr;
-} __attribute__((packed));
+} __packed;
 
 // version 2.0
 struct xsdp_t {
@@ -31,21 +32,21 @@ struct xsdp_t {
 struct rsdt_t {
 	struct apic_header header;
 	uint32_t entry_ptrs[];
-} __attribute__((packed));
+} __packed;
 
 // XSDT structure (ACPI v2.0+)
 struct xsdt_t {
 	struct apic_header header;
 	uint64_t entry_ptrs[];
-} __attribute__((packed));
+} __packed;
 
 #ifdef __x86_64__
-phys_addr_t get_rsdp_phys(); // uacpi kernel API (x86_64 only)
+phys_addr_t get_rsdp_phys(void); // uacpi kernel API (x86_64 only)
 #endif
 
-virt_addr_t find_rsdp();
+virt_addr_t find_rsdp(void);
 uint32_t validate_rsdp_checksum(virt_addr_t rsdp_addr);
 virt_addr_t find_madt(virt_addr_t rsdp_addr);
-void initialize_apic();
+void initialize_apic(void);
 
 #endif

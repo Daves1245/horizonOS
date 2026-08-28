@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <kernel/compiler.h>
 
 #include "common/common.h"
 #include "descriptor_tables.h"
@@ -36,7 +37,7 @@ struct gdt_ptr gdt_ptr;
 struct idt_entry idt_entries[256];
 
 // idt
-__attribute__((aligned(0x10))) static struct idt_entry idt[256];
+__aligned(0x10) static struct idt_entry idt[256];
 idtr_t idtr;
 
 // Initialisation routine - zeroes all the interrupt service routines,

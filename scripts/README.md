@@ -10,3 +10,11 @@ git diff | ./scripts/checkpatch.pl --no-tree --no-signoff -
 
 ./scripts/checkpatch.pl --no-tree --no-signoff -g HEAD
 ./scripts/checkpatch.pl --no-tree --no-signoff -g master~5..HEAD
+
+# quick fixes
+
+# writes a separate <file>.EXPERIMENTAL fixes, 
+./scripts/checkpatch.pl --no-tree --file --fix --ignore SPDX_LICENSE_TAG,OPEN_BRACE arch/x86_64/scheduler/process.c
+
+# overwrites in place
+./scripts/checkpatch.pl --no-tree --file --fix-inplace --ignore SPDX_LICENSE_TAG,OPEN_BRACE <file>

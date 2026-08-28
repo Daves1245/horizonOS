@@ -23,7 +23,7 @@ void exit_process(void);
 static struct process bootstrap_proc;
 
 // TODO move to cpu.c later maybe for organization?
-static inline uint64_t read_rflags() {
+static inline uint64_t read_rflags(void) {
 	uint64_t flags;
 	// flags register isn't addressable, so we push and
 	// pop the flag register and store the result into `flags`
@@ -39,8 +39,9 @@ static inline uint64_t read_rflags() {
 // TODO feels like this should always be the case for cli/sti, at least
 // in the use case of guarding critical sections. worth noting for custom
 // language
-uint64_t irq_save() {
+uint64_t irq_save(void) {
 	uint64_t flags = read_rflags() & FL_IF;
+
 	asm volatile("cli" ::: "memory");
 	return flags;
 }
@@ -114,6 +115,7 @@ static struct vm_region *init_stack(struct process *p, void (*entry)(void)) {
 
 	// guard page (stack grows down, so we have to guard the first page)
 	phys_addr_t guard_frame = unmap_page(vma_stack->start, read_cr3());
+
 	if (!guard_frame) {
 		panic("init_stack: guard page was not mapped in the first place");
 	}
@@ -140,6 +142,7 @@ void forkret(void) {
 	irq_restore(FL_IF);
 
 	struct process *p = myproc();
+
 	p->entry();
 
 	// the entry point returned. there is nothing to return to: swtch()'s
@@ -153,13 +156,14 @@ void forkret(void) {
 // held until someone writes wait().
 void exit_process(void) {
 	struct process *p = myproc();
+
 	p->state = ZOMBIE;
 
 	ctx_switch(mycpu()->scheduler_proc);
 	panic("exit_process: scheduler switched back into a zombie");
 }
 
-struct process *myproc() {
+struct process *myproc(void) {
 	// not important (?) in single core,
 	// but in multicore, guards against mycpu()
 	// changing value between our capture of *cpu,
@@ -170,11 +174,12 @@ struct process *myproc() {
 	uint64_t irq_flags = irq_save();
 	struct cpu *cpu = mycpu();
 	struct process *ret = cpu->task;
+
 	irq_restore(irq_flags);
 	return ret;
 }
 
-struct cpu *mycpu() {
+struct cpu *mycpu(void) {
 	return &cpus[0];
 }
 
@@ -199,10 +204,10 @@ static void proc_b(void) {
 		yield();
 	}
 
-	printk(KERN_INFO, "B: done. \n");
+	printk(KERN_INFO, "B: done.\n");
 }
 
-void init() {
+void init(void) {
 	printk(KERN_INFO, "init: pid %d, on its own kernel stack\n",
 	       myproc()->pid);
 
@@ -224,6 +229,7 @@ void init() {
 	// the scheduler process is not on the mlfq since queueing it would have it pick itself.
 	// doing a swtch() with old == new saves the outgoing %rsp in the context it will restore.
 	struct process *sched_p = alloc_process("scheduler", scheduler);
+
 	if (!sched_p) {
 		panic("init: could not allocate the scheduler process\n");
 	}
@@ -246,7 +252,7 @@ void init() {
 	// strand every other process still on the queue.
 	//
 	// TODO(bugs):
-	// bugs bugs bugs bugs bugs!
+	// bugs!
 	//
 	// if we remove this, we enter lots of races when running QEMU.
 	// we might hang before starting the ABAB test, miss a newline print
@@ -259,11 +265,12 @@ void init() {
 }
 
 // the 'init' process
-void init_process() {
+void init_process(void) {
 	// init takes a table slot like any other process. alloc_process() does
 	// the stack, the name, the (empty) addrspace list and a cr3 inherited
 	// from the parent.
 	struct process *init_p = alloc_process("init", init);
+
 	if (!init_p) {
 		panic("could not allocate init process");
 	}
@@ -272,6 +279,7 @@ void init_process() {
 	// only the p4d is copied, so every lower level is still shared.
 	p4d_t *bootstrap = (p4d_t *)phys_to_virt(PAGE_GET_ADDR(read_cr3()));
 	p4d_t *p4d = (p4d_t *)kmalloc_a(sizeof(p4d_t));
+
 	memcpy(p4d, bootstrap, sizeof(p4d_t));
 	init_p->cr3 = virt_to_phys((virt_addr_t)p4d);
 
@@ -340,6 +348,7 @@ static struct process *alloc_process(const char *name, void (*entry)(void)) {
 	p->entry = entry;
 
 	struct vm_region *stack_region = init_stack(p, forkret);
+
 	list_add(&stack_region->node, &p->addrspace.vm_list);
 
 	irq_restore(flags);

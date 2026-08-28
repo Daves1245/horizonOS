@@ -34,7 +34,7 @@
 /* ~60 fps frame budget */
 #define PONG_FRAME_MS 16
 
-uint32_t last_event = 0;
+uint32_t last_event;
 
 static int screen_width, screen_height;
 static int last_player_scored;
@@ -51,7 +51,7 @@ virt_addr_t audio_pong_paddle_end;
 virt_addr_t audio_pong_score_start;
 virt_addr_t audio_pong_score_end;
 
-static void reset();
+static void reset(void);
 
 void pong_init(int width, int height) {
 	screen_width = width;
@@ -93,7 +93,7 @@ void pong_init(int width, int height) {
 		virt_to_phys((virt_addr_t)&_audio_pong_score_end);
 }
 
-void pong_handle_input() {
+void pong_handle_input(void) {
 	player1.vel_y = 0;
 	player2.vel_y = 0;
 
@@ -121,6 +121,7 @@ static int rects_overlap(struct obj *a, struct obj *b) {
 
 static void pong_on_player_hit(struct obj *paddle) {
 	uint32_t now = timer_ticks();
+
 	if (now - last_event >= EVENT_DEBOUNCE_TICKS) {
 		last_event = now;
 
@@ -137,8 +138,9 @@ static void pong_on_player_hit(struct obj *paddle) {
 	}
 }
 
-static void pong_on_wall_hit() {
+static void pong_on_wall_hit(void) {
 	uint32_t now = timer_ticks();
+
 	if (now - last_event >= EVENT_DEBOUNCE_TICKS) {
 		last_event = now;
 
@@ -155,6 +157,7 @@ static void pong_on_wall_hit() {
 
 void pong_on_score(int player) {
 	uint32_t now = timer_ticks();
+
 	if (now - last_event >= EVENT_DEBOUNCE_TICKS) {
 		last_event = now;
 
@@ -196,23 +199,26 @@ void pong_update(int delta) {
 	}
 }
 
-void pong_start_round() {
+void pong_start_round(void) {
 	reset();
 }
 
-void pong_start() {
+void pong_start(void) {
 	score_player1 = score_player2 = 0;
 	last_player_scored = 0;
 	pong_start_round();
 
 	enum gfx_target prev_target = gfx_get_target();
+
 	gfx_set_target(GFX_TARGET_BACKBUFFER);
 
 	uint32_t last = timer_ticks();
+
 	while (score_player1 < PONG_WIN_SCORE &&
 	       score_player2 < PONG_WIN_SCORE) {
 		uint32_t frame_start = timer_ticks();
 		int delta = (int)(frame_start - last);
+
 		last = frame_start;
 
 		pong_handle_input();
@@ -227,7 +233,7 @@ void pong_start() {
 	gfx_set_target(prev_target);
 }
 
-static void reset() {
+static void reset(void) {
 	ball.x = screen_width / 2 - ball.width / 2;
 	ball.y = screen_height / 2 - ball.height / 2;
 
@@ -245,6 +251,7 @@ static void reset() {
 
 void draw_score(int score, int x, int y) {
 	int digit = score % 10;
+
 	for (int row = 0; row < 7; row++) {
 		for (int col = 0; col < 5; col++) {
 			if (display[digit][row][col]) {
@@ -258,7 +265,7 @@ void draw_score(int score, int x, int y) {
 	}
 }
 
-void pong_draw() {
+void pong_draw(void) {
 	gfx_clear_screen();
 
 	gfx_fill_rect(player1.x, player1.y, player1.x + player1.width,

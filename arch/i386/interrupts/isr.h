@@ -2,6 +2,7 @@
 #define ISR_H
 
 #include <stdint.h>
+#include <kernel/compiler.h>
 
 struct interrupt_context {
 	uint32_t ds;
@@ -11,7 +12,7 @@ struct interrupt_context {
 	uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
 	uint32_t int_no, err_code; // isr_common_stub
 	uint32_t eip, cs, eflags, useresp, ss; // cpu on interrupt
-} __attribute__((packed));
+} __packed;
 
 // Function pointer type for interrupt handlers
 typedef void (*isr_t)(struct interrupt_context *);

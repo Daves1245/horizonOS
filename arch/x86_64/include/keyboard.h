@@ -121,7 +121,7 @@ int register_keyboard_listener(void);
  *
  * Clears head/tail and the in-use flag so the slot can be reused.
  *
- * @param level Level id returned by ::register_keyboard_listener.
+ * @param level id returned by ::register_keyboard_listener.
  */
 void remove_keyboard_listener(int level);
 

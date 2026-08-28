@@ -1,6 +1,7 @@
 /* here be dragons; make sure nobody loves you before proceeding. */
 #include <stdio.h>
 #include <stdint.h>
+#include <kernel/compiler.h>
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -35,7 +36,7 @@
 #include <shell.h>
 
 extern void ps2k_register(void);
-extern void halt_without_apic();
+extern void halt_without_apic(void);
 extern void hcf(void);
 extern void graphics_init(struct limine_framebuffer *fb);
 
@@ -45,58 +46,49 @@ uint8_t local_apic_id;
 
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
-__attribute__((
-	used,
-	section(".limine_requests"))) static volatile LIMINE_BASE_REVISION(3);
+__used __section(".limine_requests") static volatile LIMINE_BASE_REVISION(3);
 
 // Request framebuffer from Limine
-__attribute__((
-	used,
-	section(".limine_requests"))) static volatile struct limine_framebuffer_request
+__used __section(
+	".limine_requests") static volatile struct limine_framebuffer_request
 	framebuffer_request = {
 		.id = LIMINE_FRAMEBUFFER_REQUEST,
 		.revision = 0,
 	};
 
 // Request HHDM (Higher Half Direct Map) from Limine
-__attribute__((used,
-	       section(".limine_requests"))) volatile struct limine_hhdm_request
+__used __section(".limine_requests") volatile struct limine_hhdm_request
 	hhdm_request = {
 		.id = LIMINE_HHDM_REQUEST,
 		.revision = 0,
 	};
 
 // Request memory map from Limine
-__attribute__((
-	used,
-	section(".limine_requests"))) static volatile struct limine_memmap_request
+__used __section(".limine_requests") static volatile struct limine_memmap_request
 	memmap_request = {
 		.id = LIMINE_MEMMAP_REQUEST,
 		.revision = 0,
 	};
 
 // Request kernel file info from Limine
-__attribute__((
-	used,
-	section(".limine_requests"))) static volatile struct limine_kernel_file_request
+__used __section(
+	".limine_requests") static volatile struct limine_kernel_file_request
 	kernel_file_request = {
 		.id = LIMINE_KERNEL_FILE_REQUEST,
 		.revision = 0,
 	};
 
 // Request kernel physical/virtual base addresses from Limine
-__attribute__((
-	used,
-	section(".limine_requests"))) static volatile struct limine_kernel_address_request
+__used __section(
+	".limine_requests") static volatile struct limine_kernel_address_request
 	kernel_address_request = {
 		.id = LIMINE_KERNEL_ADDRESS_REQUEST,
 		.revision = 0,
 	};
 
 // Request specific paging mode from Limine
-__attribute__((
-	used,
-	section(".limine_requests"))) static volatile struct limine_paging_mode_request
+__used __section(
+	".limine_requests") static volatile struct limine_paging_mode_request
 	paging_mode_request = {
 		.id = LIMINE_PAGING_MODE_REQUEST,
 		.revision = 0,
@@ -106,21 +98,18 @@ __attribute__((
 	};
 
 // instead of searching the BIOS area we can just request the RSDP location from limine directly
-__attribute__((used,
-	       section(".limine_requests"))) volatile struct limine_rsdp_request
+__used __section(".limine_requests") volatile struct limine_rsdp_request
 	rsdp_request = {
 		.id = LIMINE_RSDP_REQUEST,
 		.revision = 0,
 	};
 
 // Define the start and end markers for the Limine requests.
-__attribute__((
-	used,
-	section(".limine_requests_start"))) static volatile LIMINE_REQUESTS_START_MARKER;
+__used __section(
+	".limine_requests_start") static volatile LIMINE_REQUESTS_START_MARKER;
 
-__attribute__((
-	used,
-	section(".limine_requests_end"))) static volatile LIMINE_REQUESTS_END_MARKER;
+__used __section(
+	".limine_requests_end") static volatile LIMINE_REQUESTS_END_MARKER;
 
 extern uint64_t kernel_end;
 extern uint64_t placement_address;
@@ -133,7 +122,7 @@ virt_addr_t rsdp_addr;
 void kernel_main(void) {
 	// Early initialization logging
 	// Ensure the bootloader actually understands our base revision (see spec).
-	if (LIMINE_BASE_REVISION_SUPPORTED == false) {
+	if (false == LIMINE_BASE_REVISION_SUPPORTED) {
 		hcf();
 		//printf("ERROR: Limine base revision not supported!\n");
 	}
@@ -174,8 +163,10 @@ void kernel_main(void) {
 
 	serial_write("Limine memory map:\n");
 	struct limine_memmap_response *memmap = memmap_request.response;
+
 	for (uint64_t i = 0; i < memmap->entry_count; i++) {
 		struct limine_memmap_entry *e = memmap->entries[i];
+
 		log_info("  [%d] base=0x%x%x len=0x%x%x type=%d\n", (int)i,
 			 (uint32_t)(e->base >> 32), (uint32_t)e->base,
 			 (uint32_t)(e->length >> 32), (uint32_t)e->length,
@@ -234,6 +225,7 @@ void kernel_main(void) {
 	printk(KERN_DEBUG, "Testing HHDM access at offset+0x1000...\n");
 	volatile uint8_t *test_addr = (uint8_t *)(hhdm_offset + 0x1000);
 	uint8_t test_val = *test_addr; // Should not crash if HHDM works
+
 	printk(KERN_OK, "HHDM test read successful, value: 0x%x\n", test_val);
 
 	rsdp_addr = rsdp_phys + hhdm_offset;
@@ -250,6 +242,7 @@ void kernel_main(void) {
 	printk(KERN_OK, "RSDP page mapped\n");
 
 	int acpi_result = acpi_init();
+
 	printk(KERN_INFO, "acpi_init returned: %d\n", acpi_result);
 
 	printk(KERN_INFO, "initializing apic\n");
@@ -272,6 +265,7 @@ void kernel_main(void) {
 	// map MMIO regions and set virtual (HHDM) base addresses
 	map_physical_range(lapic_phys, 4096, 1, 1, cr3);
 	uintptr_t lapic_virt = hhdm_offset + lapic_phys;
+
 	apic_set_base(lapic_virt);
 	enable_api_hardware();
 	enable_apic_software();
@@ -291,6 +285,7 @@ void kernel_main(void) {
 	// according to MADT: IRQ 0 is overriden to GSI 2
 	uint32_t timer_gsi = 2; // madt override
 	uint16_t timer_flags = 0x0; // madt itself
+
 	printk(KERN_INFO, "configuring timer\n");
 	configure_ioapic_irq_with_flags(timer_gsi, 32, local_apic_id,
 					timer_flags);

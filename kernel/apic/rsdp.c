@@ -27,7 +27,7 @@ extern volatile struct limine_hhdm_request hhdm_request;
 extern volatile struct limine_rsdp_request rsdp_request;
 
 /* UAPIC Kernel API uacpi_kernel_get_rsdp internal */
-phys_addr_t get_rsdp_phys() {
+phys_addr_t get_rsdp_phys(void) {
 	if (!rsdp_request.response) {
 		return 0;
 	}
@@ -37,7 +37,7 @@ phys_addr_t get_rsdp_phys() {
 }
 #endif
 
-virt_addr_t find_rsdp() {
+virt_addr_t find_rsdp(void) {
 	virt_addr_t rsdp_addr_found;
 
 	// EBDA (Extended BIOS Data Area)
@@ -85,9 +85,11 @@ uint32_t validate_rsdp_checksum(virt_addr_t rsdp_addr) {
 	serial_write("[validate_rsdp_checksum]: address is non-null\n");
 
 	struct rsdp_t *rsdp = (struct rsdp_t *)rsdp_addr;
+
 	serial_write("[validate_rsdp_checksum]: cast to rsdp_t\n");
 
 	uint8_t *bytes = (uint8_t *)rsdp_addr;
+
 	serial_write("[validate_rsdp_checksum]: cast to bytes\n");
 
 	uint8_t checksum = 0;
@@ -127,12 +129,14 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 	}
 
 	struct rsdp_t *rsdp = (struct rsdp_t *)rsdp_addr;
+
 	log_debug("[rsdp::find_madt]: RSDP revision: %d\n", rsdp->revision);
 
 	// determine if we use RSDT (v1.0) or XSDT (v2.0+)
 	if (rsdp->revision >= 2) {
 		// use XSDT for ACPI v2.0+
 		struct xsdp_t *xsdp = (struct xsdp_t *)rsdp_addr;
+
 		log_debug("[rsdp::find_madt]: XSDT address: 0x%x%x\n",
 			  (uint32_t)(xsdp->xsdt_addr >> 32),
 			  (uint32_t)xsdp->xsdt_addr);
@@ -170,6 +174,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 		for (uint32_t i = 0; i < num_entries; i++) {
 #ifdef __x86_64__
 			uint64_t table_phys = xsdt->entry_ptrs[i];
+
 			log_debug(
 				"[rsdp::find_madt]: Checking table %d at phys address: 0x%x%x\n",
 				i, (uint32_t)(table_phys >> 32),
@@ -183,6 +188,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 				(struct apic_header *)table_virt;
 #else
 			uint32_t table_addr = (uint32_t)xsdt->entry_ptrs[i];
+
 			log_debug(
 				"[rsdp::find_madt]: Checking table %d at address: 0x%x\n",
 				i, table_addr);
@@ -252,6 +258,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 		for (uint32_t i = 0; i < num_entries; i++) {
 #ifdef __x86_64__
 			uint32_t table_phys = rsdt->entry_ptrs[i];
+
 			log_debug(
 				"[rsdp::find_madt]: Checking table %d at phys address: 0x%x\n",
 				i, table_phys);
@@ -264,6 +271,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 				(struct apic_header *)table_virt;
 #else
 			uint32_t table_addr = rsdt->entry_ptrs[i];
+
 			log_debug(
 				"[rsdp::find_madt]: Checking table %d at address: 0x%x\n",
 				i, table_addr);
@@ -296,7 +304,7 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 	return 0;
 }
 
-void initialize_apic() {
+void initialize_apic(void) {
 	log_debug("[rsdp::init_apic]: starting ACPI/APIC initialization...\n");
 
 	virt_addr_t rsdp;
@@ -317,6 +325,7 @@ void initialize_apic() {
 
 	log_debug("[rsdp::init_apic]: validating RSDP checksum...\n");
 	uint32_t rsdp_result = validate_rsdp_checksum(rsdp);
+
 	if (rsdp_result != 0) {
 		log_error("ERROR: RSDP checksum validation failed (code: %d)\n",
 			  rsdp_result);
@@ -327,6 +336,7 @@ void initialize_apic() {
 	// find madt
 	log_debug("[rsdp::init_apic]: searching for MADT table...\n");
 	virt_addr_t madt = find_madt(rsdp);
+
 	if (!madt) {
 		log_error("ERROR: MADT not found!\n");
 		return;

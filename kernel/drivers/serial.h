@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-void init_serial();
+void init_serial(void);
 void serial_putchar(char c);
 void serial_write(const char *str);
 void serial_write_hex(const char *prefix, uint32_t val);

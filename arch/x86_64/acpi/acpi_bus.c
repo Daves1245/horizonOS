@@ -8,6 +8,7 @@ static struct acpi_driver *acpi_drivers_head;
 
 void acpi_register_driver(struct acpi_driver *driver) {
 	struct acpi_driver *next = acpi_drivers_head;
+
 	acpi_drivers_head = driver;
 	driver->next = next;
 }
@@ -21,6 +22,7 @@ static uacpi_iteration_decision acpi_init_one_device(void *ctx,
 	uacpi_namespace_node_info *info;
 
 	uacpi_status ret = uacpi_get_namespace_node_info(node, &info);
+
 	if (uacpi_unlikely_error(ret)) {
 		const char *path =
 			uacpi_namespace_node_generate_absolute_path(node);
@@ -83,7 +85,7 @@ static uacpi_iteration_decision acpi_init_one_device(void *ctx,
 	return UACPI_ITERATION_DECISION_CONTINUE;
 }
 
-void acpi_bus_enumerate() {
+void acpi_bus_enumerate(void) {
 	uacpi_namespace_for_each_child(uacpi_namespace_root(),
 				       acpi_init_one_device, UACPI_NULL,
 				       UACPI_OBJECT_DEVICE_BIT,

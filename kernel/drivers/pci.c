@@ -17,6 +17,7 @@ struct pci_address_t pci_find_device(int vendor, int device) {
 
 				// register 0x00 holds vendor and device ID in high and low bits
 				uint32_t ids = pci_read(addr, 0x00);
+
 				if (ids == 0xFFFFFFFF) {
 					continue;
 				}

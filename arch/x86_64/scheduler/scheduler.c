@@ -15,7 +15,7 @@ struct list_head ready;
 lock_t mlfq_lock;
 
 /* prepare data structures (mlfq and ready list) */
-void init_scheduler() {
+void init_scheduler(void) {
 	// these live in .bss, so their next/prev come up NULL rather than
 	// pointing at themselves. an uninitialized head reads as *non*-empty,
 	// which walks the scheduler straight into a NULL deref -- so this has to
@@ -40,6 +40,7 @@ void sched_enqueue(struct process *p, int level) {
 	// mlfq today, but the moment the timer drives the scheduler, taking this
 	// with IF set is a self-deadlock waiting to happen.
 	uint64_t flags = irq_save();
+
 	spinlock(&mlfq_lock);
 
 	list_add_tail(&p->sched, &mlfq[level]);
@@ -79,7 +80,7 @@ void ctx_switch(struct process *new) {
 }
 
 // we make the scheduler its own process with special properties
-void scheduler() {
+void scheduler(void) {
 	while (1) {
 		// we arrive here with IF clear, every time: ctx_switch() cleared it
 		// on the way in and a process that yields to us hands us its cleared
@@ -92,6 +93,7 @@ void scheduler() {
 		// hold the queue only long enough to claim a process. running it
 		// under the lock would mean handing the lock to whoever we switch to.
 		uint64_t flags = irq_save();
+
 		spinlock(&mlfq_lock);
 
 		for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
@@ -136,7 +138,7 @@ void scheduler() {
 
 // give up the rest of this turn. the process stays runnable and goes back on
 // the queue (one level down) as soon as the scheduler picks the switch up.
-void yield() {
+void yield(void) {
 	struct process *p = myproc();
 	struct process *sched_p = mycpu()->scheduler_proc;
 

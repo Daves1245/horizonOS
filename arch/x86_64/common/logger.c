@@ -53,6 +53,7 @@ void logf(enum log_type type, const char *format, ...) {
 	log_prefix(type);
 
 	va_list parameters;
+
 	va_start(parameters, format);
 
 	int written = 0;
@@ -64,6 +65,7 @@ void logf(enum log_type type, const char *format, ...) {
 			if (format[0] == '%')
 				format++;
 			size_t amount = 1;
+
 			while (format[amount] && format[amount] != '%')
 				amount++;
 			if (maxrem < amount) {
@@ -84,6 +86,7 @@ void logf(enum log_type type, const char *format, ...) {
 		if (*format == 'c') {
 			format++;
 			char c = (char)va_arg(parameters, int);
+
 			if (!maxrem) {
 				va_end(parameters);
 				return;
@@ -97,6 +100,7 @@ void logf(enum log_type type, const char *format, ...) {
 			format++;
 			const char *str = va_arg(parameters, const char *);
 			size_t len = strlen(str);
+
 			if (maxrem < len) {
 				va_end(parameters);
 				return;
@@ -114,8 +118,10 @@ void logf(enum log_type type, const char *format, ...) {
 			}
 			char num_buff[12] = { 0 };
 			int num = va_arg(parameters, int);
+
 			itoa(num_buff, num);
 			size_t len = strlen(num_buff);
+
 			if (!serial_print(num_buff, len)) {
 				va_end(parameters);
 				return;
@@ -129,8 +135,10 @@ void logf(enum log_type type, const char *format, ...) {
 			}
 			char num_buff[9] = { 0 };
 			unsigned int num = va_arg(parameters, unsigned int);
+
 			itoa_hex(num_buff, num);
 			size_t len = strlen(num_buff);
+
 			if (!serial_print(num_buff, len)) {
 				va_end(parameters);
 				return;
@@ -139,6 +147,7 @@ void logf(enum log_type type, const char *format, ...) {
 		} else {
 			format = format_begun_at;
 			size_t len = strlen(format);
+
 			if (maxrem < len) {
 				va_end(parameters);
 				return;
@@ -155,7 +164,7 @@ void logf(enum log_type type, const char *format, ...) {
 	va_end(parameters);
 }
 
-void log_demo() {
+void log_demo(void) {
 	serial_write("\n=== Color Log Demo ===\n");
 	log_info("status\n");
 	log_success("tests passed\n");

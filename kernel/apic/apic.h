@@ -31,17 +31,19 @@ void apic_set_base(uintptr_t virt);
 
 static inline uint32_t read_msr_low(uint32_t msr) {
 	uint32_t low;
+
 	asm volatile("rdmsr" : "=a"(low) : "c"(msr) : "edx");
 	return low;
 }
 
 static inline uint32_t read_msr_high(uint32_t msr) {
 	uint32_t high;
+
 	asm volatile("rdmsr" : "=d"(high) : "c"(msr) : "eax");
 	return high;
 }
 
-int check_msr();
+int check_msr(void);
 
 static inline void write_msr(uint32_t msr, uint32_t low, uint32_t high) {
 	asm volatile("wrmsr" : : "c"(msr), "a"(low), "d"(high));
@@ -49,22 +51,23 @@ static inline void write_msr(uint32_t msr, uint32_t low, uint32_t high) {
 
 static inline void write_msr_low(uint32_t msr, uint32_t low) {
 	uint32_t high = read_msr_high(msr);
+
 	write_msr(msr, low, high);
 }
 
 // there are two registers for ioapic - address register and
 // data register at APIC_BASE and APIC_BASE + 4 bytes respectively
 // address register uses the bottom byte for register select
-void enable_api_hardware();
-void enable_apic_software();
+void enable_api_hardware(void);
+void enable_apic_software(void);
 uint32_t ioapic_read(uint32_t reg);
 void ioapic_write(uint32_t reg, uint32_t value);
-uint32_t get_ioapic_base();
-uint8_t get_local_apic_id();
+uint32_t get_ioapic_base(void);
+uint8_t get_local_apic_id(void);
 void configure_ioapic_irq(uint8_t irq, uint8_t vector, uint8_t dest_apic_id);
 void configure_ioapic_irq_with_flags(uint8_t irq, uint8_t vector,
 				     uint8_t dest_apic_id, uint16_t flags);
-void disable_pic();
+void disable_pic(void);
 
 // abstractino for architecture-independent implementation
 void apic_send_eoi(void);

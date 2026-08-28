@@ -2,6 +2,7 @@
 #define DESCRIPTOR_TABLES_H
 
 #include <stdint.h>
+#include <kernel/compiler.h>
 
 // GDT entry structure for x86_64
 struct gdt_entry {
@@ -11,13 +12,13 @@ struct gdt_entry {
 	uint8_t access;
 	uint8_t granularity;
 	uint8_t base_high;
-} __attribute__((packed));
+} __packed;
 
 // GDT pointer structure
 struct gdt_ptr {
 	uint16_t limit;
 	uint64_t base;
-} __attribute__((packed));
+} __packed;
 
 // IDT entry structure for x86_64 (64-bit)
 struct idt_entry {
@@ -28,13 +29,13 @@ struct idt_entry {
 	uint16_t offset_mid;
 	uint32_t offset_high;
 	uint32_t zero;
-} __attribute__((packed));
+} __packed;
 
 // IDT pointer structure
 struct idt_ptr {
 	uint16_t limit;
 	uint64_t base;
-} __attribute__((packed));
+} __packed;
 
 // Function prototypes
 void init_descriptor_tables(void);

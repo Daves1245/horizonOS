@@ -14,8 +14,9 @@ void apic_set_base(uintptr_t virt) {
 	lapic_virt_base = virt;
 }
 
-int check_msr() {
+int check_msr(void) {
 	uint32_t eax, ebx, ecx, edx;
+
 	asm volatile("cpuid"
 		     : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
 		     : "a"(1));
@@ -36,14 +37,15 @@ int check_msr() {
 // better practice)
 
 // MSR 0x1B (APIC base MSR)
-void enable_api_hardware() {
+void enable_api_hardware(void) {
 	uint32_t apic_base = read_msr_low(0x1B);
+
 	apic_base |= (1 << 11); // global (hardware) apic enable
 	write_msr_low(0x1B, apic_base);
 }
 
 // spurious vector register (APIC 0xF0)
-void enable_apic_software() {
+void enable_apic_software(void) {
 	volatile uint32_t *spurious_reg = (uint32_t *)(lapic_virt_base + 0xF0);
 	*spurious_reg |= (1 << 8); // apic software enable
 	*spurious_reg |= 0xFF;
@@ -63,13 +65,14 @@ void ioapic_write(uint32_t reg, uint32_t value) {
 }
 
 // grab the base address of the ioapic
-uint32_t get_ioapic_base() {
+uint32_t get_ioapic_base(void) {
 	uint32_t low = read_msr_low(0x1B);
+
 	return low & 0xfffff000; // mask the lower 12 bits
 }
 
 // disable legacy PIC - required when using APIC
-void disable_pic() {
+void disable_pic(void) {
 	log_debug("Disabling legacy PIC\n");
 	// mask all interrupts on both PICs
 	outb(0x21, 0xFF); // master PIC
@@ -78,7 +81,7 @@ void disable_pic() {
 }
 
 // get Local APIC ID from the APIC ID register
-uint8_t get_local_apic_id() {
+uint8_t get_local_apic_id(void) {
 	volatile uint32_t *apic_id_reg =
 		(volatile uint32_t *)(lapic_virt_base + APIC_ID);
 	// APIC ID is in bits 24-31 of the APIC ID register
@@ -150,6 +153,7 @@ static void pit_wait_ms(uint32_t ms) {
 
 	/* gate channel 2 on, speaker off */
 	uint8_t tmp = inb(0x61);
+
 	outb(0x61, (tmp & ~0x02) | 0x01);
 
 	/* channel 2, lobyte/hibyte, mode 0 (one-shot), binary */

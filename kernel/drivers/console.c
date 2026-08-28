@@ -50,11 +50,13 @@ static void scroll_up(void) {
 	uint32_t *dst = screen;
 	uint32_t *src = screen + row_pixels;
 	uint32_t copy_count = stride * (screen_h - cell_h);
+
 	for (uint32_t i = 0; i < copy_count; i++) {
 		dst[i] = src[i];
 	}
 
 	uint32_t *last = screen + stride * (screen_h - cell_h);
+
 	for (uint32_t i = 0; i < row_pixels; i++) {
 		last[i] = bg_color;
 	}
@@ -109,6 +111,7 @@ void console_backspace(void) {
 	}
 	int px = cursor_col * cell_w;
 	int py = cursor_row * cell_h;
+
 	gfx_fill_rect(px, py, px + cell_w - 1, py + cell_h - 1, bg_color);
 }
 
@@ -122,12 +125,14 @@ static void console_write_uint(uint64_t val, int base) {
 	// upper bound on digits required to display uint value
 	char buf[21];
 	int i = 0;
+
 	if (val == 0) {
 		console_putchar('0');
 		return;
 	}
 	while (val) {
 		int d = val % base;
+
 		buf[i++] = d < 10 ? '0' + d : 'a' + d - 10;
 		val /= base;
 	}
@@ -206,6 +211,7 @@ void console_vprintf(const char *fmt, va_list args) {
 
 void console_printf(const char *fmt, ...) {
 	va_list args;
+
 	va_start(args, fmt);
 	console_vprintf(fmt, args);
 	va_end(args);

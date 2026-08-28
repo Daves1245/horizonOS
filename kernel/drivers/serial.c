@@ -3,7 +3,7 @@
 
 #define COM1_PORT 0x3F8
 
-int serial_initialized = 0;
+int serial_initialized;
 
 static inline void outb(uint16_t port, uint8_t val) {
 	asm volatile("outb %0, %1" : : "a"(val), "Nd"(port));
@@ -11,11 +11,12 @@ static inline void outb(uint16_t port, uint8_t val) {
 
 static inline uint8_t inb(uint16_t port) {
 	uint8_t ret;
+
 	asm volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
 	return ret;
 }
 
-void init_serial() {
+void init_serial(void) {
 	serial_initialized = 0;
 
 	// Disable interrupts
@@ -40,7 +41,7 @@ void init_serial() {
 	serial_initialized = 1;
 }
 
-int serial_transmit_empty() {
+int serial_transmit_empty(void) {
 	return inb(COM1_PORT + 5) & 0x20;
 }
 
@@ -57,12 +58,13 @@ void serial_write(const char *str) {
 }
 
 static void serial_write_uint(uint64_t val, int base) {
-	const char digits[] = "0123456789abcdef";
+	static const char digits[] = "0123456789abcdef";
 	// uint max - 1e19 + 1 null byte
 	// whoops, if we pass in base = 2 then
 	// we need 64 bits to display this
 	char buf[65] = { 0 };
 	int i = 64;
+
 	buf[i] = '\0';
 	if (val == 0) {
 		serial_putchar('0');
@@ -145,6 +147,7 @@ void serial_vprintf(const char *fmt, va_list args) {
 
 void serial_printf(const char *fmt, ...) {
 	va_list args;
+
 	va_start(args, fmt);
 	serial_vprintf(fmt, args);
 	va_end(args);
@@ -155,6 +158,7 @@ void serial_write_hex(const char *prefix, uint32_t val) {
 	serial_write("0x");
 	static const char hex[] = "0123456789abcdef";
 	char buf[9];
+
 	buf[8] = '\0';
 	for (int i = 7; i >= 0; i--) {
 		buf[i] = hex[val & 0xF];

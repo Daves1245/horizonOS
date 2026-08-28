@@ -16,8 +16,8 @@
 
 #define TIMER_INT_NO 32
 
-void init_timer();
-uint32_t timer_ticks();
+void init_timer(void);
+uint32_t timer_ticks(void);
 void sleep(uint32_t s);
 void sleep_ms(uint32_t ms);
 
