@@ -1,4 +1,4 @@
-#include <drivers/console.h>
+#include <kernel/console.h>
 #include <fonts/font.h>
 #include <drivers/graphics.h>
 #include <stdarg.h>

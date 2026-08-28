@@ -45,3 +45,12 @@ the register values holds more than just that.
     oh, actually we cant do this since we dont have on-demand paging yet. we'd have to
     split this into a physical memory allocator and a page fault handler interrupt first.
     after that, we can just clear the pte's and let page faults do their thing.
+
+# Volatile patch series
+New patch series: removing all (unnecessary) traces of volatile.
+See: https://docs.kernel.org/process/volatile-considered-harmful.html
+
+# Refactor drivers
+- move code in drivers/ that doesn't drive anything into common/ utilities/ or some other place.
+- Related, there's probably lots of dead code within those directories and they should be consolidated
+and cleaned up.

@@ -19,7 +19,7 @@
 #include <jury/test_vm.h>
 #include "multiboot_info.h"
 #include <drivers/graphics.h>
-#include <drivers/console.h>
+#include <kernel/console.h>
 #include <drivers/ac97.h>
 #include <games/pong.h>
 

@@ -1,5 +1,5 @@
 #include "log.h"
-#include <drivers/console.h>
+#include <kernel/console.h>
 #include <drivers/graphics.h>
 #include <serial.h>
 

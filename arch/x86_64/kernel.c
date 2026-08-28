@@ -23,7 +23,7 @@
 #include <halt.h>
 #include <time.h>
 #include <drivers/graphics.h>
-#include <drivers/console.h>
+#include <kernel/console.h>
 
 #include <drivers/ac97.h>
 #include <games/pong.h>

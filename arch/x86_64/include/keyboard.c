@@ -9,7 +9,7 @@
  */
 #include "keyboard.h"
 #include <string.h>
-#include <drivers/console.h>
+#include <kernel/console.h>
 #include <serial.h>
 #include <kernel/panic.h>
 
