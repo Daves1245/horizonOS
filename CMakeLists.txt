@@ -14,7 +14,7 @@ if(BUILD_DIR_NAME STREQUAL "i386" OR BUILD_DIR_NAME STREQUAL "x86_64")
     endif()
 endif()
 
-# Toolchain selection matching default-host.sh logic
+# Toolchain selection
 if(ARCH STREQUAL "i386")
     set(CMAKE_SYSTEM_NAME Generic)
     set(CMAKE_SYSTEM_PROCESSOR i686)
@@ -23,7 +23,7 @@ elseif(ARCH STREQUAL "x86_64")
     include(uacpi/uacpi.cmake)
     set(CMAKE_SYSTEM_NAME Generic)
     set(CMAKE_SYSTEM_PROCESSOR x86_64)
-    # Match default-host.sh: try x86_64-linux-gnu-gcc first, then x86_64-elf-gcc
+    # try x86_64-linux-gnu-gcc first, then x86_64-elf-gcc
 
     # detect OS and set proper gcc
     if(WIN32)
@@ -585,7 +585,6 @@ elseif(ARCH STREQUAL "x86_64")
 endif()
 
 # Build target that respects the proper order: headers -> libc -> kernel
-# Mimics the original build.sh workflow
 add_custom_target(build-all
     DEPENDS k horizon.kernel install-kernel-headers install-libc-headers
     COMMENT "Building everything in correct order"
