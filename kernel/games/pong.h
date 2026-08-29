@@ -2,7 +2,7 @@
 #define PONG_H
 
 #include <stdint.h>
-#include <mm.h>
+#include <asm/mm.h>
 
 struct obj {
 	int x;

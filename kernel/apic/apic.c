@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <kernel/tty.h>
 #include <kernel/logger.h>
-#include <mm.h>
+#include <asm/mm.h>
 
 uintptr_t lapic_virt_base = APIC_BASE;
 

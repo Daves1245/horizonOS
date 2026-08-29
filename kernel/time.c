@@ -7,8 +7,8 @@
 #include <time.h>
 
 #ifdef __x86_64__
-#include <x86_64/scheduler/process.h>
-#include <x86_64/scheduler/scheduler.h>
+#include <kernel/scheduler/process.h>
+#include <kernel/scheduler/scheduler.h>
 #endif
 
 #define TIMER_HZ 1000

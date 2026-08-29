@@ -1,7 +1,7 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <x86_64/scheduler/process.h>
+#include <kernel/scheduler/process.h>
 
 #define NUM_PRIORITY_LEVELS 3
 

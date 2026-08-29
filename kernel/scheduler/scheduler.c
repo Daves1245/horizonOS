@@ -1,6 +1,6 @@
-#include <x86_64/scheduler/scheduler.h>
-#include <x86_64/scheduler/process.h>
-#include <x86_64/scheduler/lock.h>
+#include <kernel/scheduler/scheduler.h>
+#include <kernel/scheduler/process.h>
+#include <kernel/scheduler/lock.h>
 #include <kernel/panic.h>
 
 // old_rsp points to where we should get the last stack

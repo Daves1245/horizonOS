@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <x86_64/memory/paging.h>
-#include <mm.h>
+#include <asm/mm.h>
 
 #define NUM_PROCESSES 10
 #define NUM_CPUS 2
