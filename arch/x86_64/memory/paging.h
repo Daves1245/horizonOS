@@ -1,7 +1,7 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include "mm.h"
+#include <asm/mm.h>
 #include <stdint.h>
 #include <kernel/compiler.h>
 #include <stddef.h>

@@ -8,7 +8,7 @@
 #include <limine.h>
 #include <kernel/tty.h>
 #include <common.h>
-#include <mm.h>
+#include <asm/mm.h>
 #include <apic/rsdp.h>
 #include <serial.h>
 #include <uacpi/types.h>
@@ -28,8 +28,8 @@
 #include <drivers/ac97.h>
 #include <games/pong.h>
 
-#include <x86_64/scheduler/process.h>
-#include <x86_64/scheduler/scheduler.h>
+#include <kernel/scheduler/process.h>
+#include <kernel/scheduler/scheduler.h>
 
 #include <keyboard.h>
 #include <log.h>
