@@ -7,7 +7,7 @@
 #include <apic/apic.h>
 #include <halt.h>
 #include <kheap.h>
-#include <mm.h>
+#include <asm/mm.h>
 
 #define AC97_PCI_INTERRUPT_LINE 0x3C
 

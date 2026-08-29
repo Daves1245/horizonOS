@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <drivers/pci.h>
-#include <mm.h>
+#include <asm/mm.h>
 
 /* PCI BAR offsets */
 #define AC97_NAMBAR 0x10 /* native audio mixer base address (NAM) */

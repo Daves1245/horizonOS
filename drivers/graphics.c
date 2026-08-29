@@ -2,7 +2,7 @@
 #include <serial.h>
 #include <string.h>
 #include <kheap.h>
-#include <mm.h>
+#include <asm/mm.h>
 
 static gfx_framebuffer_t fb;
 static uint32_t *backbuffer;
