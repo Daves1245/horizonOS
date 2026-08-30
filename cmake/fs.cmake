@@ -1,4 +1,4 @@
-function(drivers name)
+function(fs name)
     cmake_parse_arguments(S "" "" "CORE;ASM;DEPENDS;INCLUDES;DEFINES" ${ARGN})
 
     if (S_UNPARSED_ARGUMENTS)

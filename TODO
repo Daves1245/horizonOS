@@ -54,3 +54,10 @@ See: https://docs.kernel.org/process/volatile-considered-harmful.html
 - move code in drivers/ that doesn't drive anything into common/ utilities/ or some other place.
 - Related, there's probably lots of dead code within those directories and they should be consolidated
 and cleaned up.
+
+# Refactor
+- lock.{c,h} should be moved out of scheduler (out of kernel core) and into include/kernel, since
+it's a publicly facing lock interface.
+
+# Timer
+- give up the CPU instead of busy-waiting for sleep. Since we work with a single-processor scheduler, we don't have to conform to strict burst cycles like the linux kernel uses (see/google dont yield in linux kernel)
