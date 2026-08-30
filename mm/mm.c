@@ -1,4 +1,4 @@
-#include "mm.h"
+#include <asm/mm.h>
 
 uint64_t kernel_phys_base;
 uint64_t kernel_virt_base;

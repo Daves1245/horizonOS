@@ -1,7 +1,7 @@
 #include <kheap.h>
 #include <string.h>
-#include <x86_64/scheduler/process.h>
-#include <x86_64/scheduler/scheduler.h>
+#include <kernel/scheduler/process.h>
+#include <kernel/scheduler/scheduler.h>
 #include <log.h>
 #include <kernel/panic.h>
 #include <serial.h>

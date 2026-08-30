@@ -52,6 +52,7 @@ void init_timer(void) {
 void sleep_ms(uint32_t ms) {
 	uint32_t start = tick_count;
 
+  // TODO spin or yield instead of busy waiting
 	while ((tick_count - start) < ms)
 		;
 }

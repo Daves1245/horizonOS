@@ -92,6 +92,19 @@ set(CMAKE_ASM_NASM_COMPILER ${NASM_BINARY})
 
 project(Horizon C ASM ASM_NASM)
 
+# include subsystem cmakes (./cmake/subsystem.cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(kernel)
+include(audio)
+include(arch)
+include(drivers)
+include(fs)
+include(mm)
+
+set(SUBSYSTEMS_INCLUDES
+    kernel/
+)
+
 enable_language(ASM_NASM)
 
 set(SYSROOT ${CMAKE_SOURCE_DIR}/sysroot)
@@ -150,7 +163,6 @@ set(KERNEL_INCLUDE_DIRS
 
 # Link flags and libraries
 set(KERNEL_LINK_FLAGS -no-pie -z noexecstack)
-set(KERNEL_LIBS -nostdlib -lk -lgcc)
 
 # Architecture-specific configuration
 if(ARCH STREQUAL "i386")
@@ -274,10 +286,6 @@ elseif(ARCH STREQUAL "x86_64")
         ${ARCHDIR}/include/log.c
         ${ARCHDIR}/include/shell.c
         ${ARCHDIR}/include/keyboard.c
-        ${ARCHDIR}/scheduler/lock.c
-        ${ARCHDIR}/scheduler/process.c
-        ${ARCHDIR}/scheduler/scheduler.c
-        ${ARCHDIR}/scheduler/swtch.S
         ${UACPI_SOURCES}
     )
 
@@ -373,29 +381,15 @@ endif()
 # Common kernel sources
 set(KERNEL_COMMON_SOURCES
     ${ARCHDIR}/kernel.c
-    kernel/kheap.c
-    drivers/keyboard/keyboard.c
-    drivers/ac97.c
-    drivers/pci.c
-    drivers/graphics.c
-    drivers/serial.c
     kernel/fonts/fontlibrary.c
     kernel/fonts/font.c
     kernel/apic/rsdp.c
     kernel/apic/apic.c
     kernel/apic/madt.c
     kernel/halt.c
-    kernel/mm.c
     kernel/games/pong.c
     kernel/time.c
     include/kernel/console.c
-)
-
-set(SUBSYSTEMS
-    arch
-    drivers
-    kernel
-    fs
 )
 
 # All kernel sources
@@ -404,8 +398,50 @@ set(KERNEL_SOURCES
     ${KERNEL_COMMON_SOURCES}
 )
 
-# Create kernel executable
+add_library(horizon_flags INTERFACE)
+
+target_compile_options(horizon_flags INTERFACE ${KERNEL_C_FLAGS} ${KERNEL_ARCH_C_FLAGS})
+target_compile_definitions(horizon_flags INTERFACE ${KERNEL_COMPILE_DEFS} ${KERNEL_ARCH_COMPILE_DEFS})
+target_include_directories(horizon_flags INTERFACE ${KERNEL_INCLUDE_DIRS} ${KERNEL_ARCH_INCLUDE_DIRS})
+
+drivers(drivers CORE
+    drivers/ac97.c
+    drivers/pci.c
+    drivers/serial.c
+    drivers/graphics.c
+    drivers/keyboard/keyboard.c
+)
+
+mm(mm CORE
+    mm/kheap.c
+    mm/mm.c
+)
+
+kernel(kernel CORE
+    kernel/scheduler/lock.c
+    kernel/scheduler/process.c
+    kernel/scheduler/scheduler.c
+    kernel/scheduler/swtch.S
+)
+
+fs(fs CORE
+    fs/inode.c
+)
+
+set(SUBSYSTEMS drivers mm kernel fs)
+
+set(KERNEL_LIBS -nostdlib -lk -lgcc)
+
+# Kernel executable
 add_executable(horizon.kernel ${KERNEL_SOURCES})
+
+# Add subsystems as prerequisites to kernel
+add_dependencies(horizon.kernel ${SUBSYSTEMS})
+
+# PUBLIC/PRIVATE here refers to whether the linked library leaks
+# its includes, compile definitions, options, etc. to the target
+# it's linking against
+target_link_libraries(horizon.kernel PRIVATE ${SUBSYSTEMS} ${KERNEL_LIBS})
 
 # Ensure headers and libk are ready before building kernel
 add_dependencies(horizon.kernel install-kernel-headers install-libc-headers k)
@@ -413,10 +449,10 @@ add_dependencies(horizon.kernel install-kernel-headers install-libc-headers k)
 # Link embedded audio data
 if(ARCH STREQUAL "x86_64")
     add_dependencies(horizon.kernel rick_obj wall_obj paddle_obj score_obj)
-    target_link_libraries(horizon.kernel ${RICK_OBJ} ${WALL_OBJ} ${PADDLE_OBJ} ${SCORE_OBJ})
+    target_link_libraries(horizon.kernel PRIVATE ${RICK_OBJ} ${WALL_OBJ} ${PADDLE_OBJ} ${SCORE_OBJ})
 elseif(ARCH STREQUAL "i386")
     add_dependencies(horizon.kernel i386_wall_obj i386_paddle_obj i386_score_obj)
-    target_link_libraries(horizon.kernel ${I386_WALL_OBJ} ${I386_PADDLE_OBJ} ${I386_SCORE_OBJ})
+    target_link_libraries(horizon.kernel PRIVATE ${I386_WALL_OBJ} ${I386_PADDLE_OBJ} ${I386_SCORE_OBJ})
 endif()
 
 # Set compile options
@@ -478,11 +514,6 @@ target_link_options(horizon.kernel PRIVATE
     -T ${LINKER_SCRIPT}
     ${KERNEL_LINK_FLAGS}
     -L${SYSROOT}${LIBDIR}
-)
-
-# Link libraries
-target_link_libraries(horizon.kernel
-    ${KERNEL_LIBS}
 )
 
 # Kernel links against libk.a in sysroot (installed by build-all target)

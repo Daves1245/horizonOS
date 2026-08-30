@@ -524,3 +524,22 @@ through their accessors, making intermixing types difficult.
 
 looks like cr4 doesn't point to the 5th level of paging, so cr3
 still works for that.
+
+
+# CMake
+
+We can modularize through libraries, but we can't use static libraries
+since static libraries will drop objects that have no references to them
+in the code. That's bad for us because the gdt, idt, etc. will be dropped
+even though they are used by the cpu. So we have to use object files
+
+Modern CMake gives targets properties which are propagated through
+dependency edges. You can draw a dependency graph edge by:
+target_link_libraries(A <SCOPE> B).
+
+There are three scopes:
+	PRIVATE: Linked to A, not passed to targets consuming A
+	PUBLIC: Linked to A, passed to targets consuming A
+	INTERFACE: Not linked to A, but passed to targets consuming A
+
+
