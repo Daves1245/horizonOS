@@ -94,16 +94,7 @@ project(Horizon C ASM ASM_NASM)
 
 # include subsystem cmakes (./cmake/subsystem.cmake)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-include(kernel)
-include(audio)
-include(arch)
-include(drivers)
-include(fs)
-include(mm)
-
-set(SUBSYSTEMS_INCLUDES
-    kernel/
-)
+include(subsystem)
 
 enable_language(ASM_NASM)
 
@@ -381,15 +372,6 @@ endif()
 # Common kernel sources
 set(KERNEL_COMMON_SOURCES
     ${ARCHDIR}/kernel.c
-    kernel/fonts/fontlibrary.c
-    kernel/fonts/font.c
-    kernel/apic/rsdp.c
-    kernel/apic/apic.c
-    kernel/apic/madt.c
-    kernel/halt.c
-    kernel/games/pong.c
-    kernel/time.c
-    include/kernel/console.c
 )
 
 # All kernel sources
@@ -404,39 +386,61 @@ target_compile_options(horizon_flags INTERFACE ${KERNEL_C_FLAGS} ${KERNEL_ARCH_C
 target_compile_definitions(horizon_flags INTERFACE ${KERNEL_COMPILE_DEFS} ${KERNEL_ARCH_COMPILE_DEFS})
 target_include_directories(horizon_flags INTERFACE ${KERNEL_INCLUDE_DIRS} ${KERNEL_ARCH_INCLUDE_DIRS})
 
-drivers(drivers CORE
-    drivers/ac97.c
-    drivers/pci.c
-    drivers/serial.c
-    drivers/graphics.c
-    drivers/keyboard/keyboard.c
-)
-
-mm(mm CORE
-    mm/kheap.c
-    mm/mm.c
-)
-
-kernel(kernel CORE
-    kernel/scheduler/lock.c
-    kernel/scheduler/process.c
-    kernel/scheduler/scheduler.c
-    kernel/scheduler/swtch.S
-)
-
-fs(fs CORE
-    fs/inode.c
-)
-
-set(SUBSYSTEMS drivers mm kernel fs)
-
-set(KERNEL_LIBS -nostdlib -lk -lgcc)
-
 # Kernel executable
 add_executable(horizon.kernel ${KERNEL_SOURCES})
 
-# Add subsystems as prerequisites to kernel
-add_dependencies(horizon.kernel ${SUBSYSTEMS})
+subsystem(kernel
+    CORE
+        kernel/scheduler/lock.c
+        kernel/scheduler/process.c
+        kernel/scheduler/scheduler.c
+        kernel/scheduler/swtch.S
+
+        kernel/fonts/fontlibrary.c
+        kernel/fonts/font.c
+
+        kernel/apic/rsdp.c
+        kernel/apic/apic.c
+        kernel/apic/madt.c
+
+        kernel/halt.c
+        kernel/time.c
+        include/kernel/console.c
+
+        kernel/games/pong.c
+
+    INCLUDES
+        ${CMAKE_SOURCE_DIR}
+)
+
+subsystem(drivers
+    CORE
+        drivers/ac97.c
+        drivers/pci.c
+        drivers/serial.c
+        drivers/graphics.c
+        drivers/keyboard/keyboard.c
+
+    INCLUDES
+        ${CMAKE_SOURCE_DIR}
+)
+
+subsystem(mm
+    CORE
+        mm/kheap.c
+        mm/mm.c
+    INCLUDES
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+subsystem(fs
+    CORE
+        fs/inode.c
+    INCLUDES
+        ${CMAKE_SOURCE_DIR}
+)
+
+set(KERNEL_LIBS -nostdlib -lk -lgcc)
 
 # PUBLIC/PRIVATE here refers to whether the linked library leaks
 # its includes, compile definitions, options, etc. to the target
