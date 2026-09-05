@@ -155,6 +155,56 @@ set(KERNEL_INCLUDE_DIRS
 # Link flags and libraries
 set(KERNEL_LINK_FLAGS -no-pie -z noexecstack)
 
+# convert audio to 16-bit 48kHz stereo raw PCM for AC97
+set(AUDIO_PONG_WALL_SRC ${CMAKE_SOURCE_DIR}/audio/wall.ogg)
+set(AUDIO_PONG_WALL_RAW ${CMAKE_CURRENT_BINARY_DIR}/wall.raw)
+set(AUDIO_PONG_PADDLE_SRC ${CMAKE_SOURCE_DIR}/audio/paddle.ogg)
+set(AUDIO_PONG_PADDLE_RAW ${CMAKE_CURRENT_BINARY_DIR}/paddle.raw)
+set(AUDIO_PONG_SCORE_SRC ${CMAKE_SOURCE_DIR}/audio/score.ogg)
+set(AUDIO_PONG_SCORE_RAW ${CMAKE_CURRENT_BINARY_DIR}/score.raw)
+
+# convert audio to 16-bit 48kHz stereo raw PCM for AC97
+# -f s16le: raw signed 16-bit little-endian PCM
+# -acodec pcm_s16le: 16-bit LE PCM codec
+# -ar 48000: 48kHz sample rate (AC97 standard)
+# -ac 2: stereo
+
+set(AUDIO_PONG_WALL_SRC ${CMAKE_SOURCE_DIR}/audio/wall.ogg)
+set(AUDIO_PONG_WALL_RAW ${CMAKE_CURRENT_BINARY_DIR}/wall.raw)
+set(AUDIO_PONG_PADDLE_SRC ${CMAKE_SOURCE_DIR}/audio/paddle.ogg)
+set(AUDIO_PONG_PADDLE_RAW ${CMAKE_CURRENT_BINARY_DIR}/paddle.raw)
+set(AUDIO_PONG_SCORE_SRC ${CMAKE_SOURCE_DIR}/audio/score.ogg)
+set(AUDIO_PONG_SCORE_RAW ${CMAKE_CURRENT_BINARY_DIR}/score.raw)
+
+# very impotant audio
+set(AUDIO_RICK_SRC ${CMAKE_SOURCE_DIR}/audio/rick.mp3)
+set(AUDIO_RICK_RAW ${CMAKE_CURRENT_BINARY_DIR}/rick.raw)
+
+add_custom_command(
+    OUTPUT ${AUDIO_RICK_RAW}
+    COMMAND ffmpeg -y -i ${AUDIO_RICK_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_RICK_RAW}
+    DEPENDS ${AUDIO_RICK_SRC}
+    COMMENT "Converting rick.mp3 to raw PCM"
+)
+add_custom_command(
+    OUTPUT ${AUDIO_PONG_WALL_RAW}
+    COMMAND ffmpeg -y -i ${AUDIO_PONG_WALL_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_WALL_RAW}
+    DEPENDS ${AUDIO_PONG_WALL_SRC}
+    COMMENT "Converting wall.ogg to raw PCM"
+)
+add_custom_command(
+    OUTPUT ${AUDIO_PONG_PADDLE_RAW}
+    COMMAND ffmpeg -y -i ${AUDIO_PONG_PADDLE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_PADDLE_RAW}
+    DEPENDS ${AUDIO_PONG_PADDLE_SRC}
+    COMMENT "Converting paddle.ogg to raw PCM"
+)
+add_custom_command(
+    OUTPUT ${AUDIO_PONG_SCORE_RAW}
+    COMMAND ffmpeg -y -i ${AUDIO_PONG_SCORE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_SCORE_RAW}
+    DEPENDS ${AUDIO_PONG_SCORE_SRC}
+    COMMENT "Converting score.ogg to raw PCM"
+)
+
 # Architecture-specific configuration
 if(ARCH STREQUAL "i386")
     set(KERNEL_ARCH_C_FLAGS -mno-sse -mno-red-zone -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -msoft-float -mno-80387)
@@ -186,39 +236,12 @@ if(ARCH STREQUAL "i386")
         ${ARCHDIR}/boot/crtn.S
     )
 
-    # convert audio to 16-bit 48kHz stereo raw PCM for AC97
-    set(AUDIO_PONG_WALL_SRC ${CMAKE_SOURCE_DIR}/audio/wall.ogg)
-    set(AUDIO_PONG_WALL_RAW ${CMAKE_CURRENT_BINARY_DIR}/wall.raw)
-    set(AUDIO_PONG_PADDLE_SRC ${CMAKE_SOURCE_DIR}/audio/paddle.ogg)
-    set(AUDIO_PONG_PADDLE_RAW ${CMAKE_CURRENT_BINARY_DIR}/paddle.raw)
-    set(AUDIO_PONG_SCORE_SRC ${CMAKE_SOURCE_DIR}/audio/score.ogg)
-    set(AUDIO_PONG_SCORE_RAW ${CMAKE_CURRENT_BINARY_DIR}/score.raw)
-
-    add_custom_command(
-        OUTPUT ${AUDIO_PONG_WALL_RAW}
-        COMMAND ffmpeg -y -i ${AUDIO_PONG_WALL_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_WALL_RAW}
-        DEPENDS ${AUDIO_PONG_WALL_SRC}
-        COMMENT "Converting wall.ogg to raw PCM"
-    )
-    add_custom_command(
-        OUTPUT ${AUDIO_PONG_PADDLE_RAW}
-        COMMAND ffmpeg -y -i ${AUDIO_PONG_PADDLE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_PADDLE_RAW}
-        DEPENDS ${AUDIO_PONG_PADDLE_SRC}
-        COMMENT "Converting paddle.ogg to raw PCM"
-    )
-    add_custom_command(
-        OUTPUT ${AUDIO_PONG_SCORE_RAW}
-        COMMAND ffmpeg -y -i ${AUDIO_PONG_SCORE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_SCORE_RAW}
-        DEPENDS ${AUDIO_PONG_SCORE_SRC}
-        COMMENT "Converting score.ogg to raw PCM"
-    )
-
     set(I386_WALL_OBJ ${CMAKE_CURRENT_BINARY_DIR}/wall.o)
     add_custom_command(
         OUTPUT ${I386_WALL_OBJ}
         COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf32-i386 -B i386
-            --rename-section .data=.sound_wall,alloc,load,readonly,contents
-            ${AUDIO_PONG_WALL_RAW} ${I386_WALL_OBJ}
+        --rename-section .data=.sound_wall,alloc,load,readonly,contents
+        ${AUDIO_PONG_WALL_RAW} ${I386_WALL_OBJ}
         DEPENDS ${AUDIO_PONG_WALL_RAW}
         COMMENT "Embedding wall.raw (i386)"
     )
@@ -228,8 +251,8 @@ if(ARCH STREQUAL "i386")
     add_custom_command(
         OUTPUT ${I386_PADDLE_OBJ}
         COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf32-i386 -B i386
-            --rename-section .data=.sound_paddle,alloc,load,readonly,contents
-            ${AUDIO_PONG_PADDLE_RAW} ${I386_PADDLE_OBJ}
+        --rename-section .data=.sound_paddle,alloc,load,readonly,contents
+        ${AUDIO_PONG_PADDLE_RAW} ${I386_PADDLE_OBJ}
         DEPENDS ${AUDIO_PONG_PADDLE_RAW}
         COMMENT "Embedding paddle.raw (i386)"
     )
@@ -239,8 +262,8 @@ if(ARCH STREQUAL "i386")
     add_custom_command(
         OUTPUT ${I386_SCORE_OBJ}
         COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf32-i386 -B i386
-            --rename-section .data=.sound_score,alloc,load,readonly,contents
-            ${AUDIO_PONG_SCORE_RAW} ${I386_SCORE_OBJ}
+        --rename-section .data=.sound_score,alloc,load,readonly,contents
+        ${AUDIO_PONG_SCORE_RAW} ${I386_SCORE_OBJ}
         DEPENDS ${AUDIO_PONG_SCORE_RAW}
         COMMENT "Embedding score.raw (i386)"
     )
@@ -280,53 +303,15 @@ elseif(ARCH STREQUAL "x86_64")
         ${UACPI_SOURCES}
     )
 
-    # convert audio to 16-bit 48kHz stereo raw PCM for AC97
-    # -f s16le: raw signed 16-bit little-endian PCM
-    # -acodec pcm_s16le: 16-bit LE PCM codec
-    # -ar 48000: 48kHz sample rate (AC97 standard)
-    # -ac 2: stereo
-
-    set(AUDIO_RICK_SRC ${CMAKE_SOURCE_DIR}/audio/rick.mp3)
-    set(AUDIO_RICK_RAW ${CMAKE_CURRENT_BINARY_DIR}/rick.raw)
-    set(AUDIO_PONG_WALL_SRC ${CMAKE_SOURCE_DIR}/audio/wall.ogg)
-    set(AUDIO_PONG_WALL_RAW ${CMAKE_CURRENT_BINARY_DIR}/wall.raw)
-    set(AUDIO_PONG_PADDLE_SRC ${CMAKE_SOURCE_DIR}/audio/paddle.ogg)
-    set(AUDIO_PONG_PADDLE_RAW ${CMAKE_CURRENT_BINARY_DIR}/paddle.raw)
-    set(AUDIO_PONG_SCORE_SRC ${CMAKE_SOURCE_DIR}/audio/score.ogg)
-    set(AUDIO_PONG_SCORE_RAW ${CMAKE_CURRENT_BINARY_DIR}/score.raw)
-
-    add_custom_command(
-        OUTPUT ${AUDIO_RICK_RAW}
-        COMMAND ffmpeg -y -i ${AUDIO_RICK_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_RICK_RAW}
-        DEPENDS ${AUDIO_RICK_SRC}
-        COMMENT "Converting rick.mp3 to raw PCM"
-    )
-    add_custom_command(
-        OUTPUT ${AUDIO_PONG_WALL_RAW}
-        COMMAND ffmpeg -y -i ${AUDIO_PONG_WALL_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_WALL_RAW}
-        DEPENDS ${AUDIO_PONG_WALL_SRC}
-        COMMENT "Converting wall.ogg to raw PCM"
-    )
-    add_custom_command(
-        OUTPUT ${AUDIO_PONG_PADDLE_RAW}
-        COMMAND ffmpeg -y -i ${AUDIO_PONG_PADDLE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_PADDLE_RAW}
-        DEPENDS ${AUDIO_PONG_PADDLE_SRC}
-        COMMENT "Converting paddle.ogg to raw PCM"
-    )
-    add_custom_command(
-        OUTPUT ${AUDIO_PONG_SCORE_RAW}
-        COMMAND ffmpeg -y -i ${AUDIO_PONG_SCORE_SRC} -f s16le -acodec pcm_s16le -ar 48000 -ac 2 ${AUDIO_PONG_SCORE_RAW}
-        DEPENDS ${AUDIO_PONG_SCORE_SRC}
-        COMMENT "Converting score.ogg to raw PCM"
+    set(X86_AUDIO_FLAGS -I binary -O elf64-x86-64 -B i386:x86-64
+        --rename-section .data=.sound_rick,alloc,load,readonly,contents
     )
 
     # Embed raw audio data into linkable objects
     set(RICK_OBJ ${CMAKE_CURRENT_BINARY_DIR}/rick.o)
     add_custom_command(
         OUTPUT ${RICK_OBJ}
-        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
-            --rename-section .data=.sound_rick,alloc,load,readonly,contents
-            ${AUDIO_RICK_RAW} ${RICK_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy ${X86_AUDIO_FLAGS} ${AUDIO_RICK_RAW} ${RICK_OBJ}
         DEPENDS ${AUDIO_RICK_RAW}
         COMMENT "Embedding rick.raw"
     )
@@ -335,9 +320,7 @@ elseif(ARCH STREQUAL "x86_64")
     set(WALL_OBJ ${CMAKE_CURRENT_BINARY_DIR}/wall.o)
     add_custom_command(
         OUTPUT ${WALL_OBJ}
-        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
-            --rename-section .data=.sound_wall,alloc,load,readonly,contents
-            ${AUDIO_PONG_WALL_RAW} ${WALL_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy ${X86_AUDIO_FLAGS} ${AUDIO_PONG_WALL_RAW} ${WALL_OBJ}
         DEPENDS ${AUDIO_PONG_WALL_RAW}
         COMMENT "Embedding wall.raw"
     )
@@ -346,9 +329,7 @@ elseif(ARCH STREQUAL "x86_64")
     set(PADDLE_OBJ ${CMAKE_CURRENT_BINARY_DIR}/paddle.o)
     add_custom_command(
         OUTPUT ${PADDLE_OBJ}
-        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
-            --rename-section .data=.sound_paddle,alloc,load,readonly,contents
-            ${AUDIO_PONG_PADDLE_RAW} ${PADDLE_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy ${X86_AUDIO_FLAGS} ${AUDIO_PONG_PADDLE_RAW} ${PADDLE_OBJ}
         DEPENDS ${AUDIO_PONG_PADDLE_RAW}
         COMMENT "Embedding paddle.raw"
     )
@@ -357,9 +338,7 @@ elseif(ARCH STREQUAL "x86_64")
     set(SCORE_OBJ ${CMAKE_CURRENT_BINARY_DIR}/score.o)
     add_custom_command(
         OUTPUT ${SCORE_OBJ}
-        COMMAND ${TOOLCHAIN_PREFIX}-objcopy -I binary -O elf64-x86-64 -B i386:x86-64
-            --rename-section .data=.sound_score,alloc,load,readonly,contents
-            ${AUDIO_PONG_SCORE_RAW} ${SCORE_OBJ}
+        COMMAND ${TOOLCHAIN_PREFIX}-objcopy ${X86_AUDIO_FLAGS} ${AUDIO_PONG_SCORE_RAW} ${SCORE_OBJ}
         DEPENDS ${AUDIO_PONG_SCORE_RAW}
         COMMENT "Embedding score.raw"
     )
@@ -391,53 +370,53 @@ add_executable(horizon.kernel ${KERNEL_SOURCES})
 
 subsystem(kernel
     CORE
-        kernel/scheduler/lock.c
-        kernel/scheduler/process.c
-        kernel/scheduler/scheduler.c
-        kernel/scheduler/swtch.S
+    kernel/scheduler/lock.c
+    kernel/scheduler/process.c
+    kernel/scheduler/scheduler.c
+    kernel/scheduler/swtch.S
 
-        kernel/fonts/fontlibrary.c
-        kernel/fonts/font.c
+    kernel/fonts/fontlibrary.c
+    kernel/fonts/font.c
 
-        kernel/apic/rsdp.c
-        kernel/apic/apic.c
-        kernel/apic/madt.c
+    kernel/apic/rsdp.c
+    kernel/apic/apic.c
+    kernel/apic/madt.c
 
-        kernel/halt.c
-        kernel/time.c
-        include/kernel/console.c
+    kernel/halt.c
+    kernel/time.c
+    include/kernel/console.c
 
-        kernel/games/pong.c
+    kernel/games/pong.c
 
     INCLUDES
-        ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
 )
 
 subsystem(drivers
     CORE
-        drivers/ac97.c
-        drivers/pci.c
-        drivers/serial.c
-        drivers/graphics.c
-        drivers/keyboard/keyboard.c
+    drivers/ac97.c
+    drivers/pci.c
+    drivers/serial.c
+    drivers/graphics.c
+    drivers/keyboard/keyboard.c
 
     INCLUDES
-        ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
 )
 
 subsystem(mm
     CORE
-        mm/kheap.c
-        mm/mm.c
+    mm/kheap.c
+    mm/mm.c
     INCLUDES
-        ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 subsystem(fs
     CORE
-        fs/inode.c
+    fs/inode.c
     INCLUDES
-        ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
 )
 
 set(KERNEL_LIBS -nostdlib -lk -lgcc)
@@ -583,11 +562,11 @@ if(ARCH STREQUAL "i386")
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_BINARY_DIR}/isodir
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/isodir/boot/grub
         COMMAND ${CMAKE_COMMAND} -E copy
-            ${SYSROOT}${BOOTDIR}/horizon.kernel
-            ${CMAKE_BINARY_DIR}/isodir/boot/horizon.kernel
+        ${SYSROOT}${BOOTDIR}/horizon.kernel
+        ${CMAKE_BINARY_DIR}/isodir/boot/horizon.kernel
         COMMAND ${CMAKE_COMMAND}
-            -DGRUB_CFG_PATH=${CMAKE_BINARY_DIR}/isodir/boot/grub/grub.cfg
-            -P ${CMAKE_SOURCE_DIR}/cmake/create_grub_cfg.cmake
+        -DGRUB_CFG_PATH=${CMAKE_BINARY_DIR}/isodir/boot/grub/grub.cfg
+        -P ${CMAKE_SOURCE_DIR}/cmake/create_grub_cfg.cmake
         COMMAND ${GRUB_MKRESCUE} -o ${CMAKE_BINARY_DIR}/horizon.iso ${CMAKE_BINARY_DIR}/isodir
         DEPENDS install-all
         COMMENT "creating bootable i386 iso"
@@ -614,22 +593,22 @@ elseif(ARCH STREQUAL "x86_64")
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_BINARY_DIR}/isodir
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/isodir
         COMMAND ${CMAKE_COMMAND} -E copy
-            ${SYSROOT}${BOOTDIR}/horizon.kernel
-            ${CMAKE_BINARY_DIR}/isodir/horizon.kernel
+        ${SYSROOT}${BOOTDIR}/horizon.kernel
+        ${CMAKE_BINARY_DIR}/isodir/horizon.kernel
         COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_SOURCE_DIR}/limine.conf
-            ${CMAKE_BINARY_DIR}/isodir/
+        ${CMAKE_SOURCE_DIR}/limine.conf
+        ${CMAKE_BINARY_DIR}/isodir/
         COMMAND ${CMAKE_COMMAND}
-            -DLIMINE_BINARY=${LIMINE_BINARY}
-            -DISODIR=${CMAKE_BINARY_DIR}/isodir
-            -P ${CMAKE_SOURCE_DIR}/cmake/copy_limine_files.cmake
+        -DLIMINE_BINARY=${LIMINE_BINARY}
+        -DISODIR=${CMAKE_BINARY_DIR}/isodir
+        -P ${CMAKE_SOURCE_DIR}/cmake/copy_limine_files.cmake
         COMMAND ${XORRISO_BINARY} -as mkisofs
-            -b limine-bios.sys
-            -no-emul-boot
-            -boot-load-size 4
-            -boot-info-table
-            -o ${CMAKE_BINARY_DIR}/horizon.iso
-            ${CMAKE_BINARY_DIR}/isodir/
+        -b limine-bios.sys
+        -no-emul-boot
+        -boot-load-size 4
+        -boot-info-table
+        -o ${CMAKE_BINARY_DIR}/horizon.iso
+        ${CMAKE_BINARY_DIR}/isodir/
         COMMAND ${LIMINE_BINARY} bios-install ${CMAKE_BINARY_DIR}/horizon.iso
         DEPENDS install-all
         COMMENT "creating bootable x86_64 iso"
@@ -651,8 +630,8 @@ add_custom_target(clean-all
     COMMAND ${CMAKE_COMMAND} -E rm -rf ${SYSROOT}
     COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_BINARY_DIR}/isodir
     COMMAND ${CMAKE_COMMAND} -E rm -f
-        ${CMAKE_BINARY_DIR}/horizon.iso
-        ${CMAKE_BINARY_DIR}/horizon.iso
+    ${CMAKE_BINARY_DIR}/horizon.iso
+    ${CMAKE_BINARY_DIR}/horizon.iso
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target clean
     COMMENT "cleaning"
 )
