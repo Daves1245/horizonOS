@@ -1,5 +1,5 @@
-// TODO: this can be done in C with gcc extensions. this will probably
-// be cleaner, although assembly for now is fine.
+; TODO: this can be done in C with gcc extensions. this will probably
+; be cleaner, although assembly for now is fine.
 %macro isr_err_stub 1
 global isr%+%1
 isr%+%1:
@@ -136,7 +136,7 @@ isr_no_err_stub 47
 global isr_stub_table
 isr_stub_table:
 %assign i 0
-// same as number of stubs above
+; same as number of stubs above
 %rep    48
     dd isr%+i
 %assign i i+1

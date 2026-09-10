@@ -84,7 +84,7 @@ static void enable_bus_master(struct pci_address_t bdf) {
 }
 
 static void controller_reset(void) {
-	/* cold reset: CR bit (bit 1) = 0 asserts reset, = 1 deasserts it.
+	/* cold reset: CR bit (bit 1) = 0 asserts reset, = 1 unasserts it.
      * to perform a cold reset: clear CR (write 0 to bit 1), wait, then set CR to come out of reset.
      * AC97_GLOBAL_CONTROL_COLD_RESET = (1 << 1), so writing just GIE (bit 0) clears CR -> asserts reset.
      * then write CR | GIE to deassert reset and keep global interrupt enable. */
@@ -97,10 +97,10 @@ static void controller_reset(void) {
 	outl(nabmbar + AC97_GLOBAL_CONTROL,
 	     AC97_GLOBAL_CONTROL_INTERRUPT_ENABLE);
 
-	// wait at least one uS (using 1ms to be safe)
+	// wait at least one uS (using 1ms to be safe, as well as we dont have uS-granular sleep)
 	sleep_ms(1);
 
-	// deassert cold reset: set CR = 1, keep GIE
+	// unassert cold reset: set CR = 1, keep GIE
 	outl(nabmbar + AC97_GLOBAL_CONTROL,
 	     AC97_GLOBAL_CONTROL_COLD_RESET |
 		     AC97_GLOBAL_CONTROL_INTERRUPT_ENABLE);
@@ -135,6 +135,25 @@ static void abort(void) {
 
 // reference driver: https://github.com/klange/toaruos/blob/master/modules/ac97.c
 
+// how much of what is left to play fits in one BDL entry. samples are 16-bit,
+// and the count has to stay even so a stereo frame never straddles two
+// entries.
+//
+// most entries will have full (0xFFE * 2) bytes, but the last one needs
+// to be calculated. if this isn't done precisely, the DMA will be handed
+// garbage memory. I'm assuming UB or we break the hardware are possibilities.
+static uint16_t samples_in_chunk(phys_addr_t pos, phys_addr_t end) {
+	uint32_t remaining = (uint32_t)(end - pos);
+
+	if (remaining >= AC97_MAX_SAMPLES_PER_ENTRY * 2) {
+		return AC97_MAX_SAMPLES_PER_ENTRY;
+	}
+
+	uint16_t samples = (uint16_t)(remaining >> 1);
+
+	return samples & ~1;
+}
+
 void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
 	if (audio_start > 0xFFFFFFFF || audio_end > 0xFFFFFFFF) {
 		serial_write(
@@ -160,10 +179,14 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
 	int i;
 
 	for (i = 0; i < NUM_BDL_ENTRIES && audio_start < audio_end; i++) {
+		uint16_t samples = samples_in_chunk(audio_start, audio_end);
+
+		if (!samples) {
+			break;
+		}
+
 		ring_buffer[i].buffer_addr_phys = audio_start;
-		ring_buffer[i].num_samples =
-			0xFFE; // max. sample number should always be even for some
-		// reason (check notes?)
+		ring_buffer[i].num_samples = samples;
 
 		// set IOC flag on entries from which we want interrupts from
 		ring_buffer[i].flags =
@@ -172,7 +195,7 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
 		// entry in the data. for now, we can just interrupt
 		// and handle each individually - this is less complicated
 		// code for now
-		audio_start += 0xFFE * 2;
+		audio_start += (phys_addr_t)samples * 2;
 	}
 	bdl_entries_filled = i;
 	/* audio_start has been advanced by the loop; save it as the next position to fill */
@@ -181,6 +204,13 @@ void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end) {
 }
 
 void ac97_start_playback(void) {
+	if (bdl_entries_filled == 0) {
+		// nothing queued: LVI would go to -1 and point the controller at
+		// the far end of the ring, playing 32 stale entries
+		serial_write("[ERROR]: ac97.c: nothing in the BDL to play\n");
+		return;
+	}
+
 	uint32_t bdl_phys = (uint32_t)virt_to_phys((virt_addr_t)ring_buffer);
 
 	// tell NABMBAR + BDL_BASE_ADDRESS where our data (ring_buffer) lies
@@ -196,6 +226,27 @@ void ac97_start_playback(void) {
 			 AC97_CHANNEL_CONTROL_REGISTER);
 	outb(nabmbar + AC97_PCM_OUT_BASE + AC97_CHANNEL_CONTROL_REGISTER,
 	     cr | AC97_CONTROL_REGISTER_RUN_PAUSE_BUS_MASTER);
+}
+
+// play a PCM section from linker symbols
+//
+// the linker gives us virtual addresses, but the controller does
+// its own DMA and needs a physical one.
+//
+// TODO(vfs) once we have a working vfs, we can refactor this
+// to accept a file instead of working with hardcoded embedded
+// data.
+void ac97_play(const void *pcm_start, const void *pcm_end) {
+	phys_addr_t start = virt_to_phys((virt_addr_t)pcm_start);
+	phys_addr_t end = virt_to_phys((virt_addr_t)pcm_end);
+
+	if (end <= start) {
+		serial_write("[ERROR]: ac97.c: pcm clip is empty\n");
+		return;
+	}
+
+	ac97_setup_bdl(start, end);
+	ac97_start_playback();
 }
 
 void ac97_debug_status(void) {
@@ -272,11 +323,8 @@ static void ac97_irq_handler(struct interrupt_context *regs) {
 	}
 
 	/* fill the next BDL slot with the next chunk of audio data, then advance LVI */
-	int next_slot = (last_valid_index + 1) & 31;
-	uint32_t remaining = (uint32_t)(audio_data_end - audio_cur_pos);
-	uint16_t samples =
-		(remaining >= 0xFFE * 2) ? 0xFFE : (uint16_t)(remaining >> 1);
-	samples &= ~1; /* must be even for stereo */
+	int next_slot = (last_valid_index + 1) & (NUM_BDL_ENTRIES - 1);
+	uint16_t samples = samples_in_chunk(audio_cur_pos, audio_data_end);
 
 	ring_buffer[next_slot].buffer_addr_phys = (uint32_t)audio_cur_pos;
 	ring_buffer[next_slot].num_samples = samples;

@@ -115,7 +115,7 @@ set(SYSROOT ${CMAKE_SOURCE_DIR}/sysroot)
 set(PREFIX /usr)
 set(EXEC_PREFIX ${PREFIX})
 set(BOOTDIR /boot)
-set(LIBDIR ${EXEC_PREFIX}/lib)
+set(LIBDIR ${EXEC_PREFIX}/lib/${ARCH})
 set(INCLUDEDIR ${PREFIX}/include)
 
 set(CMAKE_INSTALL_PREFIX ${SYSROOT}${PREFIX})

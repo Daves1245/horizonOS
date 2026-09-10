@@ -44,13 +44,6 @@ struct obj player1, player2, ball;
 int score_player1;
 int score_player2;
 
-virt_addr_t audio_pong_wall_start;
-virt_addr_t audio_pong_wall_end;
-virt_addr_t audio_pong_paddle_start;
-virt_addr_t audio_pong_paddle_end;
-virt_addr_t audio_pong_score_start;
-virt_addr_t audio_pong_score_end;
-
 static void reset(void);
 
 void pong_init(int width, int height) {
@@ -79,18 +72,6 @@ void pong_init(int width, int height) {
 			     BALL_RADIUS,
 			     0,
 			     0 };
-
-	audio_pong_wall_start =
-		virt_to_phys((virt_addr_t)&_audio_pong_wall_start);
-	audio_pong_wall_end = virt_to_phys((virt_addr_t)&_audio_pong_wall_end);
-	audio_pong_paddle_start =
-		virt_to_phys((virt_addr_t)&_audio_pong_paddle_start);
-	audio_pong_paddle_end =
-		virt_to_phys((virt_addr_t)&_audio_pong_paddle_end);
-	audio_pong_score_start =
-		virt_to_phys((virt_addr_t)&_audio_pong_score_start);
-	audio_pong_score_end =
-		virt_to_phys((virt_addr_t)&_audio_pong_score_end);
 }
 
 void pong_handle_input(void) {
@@ -133,8 +114,8 @@ static void pong_on_player_hit(struct obj *paddle) {
 
 		ball.vel_y += paddle->vel_y / 2;
 
-		ac97_setup_bdl(audio_pong_paddle_start, audio_pong_paddle_end);
-		ac97_start_playback();
+		ac97_play(&_audio_pong_paddle_start,
+			  &_audio_pong_paddle_end);
 	}
 }
 
@@ -150,8 +131,8 @@ static void pong_on_wall_hit(void) {
 			ball.vel_y = -abs(ball.vel_y);
 		}
 
-		ac97_setup_bdl(audio_pong_wall_start, audio_pong_wall_end);
-		ac97_start_playback();
+		ac97_play(&_audio_pong_wall_start,
+			  &_audio_pong_wall_end);
 	}
 }
 
@@ -161,8 +142,8 @@ void pong_on_score(int player) {
 	if (now - last_event >= EVENT_DEBOUNCE_TICKS) {
 		last_event = now;
 
-		ac97_setup_bdl(audio_pong_score_start, audio_pong_score_end);
-		ac97_start_playback();
+		ac97_play(&_audio_pong_score_start,
+			  &_audio_pong_score_end);
 
 		if (player == 1)
 			score_player1++;

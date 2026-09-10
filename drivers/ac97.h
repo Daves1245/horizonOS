@@ -83,6 +83,11 @@
 
 #define NUM_BDL_ENTRIES 32
 
+/* the max number of samples in one BDL entry. 16-bit sample count and
+ * the top bit is reserved, so 0xFFE is the largest even count that fits.
+ */
+#define AC97_MAX_SAMPLES_PER_ENTRY 0xFFE
+
 /* wrirte a run/pause bit here to start/pause playback */
 #define AC97_PCM_OUT_TRANSFER_CONTROL 0x1B
 
@@ -101,6 +106,13 @@ extern uint8_t _binary_audio_start[];
 extern uint8_t _binary_audio_end[];
 
 int ac97_init(void);
+
+/* wrapper around linker-defined addresses, plays a section of embedded PCM
+ * audio using the ac97 driver.
+ */
+void ac97_play(const void *pcm_start, const void *pcm_end);
+
+// internal setup functions
 void ac97_setup_bdl(phys_addr_t audio_start, phys_addr_t audio_end);
 void ac97_start_playback(void);
 void ac97_debug_status(void);
