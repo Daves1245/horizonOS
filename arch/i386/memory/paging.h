@@ -72,9 +72,46 @@
 #define PTE_GLOBAL (1 << 8)
 #define PTE_FRAME_MASK 0xFFFFF000
 
-// pimple typedefs for page directory and page table entries
-typedef uint32_t page_directory_t;
-typedef uint32_t page_table_entry_t;
+typedef uint32_t __page_directory_t;
+typedef uint32_t __page_table_entry_t;
+
+typedef uint32_t __page_dir_entry_t;
+
+typedef struct {
+	__page_table_entry_t pte;
+} pte_t;
+
+// TODO(inlining): like in x86_64, we might want to move
+// these accessor functions into macros in order to
+// force inlining instead of relying on the compiler.
+static inline __page_table_entry_t pte_val(pte_t pte) {
+	return pte.pte;
+}
+static inline __page_table_entry_t pte_ptr(pte_t *pte) {
+	return &pte->pte;
+}
+
+typedef struct {
+	__page_dir_entry_t pde;
+} pde_t;
+
+typedef struct page_table_t {
+	pte_t entries[512];
+} pt_t __aligned(4096);
+
+typedef uint32_t __page_upper_entry_t;
+
+typedef struct {
+	__page_upper_entry_t pue;
+} pud_t __alligned(4096);
+
+static inline __page_upper_entry_t pue_val(pue_t pue) {
+	return pue.pue;
+}
+
+static inline __page_upper_entry_t *pue_ptr(pue_t *pue) {
+	return &pue->pue;
+}
 
 // macro helpers for page table entry manipulation
 #define PTE_IS_PRESENT(pte) ((pte) & PTE_PRESENT)
