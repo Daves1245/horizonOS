@@ -1,6 +1,6 @@
 #include <kernel/scheduler/scheduler.h>
 #include <kernel/scheduler/process.h>
-#include <kernel/scheduler/lock.h>
+#include <include/lock.h>
 #include <kernel/panic.h>
 #include <asm/irqflags.h>
 #include <asm/switch.h>

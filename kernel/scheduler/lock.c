@@ -1,4 +1,4 @@
-#include <kernel/scheduler/lock.h>
+#include <include/lock.h>
 
 // according to the documentation at [1], atomic_flag is the only type
 // that is *guaranteed* to be lock-free, while the other implementations are

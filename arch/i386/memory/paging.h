@@ -2,6 +2,7 @@
 #define PAGING_H
 
 #include "interrupts/isr.h"
+#include <kernel/compiler.h>
 #include <stdint.h>
 
 /*
@@ -87,7 +88,7 @@ typedef struct {
 static inline __page_table_entry_t pte_val(pte_t pte) {
 	return pte.pte;
 }
-static inline __page_table_entry_t pte_ptr(pte_t *pte) {
+static inline __page_table_entry_t *pte_ptr(pte_t *pte) {
 	return &pte->pte;
 }
 
@@ -95,15 +96,27 @@ typedef struct {
 	__page_dir_entry_t pde;
 } pde_t;
 
+static inline __page_dir_entry_t pde_val(pde_t pde) {
+	return pde.pde;
+}
+static inline __page_dir_entry_t *pde_ptr(pde_t *pde) {
+	return &pde->pde;
+}
+
+// non-PAE i386: both tables hold 1024 4-byte entries (4KiB)
 typedef struct page_table_t {
-	pte_t entries[512];
+	pte_t entries[1024];
 } pt_t __aligned(4096);
+
+typedef struct page_directory_t {
+	pde_t entries[1024];
+} pd_t __aligned(4096);
 
 typedef uint32_t __page_upper_entry_t;
 
 typedef struct {
 	__page_upper_entry_t pue;
-} pud_t __alligned(4096);
+} pue_t;
 
 static inline __page_upper_entry_t pue_val(pue_t pue) {
 	return pue.pue;
@@ -112,6 +125,10 @@ static inline __page_upper_entry_t pue_val(pue_t pue) {
 static inline __page_upper_entry_t *pue_ptr(pue_t *pue) {
 	return &pue->pue;
 }
+
+typedef struct {
+	pue_t entries[512];
+} pud_t __aligned(4096);
 
 // macro helpers for page table entry manipulation
 #define PTE_IS_PRESENT(pte) ((pte) & PTE_PRESENT)
@@ -131,16 +148,16 @@ static inline __page_upper_entry_t *pue_ptr(pue_t *pue) {
 	((pte) = ((pte) & ~PTE_FRAME_MASK) | (((frame) & 0xFFFFF) << 12))
 
 // global variables
-extern page_directory_t *kernel_directory;
-extern page_directory_t *current_directory;
+extern pd_t *kernel_directory;
+extern pd_t *current_directory;
 
 // function declarations
 void init_paging(void);
-void switch_page_directory(page_directory_t *new_pd);
-page_table_entry_t *get_page(uint32_t addr, int make, uint32_t cr3);
+void switch_page_directory(pd_t *new_pd);
+pte_t *get_page(uint32_t addr, int make, uint32_t cr3);
 void page_fault(struct interrupt_context *regs);
-void alloc_frame(page_table_entry_t *page, int iskernel, int writeable);
-void free_frame(page_table_entry_t *page);
+void alloc_frame(pte_t *page, int iskernel, int writeable);
+void free_frame(pte_t *page);
 void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel,
 			int writeable, uint32_t cr3);
 
@@ -161,8 +178,8 @@ static inline uint32_t read_cr3() {
 	return cr3;
 }
 
-static inline page_directory_t *cr3_to_directory(uint32_t cr3) {
-	return (page_directory_t *) (cr3 & PDE_PAGE_TABLE_BASE_MASK);
+static inline pd_t *cr3_to_directory(uint32_t cr3) {
+	return (pd_t *) (cr3 & PDE_PAGE_TABLE_BASE_MASK);
 }
 
 #endif

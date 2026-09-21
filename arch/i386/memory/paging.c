@@ -12,8 +12,8 @@ uint32_t nframes;
 extern uint32_t placement_address;
 
 // global bage direbtories
-page_directory_t *kernel_directory;
-page_directory_t *current_directory;
+pd_t *kernel_directory;
+pd_t *current_directory;
 
 #define BITSET_INDEX(a) ((a) / (8 * 4))
 #define BITSET_OFFSET(a) ((a) % (8 * 4))
@@ -57,8 +57,8 @@ static uint32_t first_frame() {
 	return (uint32_t)-1;
 }
 
-void alloc_frame(page_table_entry_t *page, int iskernel, int writeable) {
-	if (PTE_GET_FRAME(*page) != 0)
+void alloc_frame(pte_t *page, int iskernel, int writeable) {
+	if (PTE_GET_FRAME(pte_val(*page)) != 0)
 		return; // already allocated
 	uint32_t idx = first_frame();
 	if (idx == (uint32_t)-1) {
@@ -69,20 +69,20 @@ void alloc_frame(page_table_entry_t *page, int iskernel, int writeable) {
 	}
 
 	set_frame(idx * 0x1000);
-	PTE_SET_PRESENT(*page);
+	PTE_SET_PRESENT(*pte_ptr(page));
 	if (writeable)
-		PTE_SET_WRITABLE(*page);
+		PTE_SET_WRITABLE(*pte_ptr(page));
 	if (!iskernel)
-		PTE_SET_USER(*page);
-	PTE_SET_FRAME(*page, idx);
+		PTE_SET_USER(*pte_ptr(page));
+	PTE_SET_FRAME(*pte_ptr(page), idx);
 }
 
-void free_frame(page_table_entry_t *page) {
-	uint32_t frame = PTE_GET_FRAME(*page);
+void free_frame(pte_t *page) {
+	uint32_t frame = PTE_GET_FRAME(pte_val(*page));
 	if (!frame)
 		return;
 	clear_frame(frame * 0x1000);
-	*page = 0; // clear entire page table entry
+	*pte_ptr(page) = 0; // clear entire page table entry
 }
 
 void init_paging() {
@@ -94,14 +94,14 @@ void init_paging() {
 
 	// allocate page directory (1024 entries * 4 bytes each = 4KB, page-aligned)
 	kernel_directory =
-		(page_directory_t *)kmalloc_a(1024 * sizeof(page_directory_t));
-	memset(kernel_directory, 0, 1024 * sizeof(page_directory_t));
+		(pd_t *)kmalloc_a(sizeof(pd_t));
+	memset(kernel_directory, 0, sizeof(pd_t));
 	current_directory = kernel_directory;
 
 	// not read_cr3(): paging is not on yet, so the live cr3 is whatever the
 	// bootloader left behind. every walk below targets the directory we are
 	// building here, which is what switch_page_directory() loads at the end.
-	uint32_t cr3 = (uint32_t)kernel_directory;
+	uint32_t cr3 = (uint32_t) kernel_directory;
 
 	/* identity map the kernel */
 	// identity map from 0x0 to the end of used memory
@@ -109,7 +109,7 @@ void init_paging() {
 	// map extra space (8MB) for kernel heap and dynamically allocated page tables
 	uint32_t identity_map_end = placement_address + 0x800000; // 8MB extra
 	for (uint32_t i = 0; i < identity_map_end; i += 0x1000) {
-		page_table_entry_t *page = get_page(i, 1, cr3);
+		pte_t *page = get_page(i, 1, cr3);
 		alloc_frame(page, 1, 1); // kernel=1, writeable=1
 	}
 
@@ -136,11 +136,11 @@ void init_paging() {
 	switch_page_directory(kernel_directory);
 }
 
-void switch_page_directory(page_directory_t *dir) {
+void switch_page_directory(pd_t *dir) {
 	current_directory = dir;
 
 	// load the page directory physical address into cr3
-	uint32_t phys_addr = (uint32_t)dir;
+	uint32_t phys_addr = (uint32_t) dir;
 	asm volatile("movl %0, %%cr3" : : "r"(phys_addr));
 
 	// enable paging by setting the pg bit in cr0
@@ -150,14 +150,14 @@ void switch_page_directory(page_directory_t *dir) {
 	asm volatile("movl %0, %%cr0" : : "r"(cr0));
 }
 
-page_table_entry_t *get_page(uint32_t addr, int make, uint32_t cr3) {
-	page_directory_t *dir = cr3_to_directory(cr3);
+pte_t *get_page(uint32_t addr, int make, uint32_t cr3) {
+	pd_t *dir = cr3_to_directory(cr3);
 
 	// extract page directory index (bits 31-22)
 	uint32_t page_dir_index = addr >> 22;
 
 	// get the page directory entry
-	uint32_t pde = dir[page_dir_index];
+	uint32_t pde = pde_val(dir->entries[page_dir_index]);
 
 	// check if page table exists
 	if (!(pde & PDE_PRESENT)) {
@@ -167,25 +167,25 @@ page_table_entry_t *get_page(uint32_t addr, int make, uint32_t cr3) {
 
 		// allocate a new page table (4KB, page-aligned)
 		uint32_t page_table_phys = (uint32_t)kmalloc_a(4096);
-		memset((void *)page_table_phys, 0, 4096);
+		memset((void *) page_table_phys, 0, 4096);
 
 		// set up the page directory entry
-		dir[page_dir_index] = page_table_phys | PDE_PRESENT |
+		*pde_ptr(&dir->entries[page_dir_index]) = page_table_phys | PDE_PRESENT |
 				      PDE_READ_WRITE;
 		// note: PDE_USER_SUPERVISOR should be set based on the page's intended use,
 		// not the make parameter. For now, kernel pages don't set this bit.
 	}
 
 	// get the page table physical address
-	uint32_t page_table_phys = dir[page_dir_index] &
+	uint32_t page_table_phys = pde_val(dir->entries[page_dir_index]) &
 				   PDE_PAGE_TABLE_BASE_MASK;
-	page_table_entry_t *page_table = (page_table_entry_t *)page_table_phys;
+	pt_t *page_table = (pt_t *)page_table_phys;
 
 	// extract page table index (bits 21-12)
 	uint32_t page_table_index = (addr >> 12) & 0x3FF;
 
 	// return pointer to the page table entry
-	return &page_table[page_table_index];
+	return &page_table->entries[page_table_index];
 }
 
 void page_fault(struct interrupt_context *regs) {
@@ -235,7 +235,7 @@ void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel,
 
 	// the PDE we relax below has to be the one get_page() then walks, so
 	// take both from cr3 rather than reaching for kernel_directory here
-	page_directory_t *dir = cr3_to_directory(cr3);
+	pd_t *dir = cr3_to_directory(cr3);
 
 	// identity map each page in the range
 	for (uint32_t addr = start; addr < end; addr += 0x1000) {
@@ -244,25 +244,25 @@ void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel,
 
 		// ensure PDE has write permission (both PDE and PTE must be writable)
 		if (writeable) {
-			dir[page_dir_index] |= PDE_READ_WRITE;
+			*pde_ptr(&dir->entries[page_dir_index]) |= PDE_READ_WRITE;
 		}
 
-		page_table_entry_t *page = get_page(addr, 1, cr3);
+		pte_t *page = get_page(addr, 1, cr3);
 		if (page) {
 			// map virtual address to same physical address (identity mapping)
 			uint32_t frame = addr / 0x1000;
-			PTE_SET_PRESENT(*page);
+			PTE_SET_PRESENT(*pte_ptr(page));
 			if (writeable) {
-				PTE_SET_WRITABLE(*page);
+				PTE_SET_WRITABLE(*pte_ptr(page));
 			} else {
-				PTE_CLEAR_WRITABLE(*page);
+				PTE_CLEAR_WRITABLE(*pte_ptr(page));
 			}
 			if (!iskernel) {
-				PTE_SET_USER(*page);
+				PTE_SET_USER(*pte_ptr(page));
 			} else {
-				PTE_CLEAR_USER(*page);
+				PTE_CLEAR_USER(*pte_ptr(page));
 			}
-			PTE_SET_FRAME(*page, frame);
+			PTE_SET_FRAME(*pte_ptr(page), frame);
 
 			// mark frame as used in our frame bitmap
 			set_frame(addr);
@@ -282,7 +282,7 @@ void map_page(uint32_t virt_addr, uint32_t phys_addr, int iskernel,
 	phys_addr &= 0xFFFFF000;
 
 	// get or create page table entry
-	page_table_entry_t *page = get_page(virt_addr, 1, cr3);
+	pte_t *page = get_page(virt_addr, 1, cr3);
 	if (!page) {
 		printf("[paging]: Failed to get page for 0x%x\n", virt_addr);
 		return;
@@ -290,17 +290,17 @@ void map_page(uint32_t virt_addr, uint32_t phys_addr, int iskernel,
 
 	// set frame number and flags
 	uint32_t frame = phys_addr / 0x1000;
-	PTE_SET_FRAME(*page, frame);
-	PTE_SET_PRESENT(*page);
+	PTE_SET_FRAME(*pte_ptr(page), frame);
+	PTE_SET_PRESENT(*pte_ptr(page));
 
 	if (writeable) {
-		PTE_SET_WRITABLE(*page);
+		PTE_SET_WRITABLE(*pte_ptr(page));
 	} else {
-		PTE_CLEAR_WRITABLE(*page);
+		PTE_CLEAR_WRITABLE(*pte_ptr(page));
 	}
 
 	if (!iskernel) {
-		PTE_SET_USER(*page);
+		PTE_SET_USER(*pte_ptr(page));
 	}
 
 	// mark frame as used
@@ -313,8 +313,8 @@ void map_page(uint32_t virt_addr, uint32_t phys_addr, int iskernel,
 void unmap_page(uint32_t virt_addr, uint32_t cr3) {
 	virt_addr &= 0xFFFFF000;
 
-	page_table_entry_t *page = get_page(virt_addr, 0, cr3);
-	if (!page || !PTE_IS_PRESENT(*page)) {
+	pte_t *page = get_page(virt_addr, 0, cr3);
+	if (!page || !PTE_IS_PRESENT(pte_val(*page))) {
 		return; // already unmapped!
 	}
 
@@ -327,6 +327,6 @@ void unmap_page(uint32_t virt_addr, uint32_t cr3) {
 
 // is it?
 int is_page_mapped(uint32_t virt_addr, uint32_t cr3) {
-	page_table_entry_t *page = get_page(virt_addr, 0, cr3);
-	return (page != 0 && PTE_IS_PRESENT(*page));
+	pte_t *page = get_page(virt_addr, 0, cr3);
+	return (page != 0 && PTE_IS_PRESENT(pte_val(*page)));
 }
