@@ -8,9 +8,6 @@ ac97.c: `void play(struct file pcm_data);`
 - have fork() continue exiting from where the parent called instead of
 giving it an entry* function to start from
 
-- page fault scheduler bug, likely from a null struct offset somewhere
-cool! first scheduler bug
-
 - add boost values to MLFQ (whoops not completely implemented yet) and use OSTEP
 hw for sanity checking values.
 
@@ -45,6 +42,10 @@ the register values holds more than just that.
     oh, actually we cant do this since we dont have on-demand paging yet. we'd have to
     split this into a physical memory allocator and a page fault handler interrupt first.
     after that, we can just clear the pte's and let page faults do their thing.
+- consider moving type accessor functions in paging files (wrapper structs around register/int values) into macros in order to force inlining instead of relying on the compiler.
+- underline or no underline for the direct type for paging type-safe values? could help with clarity, it's not directly obvious from outside the file/contract that the contracted version (pte_t vs page_table_entry_t) is the correct/type-safe value to use. double underline would make this obvious. currently, x86_64 assumes the callee will know the convention, while i386 uses the double underline/obv private-field convention.
+    case against private convention:
+        * multiple arguments require one of these underlying types (switch_page_directory() in i386, )
 
 # Volatile patch series
 New patch series: removing all (unnecessary) traces of volatile.
@@ -56,7 +57,7 @@ See: https://docs.kernel.org/process/volatile-considered-harmful.html
 and cleaned up.
 
 # Refactor
-- lock.{c,h} should be moved out of scheduler (out of kernel core) and into include/kernel, since
+* lock.{c,h} should be moved out of scheduler (out of kernel core) and into include/kernel, since
 it's a publicly facing lock interface.
 - consolidate x86_64 and i386 memory/paging.h within asm/
 - type-guard paging in i386 like 64-bit
@@ -65,3 +66,9 @@ architectures.
 
 # Timer
 - give up the CPU instead of busy-waiting for sleep. Since we work with a single-processor scheduler, we don't have to conform to strict burst cycles like the linux kernel uses (see/google dont yield in linux kernel)
+
+# Performance
+- check to make sure that the framebuffer region is mapped as cachable
+- we don't read back from the framebuffer, so we can use "non-temporal stores". read up on
+    movntdq/movntps and the likes.
+- lk
