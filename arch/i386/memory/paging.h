@@ -4,6 +4,7 @@
 #include "interrupts/isr.h"
 #include <kernel/compiler.h>
 #include <stdint.h>
+#include <asm/mm.h>
 
 /*
  * x86-32 Page Directory Structure
@@ -21,6 +22,8 @@
  * bits 21-12: index into page table (1024 entries, if PS=0)
  * bits 31-22: index into page directory (1024 entries)
  */
+
+#define PAGE_SIZE 4096UL // same default as in x86_64
 
 // page directory entry bit masks
 #define PDE_PRESENT \
@@ -164,7 +167,7 @@ void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel,
 // Virtual memory API
 void map_page(uint32_t virt_addr, uint32_t phys_addr, int iskernel,
 	      int writeable, uint32_t cr3);
-void unmap_page(uint32_t virt_addr, uint32_t cr3);
+phys_addr_t unmap_page(uint32_t virt_addr, uint32_t cr3);
 int is_page_mapped(uint32_t virt_addr, uint32_t cr3);
 
 // TLB management

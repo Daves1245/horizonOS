@@ -310,7 +310,7 @@ void map_page(uint32_t virt_addr, uint32_t phys_addr, int iskernel,
 	invalidate_page(virt_addr);
 }
 
-void unmap_page(uint32_t virt_addr, uint32_t cr3) {
+phys_addr_t unmap_page(uint32_t virt_addr, uint32_t cr3) {
 	virt_addr &= 0xFFFFF000;
 
 	pte_t *page = get_page(virt_addr, 0, cr3);
@@ -322,7 +322,13 @@ void unmap_page(uint32_t virt_addr, uint32_t cr3) {
 	free_frame(page);
 
 	// invalidate TLB entry
-	invalidate_page(virt_addr);
+	// if we don't own this page, it was already flushed by the TLB when
+	// the context switch occurred. i.e., invalidating is redundant and wasteful.
+	if (read_cr3() == cr3) {
+		invalidate_page(virt_addr);
+	}
+
+	return page;
 }
 
 // is it?
