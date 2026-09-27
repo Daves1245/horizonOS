@@ -63,6 +63,9 @@ it's a publicly facing lock interface.
 - type-guard paging in i386 like 64-bit
 - fix guards in rsdp by consolidating into asm/ to define a single contract, guaranteed by both
 architectures.
+- asm/paging.h (as well as other header files in asm/) should define the contract that sources in arch/XYZ/asm/ implement. this
+way we can prevent easy errors like different published APIs
+between architectures.
 
 # Timer
 - give up the CPU instead of busy-waiting for sleep. Since we work with a single-processor scheduler, we don't have to conform to strict burst cycles like the linux kernel uses (see/google dont yield in linux kernel)
@@ -72,3 +75,7 @@ architectures.
 - we don't read back from the framebuffer, so we can use "non-temporal stores". read up on
     movntdq/movntps and the likes.
 - lk
+
+# Misc
+- phys_addr_t and virt_addr_t should be moved out of asm/mm.h and put into
+a kernel/types.h or similar.
