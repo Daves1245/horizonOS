@@ -310,16 +310,27 @@ void map_page(uint32_t virt_addr, uint32_t phys_addr, int iskernel,
 	invalidate_page(virt_addr);
 }
 
+/**
+ *
+ * Unmap a page rooted in cr3
+ *
+ * @return the physical frame that was unmapped, or 0 if it was dangling.
+ * Note that this function does not free the returned frame, that decision
+ * is left to the caller.
+ */
 phys_addr_t unmap_page(uint32_t virt_addr, uint32_t cr3) {
 	virt_addr &= 0xFFFFF000;
 
 	pte_t *page = get_page(virt_addr, 0, cr3);
 	if (!page || !PTE_IS_PRESENT(pte_val(*page))) {
-		return; // already unmapped!
+		return 0; // already unmapped!
 	}
 
-	// freeee the frame
-	free_frame(page);
+	phys_addr_t frame = PAGE_GET_ADDR(pte_val(*page));
+
+	// drop the translation, but leave the frame bitmap alone: the caller
+	// owns the frame now, as it does in x86_64.
+	*pte_ptr(page) = 0;
 
 	// invalidate TLB entry
 	// if we don't own this page, it was already flushed by the TLB when
@@ -328,7 +339,7 @@ phys_addr_t unmap_page(uint32_t virt_addr, uint32_t cr3) {
 		invalidate_page(virt_addr);
 	}
 
-	return page;
+	return frame;
 }
 
 // is it?
