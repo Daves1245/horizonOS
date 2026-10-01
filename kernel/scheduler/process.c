@@ -248,12 +248,13 @@ void init_process(void) {
 	}
 
 	// but init gets its own top-level table rather than the bootloader's.
-	// only the p4d is copied, so every lower level is still shared.
-	p4d_t *bootstrap = (p4d_t *)phys_to_virt(PAGE_GET_ADDR(read_cr3()));
-	p4d_t *p4d = (p4d_t *)kmalloc_a(sizeof(p4d_t));
+	// only that table is copied, so every lower level is still shared.
+	pgtable_t *bootstrap =
+		(pgtable_t *)phys_to_virt(PAGE_GET_ADDR(read_cr3()));
+	pgtable_t *pgtable = (pgtable_t *)kmalloc_a(sizeof(pgtable_t));
 
-	memcpy(p4d, bootstrap, sizeof(p4d_t));
-	init_p->cr3 = virt_to_phys((virt_addr_t)p4d);
+	memcpy(pgtable, bootstrap, sizeof(pgtable_t));
+	init_p->cr3 = virt_to_phys((virt_addr_t)pgtable);
 
 	// init lives on the mlfq like everything else, even though we bootstrap
 	// straight into it below instead of letting the scheduler pick it up. it

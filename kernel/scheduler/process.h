@@ -2,7 +2,7 @@
 #define PROCESS_H
 
 #include <stdint.h>
-#include <x86_64/memory/paging.h>
+#include <asm/paging.h>
 #include <asm/mm.h>
 #include <asm/switch.h>
 
@@ -61,8 +61,8 @@ extern struct cpu cpus[NUM_CPUS];
 extern uint8_t __glbl_pid;
 
 struct addrspace {
-	phys_addr_t p4d_base; // pass to cr3
-	p4d_t *p4d;
+	phys_addr_t page_table_base; // pass to cr3
+
 	// TODO(cleanup) ideally, we'd like to add a guard page
 	// at the end of the stack. we currently do that, but we don't
 	// have logic within the page fault handler to detect this.
