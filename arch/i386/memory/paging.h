@@ -4,7 +4,7 @@
 #include "interrupts/isr.h"
 #include <kernel/compiler.h>
 #include <stdint.h>
-#include <asm/mm.h>
+#include <kernel/types.h>
 
 /*
  * x86-32 Page Directory Structure
