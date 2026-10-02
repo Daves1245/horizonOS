@@ -5,9 +5,10 @@
 #include <kernel/compiler.h>
 #include <stdint.h>
 #include <kernel/types.h>
+#include <asm/paging.h>
 
 /*
- * x86-32 Page Directory Structure
+ * i386 Page Directory Structure
  *
  * the page directory is the top-level structure in x86-32 paging. it contains
  * 1024 page directory entries (PDEs), each covering 4mb of virtual address space.
@@ -75,6 +76,8 @@
 #define PTE_PAGE_ATTRIBUTE (1 << 7)
 #define PTE_GLOBAL (1 << 8)
 #define PTE_FRAME_MASK 0xFFFFF000
+
+#define PAGE_FRAME_MASK 0xFFFFF000
 
 typedef uint32_t __page_directory_t;
 typedef uint32_t __page_table_entry_t;
