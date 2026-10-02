@@ -20,11 +20,18 @@
 #ifndef ASM_PAGING_H
 #define ASM_PAGING_H
 
+// TODO(cleanup)
+// both of these includes include this file
+
+#include <asm/mm.h>
+
 #ifdef __x86_64__
 #include <x86_64/memory/paging.h>
 #else
 #include <i386/memory/paging.h>
 #endif
+
+#include <kernel/types.h>
 
 /*
  * PAGE_GET_ADDR() - get the physical frame address in an entry
@@ -38,7 +45,7 @@ static inline void invalidate_page(virt_addr_t vaddr);
 void map_page(virt_addr_t vaddr, phys_addr_t paddr, int iskernel,
 	      int writeable, phys_addr_t cr3);
 phys_addr_t unmap_page(virt_addr_t vaddr, phys_addr_t cr3);
-void map_physical_range(phys_addr_t phys_start, uint32_t length, int iskernel, int writeable, uint32_t cr3);
+void map_physical_range(phys_addr_t phys_start, uint32_t length, int iskernel, int writeable, register_t cr3);
 
 
 #endif
