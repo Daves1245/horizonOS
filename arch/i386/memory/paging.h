@@ -115,6 +115,10 @@ typedef struct page_directory_t {
 	pde_t entries[1024];
 } pd_t __aligned(4096);
 
+// the top-level page table that cr3 points to. non-PAE i386 only has two levels
+// this conforms to the contract defined in asm/paging.h
+typedef pd_t pgtable_t;
+
 typedef uint32_t __page_upper_entry_t;
 
 typedef struct {
@@ -175,7 +179,7 @@ static inline void invalidate_page(uint32_t virt_addr) {
 	asm volatile("invlpg (%0)" : : "r"(virt_addr) : "memory");
 }
 
-static inline uint32_t read_cr3() {
+static inline uint32_t read_cr3(void) {
 	uint32_t cr3;
 	asm volatile("mov %%cr3, %0" : "=r"(cr3));
 	return cr3;
