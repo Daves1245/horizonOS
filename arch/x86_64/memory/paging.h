@@ -1,10 +1,11 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include <asm/mm.h>
 #include <stdint.h>
 #include <kernel/compiler.h>
 #include <stddef.h>
+#include <asm/paging.h>
+#include <kernel/types.h>
 
 // lwn.net find: https://lwn.net/Articles/106177/
 
