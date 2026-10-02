@@ -51,9 +51,6 @@
 // this is hex too, so those 3 zeros are actually twelve 0 bits.
 #define PAGE_FRAME_MASK 0x000FFFFFFFFFF000UL
 
-// Get physical address from page table entry
-#define PAGE_GET_ADDR(entry) ((entry) & PAGE_FRAME_MASK)
-
 // TODO(5-level paging) check and enable the la57 bit
 // on cr4 (bit 12)
 // from the intel handbook:
@@ -146,6 +143,12 @@ static inline page_l4_dir_entry_t p4e_val(p4e_t p4e) {
 static inline page_l4_dir_entry_t *p4e_ptr(p4e_t *p4e) {
 	return &p4e->pml4e;
 }
+
+// the top-level table that cr3 points to. x86_64 has 4-level paging, so
+// this is the pml4.
+// TODO(5-level paging)
+// if 5-level paging is enabled, then this becomes pgd_t below
+typedef p4d_t pgtable_t;
 
 /* Level 5 - Global page directory */
 typedef struct {
