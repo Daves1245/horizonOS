@@ -2,7 +2,7 @@
  * Paging contract. Both architectures must implement this as an interface/API.
  *
  * - PAGE_SIZE           bytes per smallest page
- * - PAGE_GET_ADDR()    physical frame address held in an entry
+ * - PAGE_FRAME_MASK		 the bit mask of the frame number in a pte.
  * - pgtable_t           top-level page table that cr3 points at
  * - read_cr3()          current cr3 value
  * - invalidate_page()   drop a TLB entry
@@ -25,6 +25,13 @@
 #else
 #include <i386/memory/paging.h>
 #endif
+
+/*
+ * PAGE_GET_ADDR() - get the physical frame address in an entry
+ *
+ * PAGE_FRAME_MASK is architecture-dependent
+ */
+#define PAGE_GET_ADDR(entry) ((entry) & PAGE_FRAME_MASK)
 
 static inline phys_addr_t read_cr3(void);
 static inline void invalidate_page(virt_addr_t vaddr);
