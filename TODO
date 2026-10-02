@@ -77,5 +77,4 @@ between architectures.
 - lk
 
 # Misc
-- phys_addr_t and virt_addr_t should be moved out of asm/mm.h and put into
-a kernel/types.h or similar.
+- Clear debug prints from DMCA
