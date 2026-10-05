@@ -1,28 +1,6 @@
-# SPDX-License-Identifier: GPL-2.0
-#
-# clang-format configuration file. Intended for clang-format >= 11.
-#
-# For more information, see:
-#
-#   Documentation/dev-tools/clang-format.rst
-#   https://clang.llvm.org/docs/ClangFormat.html
-#   https://clang.llvm.org/docs/ClangFormatStyleOptions.html
-#
-# HORIZON LOCAL CHANGE
-# --------------------
-# Taken verbatim from the Linux kernel tree except for one option:
-#
-#   AfterFunction: true -> false
-#
-# The kernel puts the opening brace of a *function definition* on its own
-# line, while every other block (if, for, while, switch, struct) keeps it on
-# the same line. We drop that exception and use same-line braces everywhere,
-# which is what Horizon was already written in.
-#
 # Consequence: scripts/checkpatch.pl does not know about this and will report
 # ERROR:OPEN_BRACE on every function. Pass --ignore OPEN_BRACE; see
 # scripts/README.md.
-#
 ---
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
@@ -778,6 +756,7 @@ IndentGotoLabels: false
 IndentPPDirectives: None
 IndentWidth: 8
 IndentWrappedFunctionNames: false
+InsertBraces: true
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: false
