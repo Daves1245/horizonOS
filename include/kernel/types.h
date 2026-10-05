@@ -35,7 +35,7 @@
 
 // this is very hacky - let's bootstrap errno.h in the future instead
 // TODO XXX
-#define ENODEV 19
+#define ENODEV 19 // uacpi needs this, so include it here for now.
 
 #ifdef __i386__
 typedef uint32_t virt_addr_t; // Virtual address type for 32-bit
