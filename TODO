@@ -71,7 +71,9 @@ between architectures.
 - check to make sure that the framebuffer region is mapped as cachable
 - we don't read back from the framebuffer, so we can use "non-temporal stores". read up on
     movntdq/movntps and the likes.
-- lk
 
 # Misc
 - Clear debug prints from DMCA
+
+# File system
+-
