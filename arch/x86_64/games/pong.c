@@ -157,10 +157,12 @@ void pong_on_score(int player) {
 		ac97_start_playback();
 
 		// add score and reset ball
-		if (player == 1)
+		if (player == 1) {
 			score_player1++;
-		if (player == 2)
+		}
+		if (player == 2) {
 			score_player2++;
+		}
 		reset();
 	}
 }
@@ -221,8 +223,9 @@ void pong_start() {
 
 		/* pace to ~60 fps so delta is coarse enough for integer
          * velocity math (vel * delta / 1000) to actually advance. */
-		while (timer_ticks() - frame_start < PONG_FRAME_MS)
+		while (timer_ticks() - frame_start < PONG_FRAME_MS) {
 			asm volatile("hlt");
+		}
 	}
 
 	gfx_set_target(prev_target);

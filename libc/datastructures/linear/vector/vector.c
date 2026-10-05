@@ -39,21 +39,24 @@ void vector_resize(vector *v, int capacity) {
 
 // Add an element to a vector
 void vector_add(vector *v, void *elem) {
-	if (v->capacity == v->size)
+	if (v->capacity == v->size) {
 		vector_resize(v, v->capacity * 2);
+	}
 	v->items[v->size++] = elem;
 }
 
 // Set an element in the vector
 void vector_set(vector *v, int index, void *item) {
-	if (index >= 0 && index < v->size)
+	if (index >= 0 && index < v->size) {
 		v->items[index] = item;
+	}
 }
 
 // Get the element from a vector at a certain index
 void *vector_get(vector *v, int index) {
-	if (index >= 0 && index < v->size)
+	if (index >= 0 && index < v->size) {
 		return v->items[index];
+	}
 	return NULL;
 }
 

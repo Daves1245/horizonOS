@@ -114,8 +114,7 @@ static void pong_on_player_hit(struct obj *paddle) {
 
 		ball.vel_y += paddle->vel_y / 2;
 
-		ac97_play(&_audio_pong_paddle_start,
-			  &_audio_pong_paddle_end);
+		ac97_play(&_audio_pong_paddle_start, &_audio_pong_paddle_end);
 	}
 }
 
@@ -131,8 +130,7 @@ static void pong_on_wall_hit(void) {
 			ball.vel_y = -abs(ball.vel_y);
 		}
 
-		ac97_play(&_audio_pong_wall_start,
-			  &_audio_pong_wall_end);
+		ac97_play(&_audio_pong_wall_start, &_audio_pong_wall_end);
 	}
 }
 
@@ -142,13 +140,14 @@ void pong_on_score(int player) {
 	if (now - last_event >= EVENT_DEBOUNCE_TICKS) {
 		last_event = now;
 
-		ac97_play(&_audio_pong_score_start,
-			  &_audio_pong_score_end);
+		ac97_play(&_audio_pong_score_start, &_audio_pong_score_end);
 
-		if (player == 1)
+		if (player == 1) {
 			score_player1++;
-		if (player == 2)
+		}
+		if (player == 2) {
 			score_player2++;
+		}
 		reset();
 	}
 }
@@ -207,8 +206,9 @@ void pong_start(void) {
 		pong_draw();
 		gfx_render();
 
-		while (timer_ticks() - frame_start < PONG_FRAME_MS)
+		while (timer_ticks() - frame_start < PONG_FRAME_MS) {
 			asm volatile("hlt");
+		}
 	}
 
 	gfx_set_target(prev_target);

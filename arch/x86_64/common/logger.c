@@ -11,8 +11,9 @@
 
 // Helper function to write to serial instead of putchar
 static bool serial_print(const char *data, size_t length) {
-	for (size_t i = 0; i < length; i++)
+	for (size_t i = 0; i < length; i++) {
 		serial_putchar(data[i]);
+	}
 	return true;
 }
 
@@ -62,12 +63,14 @@ void logf(enum log_type type, const char *format, ...) {
 		size_t maxrem = INT_MAX - written;
 
 		if (format[0] != '%' || format[1] == '%') {
-			if (format[0] == '%')
+			if (format[0] == '%') {
 				format++;
+			}
 			size_t amount = 1;
 
-			while (format[amount] && format[amount] != '%')
+			while (format[amount] && format[amount] != '%') {
 				amount++;
+			}
 			if (maxrem < amount) {
 				va_end(parameters);
 				return;

@@ -70,8 +70,9 @@ int keyboard_poll(int level, struct key_event_t *out) {
  */
 struct key_event_t keyboard_block_read(int level) {
 	struct key_event_t out;
-	while (!keyboard_poll(level, &out))
+	while (!keyboard_poll(level, &out)) {
 		asm volatile("hlt");
+	}
 	return out;
 }
 
@@ -107,13 +108,15 @@ int register_keyboard_listener() {
  */
 int readline(int level, char *buf, int len) {
 	int pos = 0;
-	if (len <= 0)
+	if (len <= 0) {
 		return 0;
+	}
 
 	for (;;) {
 		struct key_event_t ev = keyboard_block_read(level);
-		if (ev.type != KEY_EVENT_DOWN)
+		if (ev.type != KEY_EVENT_DOWN) {
 			continue;
+		}
 
 		char c = (char)ev.value;
 		if (c == '\n') {

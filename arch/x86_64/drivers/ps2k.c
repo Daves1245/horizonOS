@@ -88,16 +88,18 @@ static int e0_prefix = 0;
 static void wait_for_kbd_input(void) {
 	int timeout = 100000;
 	while (timeout-- > 0) {
-		if ((inb(ps2k_resources.port_cmd) & 0x02) == 0)
+		if ((inb(ps2k_resources.port_cmd) & 0x02) == 0) {
 			return;
+		}
 	}
 }
 
 static int wait_for_kbd_output(void) {
 	int timeout = 100000;
 	while (timeout-- > 0) {
-		if (inb(ps2k_resources.port_cmd) & 0x01)
+		if (inb(ps2k_resources.port_cmd) & 0x01) {
 			return 1;
+		}
 	}
 	return 0;
 }
@@ -117,8 +119,9 @@ static void ps2k_irq_handler(struct interrupt_context *regs) {
 
 	if (released) {
 		key_pressed[index] = 0;
-		if (index == 0x2A || index == 0x36)
+		if (index == 0x2A || index == 0x36) {
 			shift_pressed = 0;
+		}
 	} else {
 		key_pressed[index] = 1;
 		if (index == 0x2A || index == 0x36) {

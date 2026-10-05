@@ -39,8 +39,9 @@ uint32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void gfx_put_pixel(uint32_t x, uint32_t y, uint32_t val) {
-	if (x >= fb.width || y >= fb.height)
+	if (x >= fb.width || y >= fb.height) {
 		return;
+	}
 	draw_buffer()[y * (fb.pitch / 4) + x] = val;
 }
 
@@ -54,30 +55,37 @@ static inline void fast_copy32(uint32_t *dst, const uint32_t *src,
 }
 
 void gfx_render(void) {
-	if (target != GFX_TARGET_BACKBUFFER)
+	if (target != GFX_TARGET_BACKBUFFER) {
 		return;
+	}
 	fast_copy32(fb.address, backbuffer, screen_size / 4);
 }
 
 void gfx_fill_rect(int x0, int y0, int x1, int y1, uint32_t val) {
-	if (x0 < 0)
+	if (x0 < 0) {
 		x0 = 0;
-	if (y0 < 0)
+	}
+	if (y0 < 0) {
 		y0 = 0;
-	if (x1 >= (int)fb.width)
+	}
+	if (x1 >= (int)fb.width) {
 		x1 = (int)fb.width - 1;
-	if (y1 >= (int)fb.height)
+	}
+	if (y1 >= (int)fb.height) {
 		y1 = (int)fb.height - 1;
-	if (x0 > x1 || y0 > y1)
+	}
+	if (x0 > x1 || y0 > y1) {
 		return;
+	}
 	uint32_t stride = fb.pitch / 4;
 	uint32_t *buf = draw_buffer();
 
 	for (int y = y0; y <= y1; y++) {
 		uint32_t *row = &buf[y * stride];
 
-		for (int x = x0; x <= x1; x++)
+		for (int x = x0; x <= x1; x++) {
 			row[x] = val;
+		}
 	}
 }
 

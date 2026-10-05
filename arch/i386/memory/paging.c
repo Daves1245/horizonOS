@@ -44,12 +44,14 @@ static uint32_t test_frame(uint32_t frame_addr) {
 static uint32_t first_frame() {
 	uint32_t i, j;
 	for (i = 0; i < BITSET_INDEX(nframes); i++) {
-		if (frames[i] == 0xFFFFFFFF)
+		if (frames[i] == 0xFFFFFFFF) {
 			continue;
+		}
 		for (j = 0; j < 32; j++) {
 			uint32_t mask = 1 << j;
-			if (!(frames[i] & mask))
+			if (!(frames[i] & mask)) {
 				return i * 32 + j;
+			}
 		}
 	}
 
@@ -58,8 +60,9 @@ static uint32_t first_frame() {
 }
 
 void alloc_frame(pte_t *page, int iskernel, int writeable) {
-	if (PTE_GET_FRAME(pte_val(*page)) != 0)
+	if (PTE_GET_FRAME(pte_val(*page)) != 0) {
 		return; // already allocated
+	}
 	uint32_t idx = first_frame();
 	if (idx == (uint32_t)-1) {
 		log_error("kernel panic: no free frames! :O\n");
@@ -70,17 +73,20 @@ void alloc_frame(pte_t *page, int iskernel, int writeable) {
 
 	set_frame(idx * 0x1000);
 	PTE_SET_PRESENT(*pte_ptr(page));
-	if (writeable)
+	if (writeable) {
 		PTE_SET_WRITABLE(*pte_ptr(page));
-	if (!iskernel)
+	}
+	if (!iskernel) {
 		PTE_SET_USER(*pte_ptr(page));
+	}
 	PTE_SET_FRAME(*pte_ptr(page), idx);
 }
 
 void free_frame(pte_t *page) {
 	uint32_t frame = PTE_GET_FRAME(pte_val(*page));
-	if (!frame)
+	if (!frame) {
 		return;
+	}
 	clear_frame(frame * 0x1000);
 	*pte_ptr(page) = 0; // clear entire page table entry
 }
@@ -93,15 +99,14 @@ void init_paging() {
 	memset(frames, 0, BITSET_INDEX(nframes) * sizeof(uint32_t));
 
 	// allocate page directory (1024 entries * 4 bytes each = 4KB, page-aligned)
-	kernel_directory =
-		(pd_t *)kmalloc_a(sizeof(pd_t));
+	kernel_directory = (pd_t *)kmalloc_a(sizeof(pd_t));
 	memset(kernel_directory, 0, sizeof(pd_t));
 	current_directory = kernel_directory;
 
 	// not read_cr3(): paging is not on yet, so the live cr3 is whatever the
 	// bootloader left behind. every walk below targets the directory we are
 	// building here, which is what switch_page_directory() loads at the end.
-	uint32_t cr3 = (uint32_t) kernel_directory;
+	uint32_t cr3 = (uint32_t)kernel_directory;
 
 	/* identity map the kernel */
 	// identity map from 0x0 to the end of used memory
@@ -140,7 +145,7 @@ void switch_page_directory(pd_t *dir) {
 	current_directory = dir;
 
 	// load the page directory physical address into cr3
-	uint32_t phys_addr = (uint32_t) dir;
+	uint32_t phys_addr = (uint32_t)dir;
 	asm volatile("movl %0, %%cr3" : : "r"(phys_addr));
 
 	// enable paging by setting the pg bit in cr0
@@ -167,11 +172,11 @@ pte_t *get_page(uint32_t addr, int make, uint32_t cr3) {
 
 		// allocate a new page table (4KB, page-aligned)
 		uint32_t page_table_phys = (uint32_t)kmalloc_a(4096);
-		memset((void *) page_table_phys, 0, 4096);
+		memset((void *)page_table_phys, 0, 4096);
 
 		// set up the page directory entry
-		*pde_ptr(&dir->entries[page_dir_index]) = page_table_phys | PDE_PRESENT |
-				      PDE_READ_WRITE;
+		*pde_ptr(&dir->entries[page_dir_index]) =
+			page_table_phys | PDE_PRESENT | PDE_READ_WRITE;
 		// note: PDE_USER_SUPERVISOR should be set based on the page's intended use,
 		// not the make parameter. For now, kernel pages don't set this bit.
 	}
@@ -203,16 +208,21 @@ void page_fault(struct interrupt_context *regs) {
 
 	// print error information
 	log_error("\npage fault! ( ");
-	if (!present)
+	if (!present) {
 		printf("not present ");
-	if (rw)
+	}
+	if (rw) {
 		printf("read-only ");
-	if (us)
+	}
+	if (us) {
 		printf("user-mode ");
-	if (reserved)
+	}
+	if (reserved) {
 		printf("reserved ");
-	if (id)
+	}
+	if (id) {
 		printf("instruction-fetch ");
+	}
 	printf(") at 0x%x\n", faulting_address);
 
 	printf("EIP: 0x%x\n", regs->eip);
@@ -244,7 +254,8 @@ void map_physical_range(uint32_t phys_start, uint32_t length, int iskernel,
 
 		// ensure PDE has write permission (both PDE and PTE must be writable)
 		if (writeable) {
-			*pde_ptr(&dir->entries[page_dir_index]) |= PDE_READ_WRITE;
+			*pde_ptr(&dir->entries[page_dir_index]) |=
+				PDE_READ_WRITE;
 		}
 
 		pte_t *page = get_page(addr, 1, cr3);

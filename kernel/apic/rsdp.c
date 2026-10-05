@@ -202,8 +202,8 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 			}
 
 			// Map the table page before accessing it
-			map_physical_range(table_addr, 4096, 1,
-					   1, read_cr3()); // kernel, writable
+			map_physical_range(table_addr, 4096, 1, 1,
+					   read_cr3()); // kernel, writable
 
 			struct apic_header *table =
 				(struct apic_header *)table_addr;
@@ -241,8 +241,8 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 		// Map the RSDT page before accessing it
 		log_debug("[rsdp::find_madt]: Mapping RSDT at: 0x%x\n",
 			  rsdp->rsdt_addr);
-		map_physical_range(rsdp->rsdt_addr, 4096, 1,
-				   1, read_cr3()); // kernel, writable
+		map_physical_range(rsdp->rsdt_addr, 4096, 1, 1,
+				   read_cr3()); // kernel, writable
 
 		struct rsdt_t *rsdt = (struct rsdt_t *)rsdp->rsdt_addr;
 #endif
@@ -285,8 +285,8 @@ virt_addr_t find_madt(virt_addr_t rsdp_addr) {
 			}
 
 			// Map the table page before accessing it
-			map_physical_range(table_addr, 4096, 1,
-					   1, read_cr3()); // kernel, writable
+			map_physical_range(table_addr, 4096, 1, 1,
+					   read_cr3()); // kernel, writable
 
 			struct apic_header *table =
 				(struct apic_header *)table_addr;

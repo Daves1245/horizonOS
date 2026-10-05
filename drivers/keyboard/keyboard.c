@@ -423,8 +423,9 @@ void keyboard_interrupt_handler(struct interrupt_context *regs) {
 
 	/* track shift state for ascii translation */
 	if (!was_extended) {
-		if (base == 0x2A || base == 0x36)
+		if (base == 0x2A || base == 0x36) {
 			shift_pressed = !is_release;
+		}
 	}
 
 	/* queue key-down events for readline (non-extended only — no ascii for arrows) */
@@ -440,8 +441,9 @@ void keyboard_interrupt_handler(struct interrupt_context *regs) {
 				.timestamp = (int8_t)timer_ticks(),
 			};
 			for (int lvl = 0; lvl < KEYBOARD_QUEUE_LEVELS; lvl++) {
-				if (keyboard_queue_state[lvl].used)
+				if (keyboard_queue_state[lvl].used) {
 					keyboard_push(lvl, ev);
+				}
 			}
 		}
 	}
@@ -477,10 +479,11 @@ void keyboard_push(int level, struct key_event_t entry) {
 	int head = keyboard_queue_state[level].head;
 	int next = (head + 1) % RING_BUFFER_SIZE;
 
-	if (next == keyboard_queue_state[level].tail)
+	if (next == keyboard_queue_state[level].tail) {
 		keyboard_queue_state[level].tail =
 			(keyboard_queue_state[level].tail + 1) %
 			RING_BUFFER_SIZE;
+	}
 
 	memcpy(&queue[head], &entry, sizeof(struct key_event_t));
 	keyboard_queue_state[level].head = next;
@@ -491,8 +494,9 @@ int keyboard_poll(int level, struct key_event_t *out) {
 
 	int tail = keyboard_queue_state[level].tail;
 
-	if (tail == head)
+	if (tail == head) {
 		return 0;
+	}
 	*out = keyboard_multilevel_queue[level][tail];
 	keyboard_queue_state[level].tail = (tail + 1) % RING_BUFFER_SIZE;
 	return 1;
@@ -501,8 +505,9 @@ int keyboard_poll(int level, struct key_event_t *out) {
 struct key_event_t keyboard_block_read(int level) {
 	struct key_event_t out;
 
-	while (!keyboard_poll(level, &out))
+	while (!keyboard_poll(level, &out)) {
 		asm volatile("hlt");
+	}
 	return out;
 }
 
@@ -525,14 +530,16 @@ void remove_keyboard_listener(int level) {
 int readline(int level, char *buf, int len) {
 	int pos = 0;
 
-	if (len <= 0)
+	if (len <= 0) {
 		return 0;
+	}
 
 	for (;;) {
 		struct key_event_t ev = keyboard_block_read(level);
 
-		if (ev.type != KEY_EVENT_DOWN)
+		if (ev.type != KEY_EVENT_DOWN) {
 			continue;
+		}
 
 		char c = (char)ev.value;
 

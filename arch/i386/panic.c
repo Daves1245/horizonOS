@@ -11,8 +11,9 @@ static void vga_put(int pos, char c) {
 }
 
 static int vga_puts(int pos, const char *s) {
-	while (*s)
+	while (*s) {
 		vga_put(pos++, *s++);
+	}
 	return pos;
 }
 
@@ -20,8 +21,9 @@ static int vga_put_hex(int pos, uint32_t val) {
 	const char *hex = "0123456789ABCDEF";
 	vga_put(pos++, '0');
 	vga_put(pos++, 'x');
-	for (int i = 28; i >= 0; i -= 4)
+	for (int i = 28; i >= 0; i -= 4) {
 		vga_put(pos++, hex[(val >> i) & 0xF]);
+	}
 	return pos;
 }
 
@@ -36,8 +38,9 @@ static int vga_put_dec(int pos, int val) {
 		buf[i++] = '0' + (val % 10);
 		val /= 10;
 	} while (val);
-	while (i--)
+	while (i--) {
 		vga_put(pos++, buf[i]);
+	}
 	return pos;
 }
 
@@ -87,8 +90,9 @@ void _panic(const char *msg, const char *file, int line, const char *func) {
 	snapshot_regs(&r);
 
 	// clear screen
-	for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
+	for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
 		vga_put(i, ' ');
+	}
 
 	int pos;
 
@@ -122,11 +126,13 @@ void _panic(const char *msg, const char *file, int line, const char *func) {
 		int col = (i % 4) * 16;
 		pos = vga_put_reg(row * VGA_WIDTH + col, regs[i].name,
 				  regs[i].val);
-		if (i % 4 == 3)
+		if (i % 4 == 3) {
 			row++;
+		}
 	}
 
 	// halt
-	while (1)
+	while (1) {
 		__asm__ volatile("hlt");
+	}
 }

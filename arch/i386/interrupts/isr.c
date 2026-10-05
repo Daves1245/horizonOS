@@ -42,24 +42,33 @@ void debug_print_registers(struct interrupt_context regs) {
 
 	// EFLAGS breakdown
 	printf("EFLAGS bits: ");
-	if (regs.eflags & (1 << 0))
+	if (regs.eflags & (1 << 0)) {
 		printf("CF ");
-	if (regs.eflags & (1 << 2))
+	}
+	if (regs.eflags & (1 << 2)) {
 		printf("PF ");
-	if (regs.eflags & (1 << 4))
+	}
+	if (regs.eflags & (1 << 4)) {
 		printf("AF ");
-	if (regs.eflags & (1 << 6))
+	}
+	if (regs.eflags & (1 << 6)) {
 		printf("ZF ");
-	if (regs.eflags & (1 << 7))
+	}
+	if (regs.eflags & (1 << 7)) {
 		printf("SF ");
-	if (regs.eflags & (1 << 8))
+	}
+	if (regs.eflags & (1 << 8)) {
 		printf("TF ");
-	if (regs.eflags & (1 << 9))
+	}
+	if (regs.eflags & (1 << 9)) {
 		printf("IF ");
-	if (regs.eflags & (1 << 10))
+	}
+	if (regs.eflags & (1 << 10)) {
 		printf("DF ");
-	if (regs.eflags & (1 << 11))
+	}
+	if (regs.eflags & (1 << 11)) {
 		printf("OF ");
+	}
 	printf("\n");
 
 	printf("==================\n");

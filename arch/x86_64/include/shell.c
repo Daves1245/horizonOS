@@ -65,8 +65,9 @@ static void cmd_peek(const char *args) {
 	virt_addr_t addr = parse_hex(args, &end);
 
 	virt_addr_t len = 64;
-	while (*end == ' ')
+	while (*end == ' ') {
 		end++;
+	}
 	if (*end != '\0') {
 		len = parse_hex(end, NULL);
 	}
@@ -106,16 +107,19 @@ static void cmd_peek(const char *args) {
  * real parser (quoting, piping, etc.) goes here later.
  */
 static void parse_and_dispatch(char *line) {
-	if (line[0] == '\0')
+	if (line[0] == '\0') {
 		return;
+	}
 
 	char *args = line;
-	while (*args && *args != ' ')
+	while (*args && *args != ' ') {
 		args++;
+	}
 	if (*args == ' ') {
 		*args++ = '\0';
-		while (*args == ' ')
+		while (*args == ' ') {
 			args++;
+		}
 	}
 
 	if (strcmp(line, "help") == 0) {

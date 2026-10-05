@@ -220,8 +220,9 @@ static int parse_command_buffer() {
 
 	int argc = 0;
 	while (*it && (it < end)) {
-		while (*it && iswhitespace(*it) && (it < end))
+		while (*it && iswhitespace(*it) && (it < end)) {
 			it++;
+		}
 
 		if (!*it) {
 			break;

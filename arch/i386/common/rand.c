@@ -18,7 +18,8 @@ uint32_t random_next(void) {
 }
 
 uint32_t random_range(uint32_t max) {
-	if (max == 0)
+	if (max == 0) {
 		return 0;
+	}
 	return random_next() % max;
 }

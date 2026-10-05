@@ -63,10 +63,12 @@ void segtree_update(int *tree, int i, int value) {
 int segtree_query(int *tree, size_t n, int l, int r) {
 	int res = 0;
 	for (l += n, r += n; l < r; l /= 2, r /= 2) {
-		if (l & 1)
+		if (l & 1) {
 			res += tree[l++];
-		if (r & 1)
+		}
+		if (r & 1) {
 			res += tree[--r];
+		}
 	}
 	return res;
 }

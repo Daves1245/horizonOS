@@ -189,7 +189,7 @@ static inline uint32_t read_cr3(void) {
 }
 
 static inline pd_t *cr3_to_directory(uint32_t cr3) {
-	return (pd_t *) (cr3 & PDE_PAGE_TABLE_BASE_MASK);
+	return (pd_t *)(cr3 & PDE_PAGE_TABLE_BASE_MASK);
 }
 
 #endif

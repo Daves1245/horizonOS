@@ -22,15 +22,17 @@ static inline void com1_putc(char c) {
 }
 
 static void com1_write(const char *s) {
-	while (*s)
+	while (*s) {
 		com1_putc(*s++);
+	}
 }
 
 static void com1_hex64(uint64_t val) {
 	const char *h = "0123456789ABCDEF";
 	com1_write("0x");
-	for (int i = 60; i >= 0; i -= 4)
+	for (int i = 60; i >= 0; i -= 4) {
 		com1_putc(h[(val >> i) & 0xF]);
+	}
 }
 
 void page_fault_handler(struct interrupt_context *regs) {

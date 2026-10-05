@@ -71,8 +71,9 @@ void draw_maze() {
 
 			// Skip if out of bounds
 			if (cell_display_y >= DISPLAY_HEIGHT ||
-			    cell_display_x >= DISPLAY_WIDTH)
+			    cell_display_x >= DISPLAY_WIDTH) {
 				continue;
+			}
 
 			// 1. Draw the cell content
 			char cell_char;

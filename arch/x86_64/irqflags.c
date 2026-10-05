@@ -27,5 +27,3 @@ void irq_restore(uint64_t flags) {
 		asm volatile("sti" ::: "memory");
 	}
 }
-
-

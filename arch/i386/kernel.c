@@ -45,12 +45,13 @@ void kernel_main(uint32_t multiboot_info_p) {
 	log_info("[multiboot]: info pointer: 0x%x\n", multiboot_info_p);
 	log_info("[multiboot]: flags: 0x%x\n", mb_info->flags);
 
-	if (mb_info->flags & MB_FLAG_MMAP)
+	if (mb_info->flags & MB_FLAG_MMAP) {
 		log_success(
 			"[multiboot]: memory map present (mmap_addr=0x%x len=%d)\n",
 			mb_info->mmap_addr, mb_info->mmap_length);
-	else
+	} else {
 		log_warn("[multiboot]: no memory map\n");
+	}
 
 	if (mb_info->flags & MB_FLAG_FRAMEBUFFER) {
 		log_success("[multiboot]: framebuffer info present\n");

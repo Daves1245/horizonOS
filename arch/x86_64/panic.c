@@ -54,8 +54,9 @@ static void snapshot_regs(struct regs *r) {
 static void serial_hex64(uint64_t val) {
 	const char *hex = "0123456789ABCDEF";
 	serial_write("0x");
-	for (int i = 60; i >= 0; i -= 4)
+	for (int i = 60; i >= 0; i -= 4) {
 		serial_putchar(hex[(val >> i) & 0xF]);
+	}
 }
 
 void _panic(const char *msg, const char *file, int line, const char *func) {
@@ -80,6 +81,7 @@ void _panic(const char *msg, const char *file, int line, const char *func) {
 	serial_write("\n");
 
 	// halt
-	while (1)
+	while (1) {
 		__asm__ volatile("hlt");
+	}
 }

@@ -19,8 +19,9 @@ int init_rand(void) {
 		uint32_t lo, hi;
 		asm volatile("rdtsc" : "=a"(lo), "=d"(hi));
 		rng_state = ((uint64_t)hi << 32) | lo;
-		if (rng_state == 0)
+		if (rng_state == 0) {
 			rng_state = 1;
+		}
 	}
 
 	return 0;
@@ -48,8 +49,9 @@ static uint64_t rdrand64(void) {
 		asm volatile("rdrand %0\n\t"
 			     "setc %1"
 			     : "=r"(val), "=qm"(ok));
-		if (ok)
+		if (ok) {
 			return val;
+		}
 	}
 	/* hardware failed, fall back */
 	return xorshift64();
@@ -72,8 +74,9 @@ int32_t rand(void) {
 }
 
 uint32_t rand_range(uint32_t min, uint32_t max) {
-	if (min >= max)
+	if (min >= max) {
 		return min;
+	}
 	return min + randu() % (max - min);
 }
 

@@ -65,8 +65,9 @@ static void log_prefix(enum log_type type) {
 
 void log(enum log_type type, const char *str) {
 	log_prefix(type);
-	if (g_console_ready)
+	if (g_console_ready) {
 		console_puts(str);
+	}
 	serial_write(str);
 }
 
@@ -78,8 +79,9 @@ void logf(enum log_type type, const char *format, ...) {
 	va_list serial_args;
 	va_copy(serial_args, console_args);
 
-	if (g_console_ready)
+	if (g_console_ready) {
 		console_vprintf(format, console_args);
+	}
 	serial_vprintf(format, serial_args);
 
 	va_end(serial_args);
@@ -87,15 +89,17 @@ void logf(enum log_type type, const char *format, ...) {
 }
 
 void log_demo() {
-	if (g_console_ready)
+	if (g_console_ready) {
 		console_printf("\n=== Color Log Demo ===\n");
+	}
 	serial_write("\n=== Color Log Demo ===\n");
 	log_info("This is informational text\n");
 	log_success("Operation completed successfully\n");
 	log_warn("This is a warning message\n");
 	log_error("This is an error message\n");
 	log_debug("Debug information\n");
-	if (g_console_ready)
+	if (g_console_ready) {
 		console_printf("\n");
+	}
 	serial_write("\n");
 }
