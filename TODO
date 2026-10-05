@@ -57,9 +57,6 @@ See: https://docs.kernel.org/process/volatile-considered-harmful.html
 and cleaned up.
 
 # Refactor
-* lock.{c,h} should be moved out of scheduler (out of kernel core) and into include/kernel, since
-it's a publicly facing lock interface.
-- consolidate x86_64 and i386 memory/paging.h within asm/
 - type-guard paging in i386 like 64-bit
 - fix guards in rsdp by consolidating into asm/ to define a single contract, guaranteed by both
 architectures.
