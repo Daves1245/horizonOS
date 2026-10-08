@@ -27,7 +27,7 @@ my $verbose = 0;
 my %verbose_messages = ();
 my %verbose_emitted = ();
 my $tree = 1;
-my $chk_signoff = 1;
+my $chk_signoff = 0; # I'm one person, let's not do sign-offs
 my $chk_fixes_tag = 1;
 my $chk_patch = 1;
 my $tst_only;
@@ -421,9 +421,9 @@ if ($^V && $^V lt $minimum_perl_version) {
 	exit(1) if (!$ignore_perl_version);
 }
 
-#if no filenames are given, push '-' to read patch from stdin
+# if nothing specified, go from the root.
 if ($#ARGV < 0) {
-	push(@ARGV, '-');
+	push(@ARGV, '.');
 }
 
 # skip TAB size 1 to avoid additional checks on $tabsize - 1
@@ -1412,7 +1412,7 @@ sub top_of_kernel_tree {
 
 	my @tree_check = (
 		"README.md", "docs", "include", "kernel",
-		"fs", "init", "ipc", "kernel", "lib", "scripts",
+		"fs", "init", "kernel", "libc", "scripts",
 	);
 
 	foreach my $check (@tree_check) {
@@ -5000,6 +5000,9 @@ sub process {
 		    $sline =~ /$Type\s*$Ident\s*$balanced_parens\s*\{/ &&
 		    $sline !~ /\#\s*define\b.*do\s*\{/ &&
 		    $sline !~ /}/) {
+=begin comment
+# we comment this out in order to have same-line function braces. personally, this is a must! and
+# what i say goes inside my laptop
 			if (ERROR("OPEN_BRACE",
 				  "open brace '{' following function definitions go on the next line\n" . $herecurr) &&
 			    $fix) {
@@ -5014,6 +5017,8 @@ sub process {
 					fix_insert_line($fixlinenr, "\+\t" . trim($line2));
 				}
 			}
+=end comment
+=cut
 		}
 
 # open braces for enum, union and struct go on the same line.
@@ -6321,6 +6326,7 @@ sub process {
 					$allowed = 1;
 				}
 			}
+=begin comment
 			if ($level == 0 && $block =~ /^\s*\{/ && !$allowed) {
 				my $cnt = statement_rawlines($block);
 				my $herectx = get_stat_here($linenr, $cnt, $here);
@@ -6328,6 +6334,8 @@ sub process {
 				WARN("BRACES",
 				     "braces {} are not necessary for single statement blocks\n" . $herectx);
 			}
+=end comment
+=cut
 		}
 
 # check for single line unbalanced braces
