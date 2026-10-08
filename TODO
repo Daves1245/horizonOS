@@ -8,6 +8,9 @@ ac97.c: `void play(struct file pcm_data);`
 - have fork() continue exiting from where the parent called instead of
 giving it an entry* function to start from
 
+- page fault scheduler bug, likely from a null struct offset somewhere
+cool! first scheduler bug
+
 - add boost values to MLFQ (whoops not completely implemented yet) and use OSTEP
 hw for sanity checking values.
 
@@ -57,12 +60,12 @@ See: https://docs.kernel.org/process/volatile-considered-harmful.html
 and cleaned up.
 
 # Refactor
+* lock.{c,h} should be moved out of scheduler (out of kernel core) and into include/kernel, since
+it's a publicly facing lock interface.
+- consolidate x86_64 and i386 memory/paging.h within asm/
 - type-guard paging in i386 like 64-bit
 - fix guards in rsdp by consolidating into asm/ to define a single contract, guaranteed by both
 architectures.
-- asm/paging.h (as well as other header files in asm/) should define the contract that sources in arch/XYZ/asm/ implement. this
-way we can prevent easy errors like different published APIs
-between architectures.
 
 # Timer
 - give up the CPU instead of busy-waiting for sleep. Since we work with a single-processor scheduler, we don't have to conform to strict burst cycles like the linux kernel uses (see/google dont yield in linux kernel)
@@ -72,8 +75,5 @@ between architectures.
 - we don't read back from the framebuffer, so we can use "non-temporal stores". read up on
     movntdq/movntps and the likes.
 
-# Misc
-- Clear debug prints from DMCA
-
-# File system
--
+# Memory management
+- Slab allocator, mostly for hot vfs-related data structures
