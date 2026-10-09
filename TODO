@@ -34,6 +34,8 @@ this is done carefully around the scheduler code that is very prone to mistakes!
 
 - review the myproc() implementation.
 
+- make file descriptor table per-process instead of global
+
 # Memory
 - remove cr4 references from process-specific code.
 - communicate that cr3 is usually the *address bits*, since
