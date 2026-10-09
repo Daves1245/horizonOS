@@ -326,10 +326,11 @@ subsystem(mm
 subsystem(fs
     CORE
     fs/inode.c
+    fs/vfs.c
+    INCLUDES
     asm/vfs.h
     # included in both, so just do this. it's admittedly kind of hacky
     ${ARCHDIR}/fs/vfs.h
-    INCLUDES
     ${CMAKE_SOURCE_DIR}
 )
 
