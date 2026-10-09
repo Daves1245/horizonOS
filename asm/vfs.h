@@ -108,9 +108,6 @@ struct file_descriptor {
 	atomic_int refcount;
 };
 
-// TODO(scheduling) make this per-process
-struct file_descriptor ft_table[MAX_OPEN_FILES];
-
 struct bitmap {
 	uint32_t map[BITMAP_SIZE];
 };
