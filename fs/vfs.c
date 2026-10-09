@@ -1,5 +1,8 @@
 #include <asm/vfs.h>
 
+// TODO(scheduling) make this per-process
+struct file_descriptor ft_table[MAX_OPEN_FILES];
+
 int open(const char *path, uint32_t permissions, uint32_t flags) {
   return 0;
 }
