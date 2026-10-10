@@ -79,3 +79,6 @@ architectures.
 
 # Memory management
 - Slab allocator, mostly for hot vfs-related data structures
+
+# Misc
+- Check inline dependencies around graphics code. Lots of redundant work needs to be addressed!!!
