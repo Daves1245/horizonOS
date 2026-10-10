@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include "irqflags.h"
 #include <kernel/console.h>
 #include <fonts/font.h>
 #include <kernel/graphics.h>
@@ -73,15 +75,18 @@ static void newline(void) {
 }
 
 void console_putchar(char c) {
+	uint64_t flags = irq_save();
 	switch (c) {
 	case '\n':
 		newline();
+		goto end;
 		return;
 	case '\t':
 		cursor_col = (cursor_col + 4) & ~3;
 		if (cursor_col >= max_cols) {
 			newline();
 		}
+		goto end;
 		return;
 	default:
 		break;
@@ -97,6 +102,9 @@ void console_putchar(char c) {
 	gfx_fill_rect(px, py, px + cell_w - 1, py + cell_h - 1, bg_color);
 	font_draw_char(console_font, c, px, py, fg_color);
 	cursor_col++;
+
+end:
+	irq_restore(flags);
 }
 
 void console_backspace(void) {
