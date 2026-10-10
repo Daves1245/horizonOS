@@ -1,5 +1,6 @@
 # use fontbm to generate xml font files for bmfont2c.py
-./fontbm --font-file ~/horizon/fonts/MonaspaceArgonNF-Light.otf --output monaspace-argon-light --data-format xml --font-size 16
+./fontbm --font-file ~/documents/horizon/fonts/MonaspaceArgonNF-Regular.otf --output monaspace-argon-light --data-format xml --font-size 16 --monochrome
+
 
 # bmfont2c.py (have to setup bmfont2c.cfg as well - use [Font2], [Font3], ...[FontN])
  uv run python3 bmfont2c.py
