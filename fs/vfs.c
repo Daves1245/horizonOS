@@ -4,6 +4,18 @@
 struct file_descriptor ft_table[MAX_OPEN_FILES];
 
 int open(const char *path, uint32_t permissions, uint32_t flags) {
+  int found = -1;
+  for (int i = 0; i < MAX_OPEN_FILES; i++) {
+    if (!ft_table[i].populated) {
+      found = i;
+      break;
+    }
+  }
+
+  if (!found) {
+    return ENFILE;
+  }
+
   return 0;
 }
 
