@@ -106,6 +106,9 @@ struct file_descriptor {
 	struct inode *inode_ptr;
 	uint32_t file_offset;
 	atomic_int refcount;
+	int populated; // internal tracking value, used to tell if a file descriptor index
+								 // has been used yet or not. not directly relevant to the file descriptor
+								 // itself TODO(cleanup)
 };
 
 struct bitmap {
