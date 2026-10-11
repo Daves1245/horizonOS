@@ -8,6 +8,12 @@ case "$(uname)" in
 esac
 AC97="-device AC97,audiodev=snd0"
 
+# Fullscreen, unscaled so the framebuffer maps 1:1 to host pixels (cocoa is macOS-only)
+case "$(uname)" in
+    Darwin) GFXDISPLAY="-display cocoa,full-screen=on,zoom-to-fit=off" ;;
+    *)      GFXDISPLAY="" ;;
+esac
+
 # Detect which architecture to use (default to i386 if both exist)
 if [ -f build/i386/horizon.kernel ]; then
     ARCH="i386"
@@ -32,6 +38,7 @@ if [ "$USE_CDROM" = "1" ]; then
     if [ "$1" = "debug" ]; then
         $QEMU_BIN -cdrom $ISO_FILE \
             -vga std \
+            $GFXDISPLAY \
             $AUDIODEV $AC97 \
             -monitor stdio \
             -d int,cpu_reset,guest_errors \
@@ -47,6 +54,7 @@ if [ "$USE_CDROM" = "1" ]; then
     else
         $QEMU_BIN -cdrom $ISO_FILE \
             -vga std \
+            $GFXDISPLAY \
             $AUDIODEV $AC97 \
             -serial stdio
     fi
@@ -55,6 +63,7 @@ else
     if [ "$1" = "debug" ]; then
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
             -vga std \
+            $GFXDISPLAY \
             -machine pc,smm=off \
             -no-reboot \
             $AUDIODEV $AC97 \
@@ -69,6 +78,7 @@ else
         #   x86_64-elf-gdb build/x86_64/horizon.kernel
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
             -vga std \
+            $GFXDISPLAY \
             -machine pc,smm=off \
             -no-reboot \
             $AUDIODEV $AC97 \
@@ -79,6 +89,7 @@ else
     else
         $QEMU_BIN -drive file=$ISO_FILE,format=raw,index=0,media=disk \
             -vga std \
+            $GFXDISPLAY \
             -machine pc,smm=off \
             $AUDIODEV $AC97 \
             -serial stdio
