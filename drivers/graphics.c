@@ -38,7 +38,7 @@ uint32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
 	return ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
 }
 
-void gfx_put_pixel(uint32_t x, uint32_t y, uint32_t val) {
+inline void gfx_put_pixel(uint32_t x, uint32_t y, uint32_t val) {
 	if (x >= fb.width || y >= fb.height) {
 		return;
 	}
