@@ -24,6 +24,43 @@ void exit_process(void);
 // %rsp when we bootstrap ourselves into the init() process
 static struct process bootstrap_proc;
 
+/*
+ * alloc_stack: allocate a kernel stack and the vm_region describing it.
+ *
+ * The stack is left empty. init_stack() seeds an initial frame on it, and
+ * fork() copies the parent's frames into it.
+ */
+static struct vm_region *alloc_stack(void) {
+	/*
+	 * TODO(memory): add a frame allocator to upgrade from the current
+	 * bump allocator.
+	 */
+	virt_addr_t stack = kmalloc_a(KSTACK_SIZE);
+	struct vm_region *vma_stack =
+		(struct vm_region *)kmalloc(sizeof(*vma_stack));
+
+	if (!stack || !vma_stack) {
+		panic("alloc_stack: could not allocate stack for process");
+	}
+
+	vma_stack->flags =
+		FL_VM_READ |
+		FL_VM_WRITE; // not used, just here for the fun of the game
+	vma_stack->type = STACK;
+
+	vma_stack->start = stack;
+	vma_stack->end = stack + KSTACK_SIZE;
+
+	// guard page (stack grows down, so we have to guard the first page)
+	phys_addr_t guard_frame = unmap_page(vma_stack->start, read_cr3());
+
+	if (!guard_frame) {
+		panic("alloc_stack: guard page was not mapped in the first place");
+	}
+
+	return vma_stack;
+}
+
 // build the kernel stack (and matching context saved). brand new
 // processes needs to survive its first swtch() into it. swtch()
 // always ends with pop r15; pop r14; pop r13; pop r12; pop rbx;
@@ -36,16 +73,10 @@ static struct process bootstrap_proc;
 // save the registers, followed by `entry` as the return address for the
 // final ret to land on. symmetry is the point here.
 static struct vm_region *init_stack(struct process *p, void (*entry)(void)) {
-	virt_addr_t stack = kmalloc_a(KSTACK_SIZE);
-	struct vm_region *vma_stack =
-		(struct vm_region *)kmalloc(sizeof(*vma_stack));
-
-	if (!stack || !vma_stack) {
-		panic("init_stack: could not allocate stack for process");
-	}
+	struct vm_region *vma_stack = alloc_stack();
 
 	// one past the highest addressable word in this region
-	virt_addr_t *stack_p = (virt_addr_t *)(stack + KSTACK_SIZE);
+	virt_addr_t *stack_p = (virt_addr_t *)vma_stack->end;
 
 	// see `swtch()` (swtch.S), a newly initialized process
 	// needs this boostrapped stack. the trick lies
@@ -75,22 +106,7 @@ static struct vm_region *init_stack(struct process *p, void (*entry)(void)) {
 	stack_p[-7] = 0; // r14
 	stack_p[-8] = 0; // r15 (lowest, popped first)
 
-	vma_stack->flags =
-		FL_VM_READ |
-		FL_VM_WRITE; // not used, just here for the fun of the game
-	vma_stack->type = STACK;
-
-	vma_stack->start = stack;
-	vma_stack->end = (virt_addr_t)stack_p;
-
 	p->context.sp = (virt_addr_t)&stack_p[-8]; // r15
-
-	// guard page (stack grows down, so we have to guard the first page)
-	phys_addr_t guard_frame = unmap_page(vma_stack->start, read_cr3());
-
-	if (!guard_frame) {
-		panic("init_stack: guard page was not mapped in the first place");
-	}
 
 	return vma_stack;
 }
@@ -101,19 +117,18 @@ static struct vm_region *init_stack(struct process *p, void (*entry)(void)) {
 // process skips straight past that call and lands here instead, so
 // it has to redo that step itself before anything else.
 
-// AMD64 ABI 1.0 – March 12, 2025
+// AMD64 ABI 1.0 - March 12, 2025
 // "the standard calling sequence requirements apply only to global functions"
 // this should be private, but i'm too lazy to look up whether gcc
 // handles private functions differently. for now, just keep it
 // private
 // TODO(cleanup)
 void forkret(void) {
-	// ctx_switch() clears IF before swtch() and re-enables it on the far side
-	// of that call. a brand new process never reaches that far side -- swtch()
-	// drops it here instead -- so this is where it makes the step up.
-	irq_restore(FL_IF);
-
 	struct process *p = myproc();
+
+	// fork() brings us back here after swtch(), but clears IF before all
+	// of that. we restore the flag as it was before the fork.
+	irq_restore(FL_IF);
 
 	p->entry();
 
@@ -189,8 +204,21 @@ void init(void) {
 
 	// start a above b, and they drop in the MLFQ until they're in the bottom
 	// level, at which point they're RR'ing, still in alternating order.
-	int a = fork("A", proc_a, 0);
-	int b = fork("B", proc_b, 1);
+	// the children come back out of fork() right here, so each one has to
+	// peel off before it runs the rest of init()
+	int a = fork("A", 0);
+
+	if (a == 0) {
+		proc_a();
+		exit_process();
+	}
+
+	int b = fork("B", 1);
+
+	if (b == 0) {
+		proc_b();
+		exit_process();
+	}
 
 	if (a < 0 || b < 0) {
 		panic("init: could not fork the A/B test processes");
@@ -254,7 +282,7 @@ void init_process(void) {
 	pgtable_t *pgtable = (pgtable_t *)kmalloc_a(sizeof(pgtable_t));
 
 	memcpy(pgtable, bootstrap, sizeof(pgtable_t));
-	init_p->cr3 = virt_to_phys((virt_addr_t)pgtable);
+	init_p->pml4_addr = virt_to_phys((virt_addr_t) pgtable);
 
 	// init lives on the mlfq like everything else, even though we bootstrap
 	// straight into it below instead of letting the scheduler pick it up. it
@@ -286,8 +314,7 @@ static struct process *alloc_process(const char *name, void (*entry)(void)) {
 
 	struct process *p = NULL;
 
-	for (struct process *it = processes; it < &processes[NUM_PROCESSES];
-	     it++) {
+	for (struct process *it = processes; it < &processes[NUM_PROCESSES]; it++) {
 		if (it->state == UNUSED) {
 			p = it;
 			break;
@@ -311,11 +338,7 @@ static struct process *alloc_process(const char *name, void (*entry)(void)) {
 
 	INIT_LIST_HEAD(&p->addrspace.vm_list);
 
-	// TODO(addrspace) every process still inherits the address space it was
-	// created in, so they all share one. a real fork has to copy the tables.
-	// note this is the *address* bits only -- read_cr3() also returns
-	// PWT/PCD, which have no business in a saved context.
-	p->cr3 = PAGE_GET_ADDR(read_cr3());
+	p->pml4_addr = cr3_to_pml4_addr(read_cr3());
 
 	// every process starts in forkret(), which then calls p->entry(). that
 	p->entry = entry;
@@ -328,27 +351,148 @@ static struct process *alloc_process(const char *name, void (*entry)(void)) {
 	return p;
 }
 
-// not a fork in the unix sense yet: the child does not resume where the
-// parent is, it starts at `entry` and shares the parent's address space.
-// TODO(fork) copy the address space and return 0 in the child once userspace
-// exists and a child can inherit the parent's instruction pointer.
-//
-// @param level priority level to start the child on, 0 being the highest
-// @return the child's pid, or -1 if the process table is full
-int fork(const char *name, void (*entry)(void), int level) {
+struct process *alloc_process_no_entry(const char *name) {
+	uint64_t flags = irq_save();
+
+	struct process *p = NULL;
+
+	for (struct process *it = processes; it < &processes[NUM_PROCESSES];
+			it++) {
+		if (it->state == UNUSED) {
+			p = it;
+			break;
+		}
+	}
+
+	if (!p) {
+		irq_restore(flags);
+		return NULL;
+	}
+
+	// .bss hands us zeros the first time round, but a recycled slot is the
+	// corpse of a dead process. start from a known state either way.
+	*p = (struct process){ 0 };
+
+	p->pid = __glbl_pid++;
+	p->parent = NULL;
+	p->state = READY;
+	// caller's problem to keep names under sizeof(p->name)
+	memcpy(p->name, name, strlen(name) + 1);
+
+	INIT_LIST_HEAD(&p->addrspace.vm_list);
+
+	// TODO(addrspace) all processes currently share the same address space.
+	// see the documentaton around copy_stack_rebased().
+	p->pml4_addr = PAGE_GET_ADDR(read_cr3());
+
+	// no frame on it yet: fork() fills it with a copy of the parent's
+	struct vm_region *stack_region = alloc_stack();
+
+	list_add(&stack_region->node, &p->addrspace.vm_list);
+
+	irq_restore(flags);
+	return p;
+}
+
+static struct vm_region *find_stack(struct process *p) {
+	struct vm_region *r;
+
+	list_for_each_entry(r, &p->addrspace.vm_list, node) {
+		if (r->type == STACK) {
+			return r;
+		}
+	}
+
+	panic("find_stack: process has no stack region");
+}
+
+/*
+ * clone_stack_rebased: copy a parent's stack into a child address space
+ *
+ * The internals of copy_stack (swtch.S). The assembly only creates a snapshot
+ * of the outer frame of the parent that the context switch can return into.
+ *
+ * There is only one address space so far. For a number of reasons:
+ *
+ * 1) We don't have userspace yet.
+ * 2) init copies over cr3 from the limine bootloader
+ * 3) init_process() does a shallow copy on each fork
+ *
+ * Number 1 is an issue because in kernelspace, every process shares the same
+ * address space. Until we get userspace, we're stuck manually cloning each
+ * stack on a fork.
+ *
+ * see TODO(addrspace).
+ */
+
+void clone_stack_rebased(struct process *child, virt_addr_t frame) {
+	virt_addr_t parent_stack_top = find_stack(myproc())->end;
+	virt_addr_t child_stack_top = find_stack(child)->end;
+	// wraps when the child sits lower, which should be fine
+	virt_addr_t delta = child_stack_top - parent_stack_top;
+	virt_addr_t child_frame = frame + delta;
+
+	memcpy((void *) child_frame, (void *)frame, parent_stack_top - frame);
+
+	// init_stack() seeds the bottom frame with a 0 frame pointer, which falls
+	// outside the parent's stack and ends the walk.
+	virt_addr_t *slot = (virt_addr_t *) child_frame + FORK_FRAME_FP_SLOT;
+
+	while (*slot >= frame && *slot < parent_stack_top) {
+		*slot += delta;
+		slot = (virt_addr_t *) *slot;
+	}
+
+	child->context.sp = child_frame;
+}
+
+/*
+ *
+ * unix-like fork: duplicate a process.
+ *
+ *
+ * The child process is a copy of the parent and returns to the same point
+ * as the parent, through its own stack. Stack walking and copying is done
+ * to replicate the original structure.
+ *
+ * TODO(fork) copy the address space too once there is one per process.
+ *
+ * @param name Name of the child process, used internally for debugging.
+ * @param level Initial priority level to start the child process. See the MLFQ scheduler for details
+ * @return The child's pid in the parent, 0 in the child, or -1 if the
+ * process table is full
+ */
+int fork(const char *name, int level) {
+	/*
+	 * Fairly straightforward: Allocate an address space, reserve a stack (this
+	 * includes making a guard page for overflows), copy over the callee's stack
+	 * through a walk, and enqueue into the scheduler.
+	 */
+
+	// disable (save) interrupts
+	uint64_t flags = irq_save();
+
 	struct process *parent = myproc();
-	struct process *child = alloc_process(name, entry);
+	struct process *child = alloc_process_no_entry(name);
 
 	if (!child) {
+		irq_restore(flags);
 		printk(KERN_DEBUG, "fork: process limit hit\n");
 		return -1;
 	}
 
 	child->parent = parent;
 
-	// publish last: enqueueing is what makes the child visible to the
-	// scheduler, so nothing may be left half-initialized past this point
+	if (clone_parent_base_frame(child) == 0) {
+		// we are the child. we came back from swtch(), IF is clear and
+		// we skipped the re-enable on the far side of ctx_switch().
+		// `flags` is the parent's, copied over with the rest of the frame.
+		irq_restore(flags);
+		return 0;
+	}
+
 	sched_enqueue(child, level);
 
+	irq_restore(flags);
 	return child->pid;
 }
