@@ -18,7 +18,7 @@ void ctx_switch(struct process *new) {
 
 	cpus[0].task = new;
 
-	swtch(&old->context.sp, new->context.sp, new->cr3);
+	swtch(&old->context.sp, new->context.sp, new->pml4_addr);
 
 	irq_restore(flags);
 }
