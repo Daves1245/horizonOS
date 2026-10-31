@@ -50,7 +50,7 @@ struct cpu {
 
 	// the scheduler runs as a process with a stack of its own, so that control
 	// can be handed back to it without borrowing the stack of whoever was
-	// interrupted. it is not on the mlfq -- it is what services the mlfq.
+	// interrupted. it is not on the mlfq
 	struct process *scheduler_proc;
 };
 
@@ -84,7 +84,7 @@ struct process {
 	struct list_head sched;
 
 	enum process_state state;
-	phys_addr_t cr3;
+	phys_addr_t pml4_addr;
 	struct context context;
 
 	// entry point for new execution
@@ -92,7 +92,7 @@ struct process {
 };
 
 void sched(void);
-int fork(const char *name, void (*entry)(void), int level);
+int fork(const char *name, int level);
 
 struct process *myproc();
 struct cpu *mycpu();
