@@ -82,3 +82,9 @@ architectures.
 
 # Misc
 - Check inline dependencies around graphics code. Lots of redundant work needs to be addressed!!!
+
+# cr3 vs pml4_addr
+- There are lots of uses where the entire cr3 regster is used when the intended portion is the pml4 base address.
+This works now, but not intentionally; the lower bits of the cr3 register just happen to be 0 because of the
+state that the limine bootloader leaves us in. Uses of read_cr3() directly are discouraged, and should be wrapped
+in cr3_to_pml4_addr() instead.
