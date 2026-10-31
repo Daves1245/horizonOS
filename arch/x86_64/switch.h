@@ -31,6 +31,18 @@ struct context {
 // itself has to be a pointer. defined in asm/swtch.S
 void swtch(virt_addr_t *old_sp, virt_addr_t new_sp, phys_addr_t new_cr3);
 
+// snapshot the caller into `child` (see fork()). returns 1 in the parent and
+// 0 in the child. defined in asm/swtch.S
+int clone_parent_base_frame(struct process *child);
+
+// used in fork(). walks and copies the parent's stack bottom up into the
+// stack of the child.
+void clone_stack_rebased(struct process *child, virt_addr_t frame);
+
+// clone_parent_base_frame()'s frame, lowest address first: r15 r14 r13 r12 rbx rbp. the
+// saved frame pointer is the start of the chain fork_copy_stack() rebases
+#define FORK_FRAME_FP_SLOT 5
+
 void ctx_switch(struct process *new);
 
 #endif
