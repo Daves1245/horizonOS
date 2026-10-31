@@ -4,6 +4,7 @@
 #include <serial.h>
 #include <kernel/logger.h>
 #include <limine.h>
+#include <asm/paging.h>
 
 // We'll use Limine's page tables initially, then can create our own if needed
 // Limine provides the HHDM which we need to access physical memory
@@ -240,11 +241,11 @@ void map_physical_range(phys_addr_t phys_addr, uint32_t size, int iskernel,
  * Note that this function does not free the returned frame, that decision
  * is left to the caller.
  */
-phys_addr_t unmap_page(virt_addr_t addr, uint64_t cr3) {
+phys_addr_t unmap_page(virt_addr_t addr, phys_addr_t pml4_addr) {
 	// page align
 	addr &= ~0xFFFUL;
 
-	pte_t *pte = get_page_entry(addr, 0, cr3);
+	pte_t *pte = get_page_entry(addr, 0, pml4_addr);
 	if (!pte || !(pte_val(*pte) & PAGE_PRESENT)) {
 		return 0;
 	}
@@ -255,7 +256,7 @@ phys_addr_t unmap_page(virt_addr_t addr, uint64_t cr3) {
 
 	// only invalidate the TLB if we benefit from it, i.e. the owning
 	// cr3 is the same one as our currently running process.
-	if (cr3 == read_cr3()) {
+	if (pml4_addr == cr3_to_pml4_addr(read_cr3())) {
 		invalidate_page(addr);
 	}
 

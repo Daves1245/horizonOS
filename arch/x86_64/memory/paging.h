@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <kernel/compiler.h>
 #include <stddef.h>
-#include <asm/paging.h>
 #include <kernel/types.h>
 
 // lwn.net find: https://lwn.net/Articles/106177/
@@ -199,6 +198,16 @@ static inline uint64_t read_cr4(void) {
 
 	asm volatile("mov %%cr4, %0" : "=r"(cr4));
 	return cr4;
+}
+
+// The address bits of cr3 that dictate where the pml4 is are
+// the same as in a PTE, so we can do PAGE_GET_ADDR, but
+// we include this function here for readability to prevent
+// later confusion by using cr3 directly and ignoring the lower
+// bits, which include non-pml4 information.
+// see https://wiki.osdev.org/CPU_Registers_x86-64#CR3
+static inline phys_addr_t cr3_to_pml4_addr(uint64_t cr3) {
+	return cr3 & PAGE_FRAME_MASK;
 }
 
 // again - the memory clobber tells gcc to assume this
